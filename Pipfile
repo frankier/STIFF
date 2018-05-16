@@ -9,7 +9,6 @@ nltk = "*"
 click = "*"
 plumbum = "*"
 pyahocorasick = "*"
-hfst = "==3.12.2.4b0"
 pygtrie = "*"
 finntk = {git = "https://github.com/frankier/finntk.git", editable = true}
 mafan = "*"

@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "84fd701173d6752832129dce6369b0c15c60af898f83318a21cecde0a2737e85"
+            "sha256": "00eee7d356c2f417b223032a760611f4770c7094f71fcfe47cfe18ddc983eaed"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -39,28 +39,13 @@
         },
         "finntk": {
             "editable": true,
-            "git": "https://github.com/frankier/finntk.git",
-            "ref": "75d7d11bec90abf148d83c1070ee0961266216ce"
+            "git": "https://github.com/frankier/finntk.git"
         },
         "future": {
             "hashes": [
                 "sha256:e39ced1ab767b5936646cedba8bcce582398233d6a627067d4c6a454c90cfedb"
             ],
             "version": "==0.16.0"
-        },
-        "hfst": {
-            "hashes": [
-                "sha256:05cafc8d7383e261ca4f02c8e50a32ce9bdd0c0ad8021a6c1ad99da1b7b31e97",
-                "sha256:2ccb0021609259832b7728e98869720a94c5002107bc5b3d3def0dad8b8809d3",
-                "sha256:6624aa8d0c743d9b24ed2789309d37baae0923ad5d44cdb7e01a8d894a173e9a",
-                "sha256:9d0c399c59dc84297e55a48581d00ea5fed64632d956588b3599671f2137ccb8",
-                "sha256:d695cc755d628ea70193d2bb4a2415cbd5c0fd5c8e9713726e2c81e850fbf257",
-                "sha256:e9739bf73ac5284531e75aceaf0a0cfc84d741efe42e107397448b10e63b935b",
-                "sha256:f434f9042d89a7886f77dfb5ee3173942c4b1a08182557ee134d84de5f9f19d8",
-                "sha256:f4b9564f7b07bb09cb7034f17e7f07870050ea313fff8af56d1278c00f78ada1"
-            ],
-            "index": "pypi",
-            "version": "==3.12.2.4b0"
         },
         "jieba": {
             "hashes": [
@@ -85,11 +70,10 @@
         },
         "nltk": {
             "hashes": [
-                "sha256:2661f9971d983db314bbebd51ba770811a362c6597fd0f303bb1d3beadcb4834",
-                "sha256:8a3bad9ff7f67d2828a7915c2fab93e6ca910c2015ef40799e1805fccf2354e5"
+                "sha256:fe0eda251be65843be86d7de9abfbf7161732256f742e623b21243ec47bdb718"
             ],
             "index": "pypi",
-            "version": "==3.2.5"
+            "version": "==3.3.0"
         },
         "opencc": {
             "hashes": [

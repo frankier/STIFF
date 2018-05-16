@@ -1,0 +1,141 @@
+{
+    "_meta": {
+        "hash": {
+            "sha256": "84fd701173d6752832129dce6369b0c15c60af898f83318a21cecde0a2737e85"
+        },
+        "pipfile-spec": 6,
+        "requires": {
+            "python_version": "3.6"
+        },
+        "sources": [
+            {
+                "name": "pypi",
+                "url": "https://pypi.python.org/simple",
+                "verify_ssl": true
+            }
+        ]
+    },
+    "default": {
+        "argparse": {
+            "hashes": [
+                "sha256:83aa6d2a117c3fb5ada747c652972cb437ba7f2bb2b63c5fee94be79d1de0403",
+                "sha256:ee6da1aaad8b08a74a33eb82264b1a2bf12a7d5aefc7e9d7d40a8f8fa9912e62"
+            ],
+            "version": "==1.1"
+        },
+        "chardet": {
+            "hashes": [
+                "sha256:b0d4149078ec777b448f43960c1d0d9648e03b366c60e396c50990c55eab6ed0"
+            ],
+            "version": "==2.1.1"
+        },
+        "click": {
+            "hashes": [
+                "sha256:29f99fc6125fbc931b758dc053b3114e55c77a6e4c6c3a2674a2dc986016381d",
+                "sha256:f15516df478d5a56180fbf80e68f206010e6d160fc39fa508b65e035fd75130b"
+            ],
+            "index": "pypi",
+            "version": "==6.7"
+        },
+        "finntk": {
+            "editable": true,
+            "git": "https://github.com/frankier/finntk.git",
+            "ref": "75d7d11bec90abf148d83c1070ee0961266216ce"
+        },
+        "future": {
+            "hashes": [
+                "sha256:e39ced1ab767b5936646cedba8bcce582398233d6a627067d4c6a454c90cfedb"
+            ],
+            "version": "==0.16.0"
+        },
+        "hfst": {
+            "hashes": [
+                "sha256:05cafc8d7383e261ca4f02c8e50a32ce9bdd0c0ad8021a6c1ad99da1b7b31e97",
+                "sha256:2ccb0021609259832b7728e98869720a94c5002107bc5b3d3def0dad8b8809d3",
+                "sha256:6624aa8d0c743d9b24ed2789309d37baae0923ad5d44cdb7e01a8d894a173e9a",
+                "sha256:9d0c399c59dc84297e55a48581d00ea5fed64632d956588b3599671f2137ccb8",
+                "sha256:d695cc755d628ea70193d2bb4a2415cbd5c0fd5c8e9713726e2c81e850fbf257",
+                "sha256:e9739bf73ac5284531e75aceaf0a0cfc84d741efe42e107397448b10e63b935b",
+                "sha256:f434f9042d89a7886f77dfb5ee3173942c4b1a08182557ee134d84de5f9f19d8",
+                "sha256:f4b9564f7b07bb09cb7034f17e7f07870050ea313fff8af56d1278c00f78ada1"
+            ],
+            "index": "pypi",
+            "version": "==3.12.2.4b0"
+        },
+        "jieba": {
+            "hashes": [
+                "sha256:0dfb9b7f0bcef523338ca687eca23e73428cdd005fb4254f38a3c3580e165b1d"
+            ],
+            "version": "==0.37"
+        },
+        "mafan": {
+            "hashes": [
+                "sha256:943433e662981776c50d3873fc82878c2bdca024347f2b9bee37d3d48bd69b60"
+            ],
+            "index": "pypi",
+            "version": "==0.3.1"
+        },
+        "more-itertools": {
+            "hashes": [
+                "sha256:0dd8f72eeab0d2c3bd489025bb2f6a1b8342f9b198f6fc37b52d15cfa4531fea",
+                "sha256:11a625025954c20145b37ff6309cd54e39ca94f72f6bb9576d1195db6fa2442e",
+                "sha256:c9ce7eccdcb901a2c75d326ea134e0886abfbea5f93e91cc95de9507c0816c44"
+            ],
+            "version": "==4.1.0"
+        },
+        "nltk": {
+            "hashes": [
+                "sha256:2661f9971d983db314bbebd51ba770811a362c6597fd0f303bb1d3beadcb4834",
+                "sha256:8a3bad9ff7f67d2828a7915c2fab93e6ca910c2015ef40799e1805fccf2354e5"
+            ],
+            "index": "pypi",
+            "version": "==3.2.5"
+        },
+        "opencc": {
+            "hashes": [
+                "sha256:bfca25fb46add057454075ba4c4dfed51c19c09944a960e3920ac22ba24097e2",
+                "sha256:c845abfcd6936ea110ff19de0da85e5ed99953cb03836be975bd0d5b163618e1"
+            ],
+            "index": "pypi",
+            "version": "==0.2"
+        },
+        "plumbum": {
+            "hashes": [
+                "sha256:4b5af076fef56fe7345b67f7fa4c79185fa64ac5bc14a9de1aa1447b58b6cbd0",
+                "sha256:d179b90a9927f91427a28c1bac2864c61342cb43ef39aa7324c7c9a96bcc23eb",
+                "sha256:e4be6200df23b03926c27fe333356408f5212182675fcbacda06ecbfa83bf863"
+            ],
+            "index": "pypi",
+            "version": "==1.6.6"
+        },
+        "pyahocorasick": {
+            "hashes": [
+                "sha256:3d584e7836ca7b066f99d7fdb384dc6ef7af211b2b139baedbd960c7c279bb7f"
+            ],
+            "index": "pypi",
+            "version": "==1.1.8"
+        },
+        "pycountry": {
+            "hashes": [
+                "sha256:46e4b1a21516e41fe6f8c0ef7a9876da8ce9ac3f719e3fed79cf79fd9b6206ee"
+            ],
+            "index": "pypi",
+            "version": "==18.2.23"
+        },
+        "pygtrie": {
+            "hashes": [
+                "sha256:01f2a8f41b1c9fd6cc29edae5c908d2cd6cc69d0bf31e3dea6ea31fe97fff9d3"
+            ],
+            "index": "pypi",
+            "version": "==2.2"
+        },
+        "six": {
+            "hashes": [
+                "sha256:70e8a77beed4562e7f14fe23a786b54f6296e34344c23bc42f07b15018ff98e9",
+                "sha256:832dc0e10feb1aa2c68dcc57dbb658f1c7e65b9b61af69048abc87a2db00a0eb"
+            ],
+            "version": "==1.11.0"
+        }
+    },
+    "develop": {}
+}

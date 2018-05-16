@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+pycountry = "*"
+nltk = "*"
+click = "*"
+plumbum = "*"
+pyahocorasick = "*"
+hfst = "==3.12.2.4b0"
+pygtrie = "*"
+finntk = {git = "https://github.com/frankier/finntk.git", editable = true}
+mafan = "*"
+opencc = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.6"

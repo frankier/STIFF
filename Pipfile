@@ -10,9 +10,10 @@ click = "*"
 plumbum = "*"
 pyahocorasick = "*"
 pygtrie = "*"
-finntk = {git = "https://github.com/frankier/finntk.git", editable = true}
-mafan = "*"
 opencc = "*"
+finntk = "*"
+opus-api = "*"
+mafan = {git = "https://github.com/frankier/mafan.git", editable = true}
 
 [dev-packages]
 

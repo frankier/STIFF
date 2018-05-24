@@ -14,6 +14,11 @@ opencc = "*"
 finntk = "*"
 opus-api = "*"
 mafan = {git = "https://github.com/frankier/mafan.git", editable = true}
+pandas = "*"
+sklearn = "*"
+scikit-plot = "*"
+jupyter = "*"
+ipykernel = "*"
 
 [dev-packages]
 

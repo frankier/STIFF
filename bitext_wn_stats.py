@@ -40,8 +40,13 @@ def count_chars(line):
 def get_covs(tags, toks, line):
     unambg = unambg_tags(tags)
     # tok cov
-    cov = len(tags.keys()) / len(toks)
-    unambg_cov = len(unambg) / len(toks)
+    num_toks = len(toks)
+    if num_toks > 0:
+        cov = len(tags.keys()) / num_toks
+        unambg_cov = len(unambg) / num_toks
+    else:
+        cov = 0
+        unambg_cov = 0
     # char cov
     chars_covered = [False] * len(line)
     chars_unambg_covered = [False] * len(line)

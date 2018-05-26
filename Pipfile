@@ -11,7 +11,7 @@ plumbum = "*"
 pyahocorasick = "*"
 pygtrie = "*"
 opencc = "*"
-finntk = "*"
+finntk = ">=0.0.5"
 opus-api = "*"
 mafan = {git = "https://github.com/frankier/mafan.git", editable = true}
 pandas = "*"
@@ -19,6 +19,7 @@ sklearn = "*"
 scikit-plot = "*"
 jupyter = "*"
 ipykernel = "*"
+pytest = "*"
 
 [dev-packages]
 

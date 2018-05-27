@@ -57,8 +57,8 @@ def read_opensubtitles2018(dir):
         for ((zh_untok, zh_tok), fi_tok, line_id, moses_alignment) in \
                 zip(realign(zh_untok_f, zh_tok_f), fi_tok_f, ids_f, alignment_f):
             src = get_src(line_id)
-            align = WordAlignment(moses_alignment)
-            yield zh_untok, zh_tok, fi_tok, src, align
+            align = WordAlignment(moses_alignment[:-1])
+            yield zh_untok[:-1], zh_tok[:-1], fi_tok[:-1], src, align
 
 
 def get_src(line_id):
@@ -75,6 +75,8 @@ class WordAlignment:
     def __init__(self, alignment):
         self.s2t = {}
         self.t2s = {}
+        if not alignment:
+            return
         for align in alignment.split(' '):
             s, t = [int(n) for n in align.split('-')]
             self.s2t[s] = t

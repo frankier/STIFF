@@ -8,8 +8,9 @@ import pandas as pd
 import fix_cmn # noqa
 from finntk import get_omorfi, analysis_to_subword_dicts, get_token_positions, extract_lemmas_recurs
 
-from writers import UnifiedWriter, EuroSenseWriter
+from writers import Writer
 from extract import get_synset_set
+from corpus_read import read_opensubtitles2018
 
 SYNS_TRACE = True
 SIM_TRACE = False
@@ -104,92 +105,66 @@ def get_tags(
     return s1_tags, s2_tags
 
 
-@click.command('trace-wn')
-@click.argument('lang1')
-@click.argument('lang2')
-@click.argument('corpus1', type=click.File('r'))
-@click.argument('corpus2', type=click.File('r'))
-@click.option('--alignment', type=click.File('r'), default=None)
-@click.option('--output', default=None)
-@click.option('--format', default='eurosense')
-@click.option('--cov-out', default='cov')
-@click.option('--use-english-deriv/--no-use-english-deriv',
-              default=False)
-def bitext_wn_stats(lang1, lang2, corpus1, corpus2,
-                    alignment, output, format,
-                    cov_out, use_english_deriv):
-    if alignment is None:
-        alignment = itertools.repeat(None)
-
-    if output:
-        if format == 'eurosense':
-            sense_writer = EuroSenseWriter(output)
+def write_anns(writer, lang, taggings, tokens, tokenised=True):
+    for tok_idx, tags in taggings.items():
+        tok = tokens[tok_idx]
+        if isinstance(tok['token'], str):
+            anchor = tok['token']
         else:
-            sense_writer = UnifiedWriter(output)
+            anchor = tok['token']['surf']
+        lemma = list(tok['lemmas'])[0]
+        for tag in tags:
+            writer.write_ann(lang, anchor, tok_idx, lemma, tag, is_tokenised=tokenised)
 
-    df_cov1 = pd.DataFrame([], columns=['cov', 'unambg', 'char', 'unambg_char'])
-    df_cov2 = pd.DataFrame([], columns=['cov', 'unambg', 'char', 'unambg_char'])
-    left_extra_count = 0
-    right_extra_count = 0
-    intersect_count = 0
-    union_count = 0
-    for line1, line2, align in zip(corpus1, corpus2, alignment):
-        s1tok, s1d = get_synset_set(line1, lang1)
-        s2tok, s2d = get_synset_set(line2, lang2)
-        if SYNS_TRACE:
-            print(line1, line2)
-            print('s1tok, s1d', s1tok, s1d)
-            print('s2tok, s12', s2tok, s2d)
-        s1d_lemma_map = dict(s1d.keys())
-        s2d_lemma_map = dict(s2d.keys())
-        s1 = set(s1d_lemma_map.keys())
-        s2 = set(s2d_lemma_map.keys())
 
-        if SIM_TRACE:
-            # s1 - s2
-            s1_m_s2 = len(s1 - s2)
-            left_extra_count += s1_m_s2
+def proc_line(writer, zh_untok, zh_tok, fi_tok, src, align):
+    s1tok, s1d = get_synset_set(fi_tok, 'fin')
+    s2tok, s2d = get_synset_set(zh_untok, 'zh+')
+    if SYNS_TRACE:
+        print(fi_tok)
+        print(zh_untok)
+        print('s1tok, s1d', s1tok, s1d)
+        print('s2tok, s12', s2tok, s2d)
+    s1d_lemma_map = dict(s1d.keys())
+    s2d_lemma_map = dict(s2d.keys())
+    s1 = set(s1d_lemma_map.keys())
+    s2 = set(s2d_lemma_map.keys())
 
-            # s2 - s1
-            s2_m_s1 = len(s2 - s1)
-            right_extra_count += s2_m_s1
+    s1_tags, s2_tags = get_tags(
+        s1, s1d_lemma_map, s1d,
+        s2, s2d_lemma_map, s2d,
+        expand_english_deriv, expand_english_deriv)
 
-            # s1 & s2
-            s1_and_s2 = len(s1 & s2)
-            intersect_count += s1_and_s2
+    writer.begin_sent()
+    writer.write_text("zh", zh_tok)
+    writer.write_text("zh", zh_untok, is_tokenised=False)
+    writer.write_text("fi", fi_tok)
+    write_anns(writer, "fi", s1_tags, s1tok)
+    write_anns(writer, "zh", s2_tags, s2tok)
+    writer.end_sent()
 
-            # s1 | s2
-            s1_or_s2 = len(s1 | s2)
-            union_count += s1_or_s2
 
-            jaccard = s1_and_s2 / s1_or_s2 if s1_or_s2 > 0 else 0
-            print(s1d)
-            print(s2d)
-            print(s1 & s2)
-            print(f"s1 - s2: {s1_m_s2}; s2 - s1: {s2_m_s1}; s1 & s2: {s1_and_s2}; "
-                  f"s1 | s2 {s1_or_s2}; jaccard: {jaccard}")
-
-        if use_english_deriv:
-            s1_tags, s2_tags = get_tags(
-                s1, s1d_lemma_map, s1d,
-                s2, s2d_lemma_map, s2d,
-                expand_english_deriv, expand_english_deriv)
-        else:
-            s1_tags, s2_tags = get_tags(
-                s1, s1d_lemma_map, s1d,
-                s2, s2d_lemma_map, s2d)
-
-        cov_trace(df_cov1, s1_tags, s1tok, line1)
-        cov_trace(df_cov2, s2_tags, s2tok, line2)
-
-    df_cov1.to_csv(cov_out + '1.csv')
-    df_cov2.to_csv(cov_out + '2.csv')
-
-    if SIM_TRACE:
-        print(left_extra_count, right_extra_count, intersect_count, union_count)
-
-    return df_cov1, df_cov2
+@click.command('tag')
+@click.argument('corpus')
+@click.argument('output')
+@click.option('--cutoff', default=None, type=int)
+def tag(corpus, output, cutoff):
+    idx = 0
+    imdb_id = None
+    with Writer(output) as writer:
+        for zh_untok, zh_tok, fi_tok, src, align in read_opensubtitles2018(corpus):
+            srcs, next_imdb_id = src[:-1], src[-1]
+            if next_imdb_id != imdb_id:
+                if imdb_id is not None:
+                    writer.end_subtitle()
+                imdb_id = next_imdb_id
+                writer.begin_subtitle(src, imdb_id)
+            proc_line(writer, zh_untok, zh_tok, fi_tok, src, align)
+            idx += 1
+            if cutoff is not None and idx > cutoff:
+                break
+        writer.end_subtitle()
 
 
 if __name__ == '__main__':
-    bitext_wn_stats()
+    tag()

@@ -32,21 +32,48 @@ class Writer:
         return " tokenized=\"false\"" if not is_tokenised else ""
 
     def write_text(self, lang, text, is_tokenised=True):
-        self.outf.write('<text lang="{}"{}>{}</text>\n'.format(lang, self._tok_extra(is_tokenised), text))
+        id = "{}-{}tok".format(lang, "" if is_tokenised else "un")
+        self.outf.write('<text id="{}" lang="{}"{}>{}</text>\n'.format(id, lang, self._tok_extra(is_tokenised), text))
 
-    def write_ann(self, lang, anchor, anchor_pos, lemma, synset, is_tokenised=True):
+    def write_ann(self, lang, anchor, tok, tag):
+        supports = []
+        for support in tag.get('support', []):
+            support_bits = [support['type'], 'from', str(support['source'])]
+            if 'preproc' in support:
+                support_bits.append('preproc')
+                support_bits.extend(support['preproc'])
+            supports.append(":".join(support_bits))
+        anchors = []
+
+        for anchor_pos in tok['anchors']:
+            anchor_text = "from:{}".format(anchor_pos['id'])
+            if 'char' in anchor_pos:
+                anchor_text += ";char:{}".format(anchor_pos['char'])
+            if 'token' in anchor_pos:
+                anchor_text += ";token:{}".format(anchor_pos['token'])
+            anchors.append(anchor_text)
+
+        #lemma_path = "from:XXX:chars:YY;from:XX2 {}".format(anchor_pos)
         self.outf.write(
-            ('<annotation lang="{}" '
+            ('<annotation '
+             'id="{}" '
+             'lang="{}" '
              'type="stiff" '
+             'support="{}" '
              'anchor="{}" '
-             'anchor-pos="{}" '
-             'lemma="{}"{}>'
+             'anchor-positions="{}" '
+             'lemma="{}" '
+             'wordnets="{}" '
+             'lemma-path="{}">'
              '{}</annotation>\n')
             .format(
+                tag['id'],
                 lang,
+                " ".join(supports),
                 anchor,
-                anchor_pos,
-                lemma,
-                self._tok_extra(is_tokenised),
-                synset)
+                " ".join(anchors),
+                tag['lemma'],
+                " ".join(tag['wordnet']),
+                "whole",
+                tag['wnlemma'][0])
             )

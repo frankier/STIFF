@@ -20,8 +20,12 @@ scikit-plot = "*"
 jupyter = "*"
 ipykernel = "*"
 pytest = "*"
+black = "==18.5b1"
 
 [dev-packages]
 
 [requires]
 python_version = "3.6"
+
+[pipenv]
+allow_prereleases = true

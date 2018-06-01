@@ -11,7 +11,7 @@ tok = open(sys.argv[2])
 use_opencc = len(sys.argv) > 3
 occ = None
 if use_opencc:
-    opencc_config = os.path.join(dir_path, "t2s_char.json")
+    opencc_config = os.path.join(dir_path, "../t2s_char.json")
     occ = opencc.OpenCC(opencc_config)
 
 untok_line = untok.readline()

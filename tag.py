@@ -6,8 +6,13 @@ import string
 import pandas as pd
 from itertools import chain
 
-import fix_cmn # noqa
-from finntk import get_omorfi, analysis_to_subword_dicts, get_token_positions, extract_lemmas_recurs
+import fix_cmn  # noqa
+from finntk import (
+    get_omorfi,
+    analysis_to_subword_dicts,
+    get_token_positions,
+    extract_lemmas_recurs,
+)
 
 from writers import Writer
 from extract import extract_full_zh, get_synset_set_fin
@@ -20,14 +25,21 @@ COVERAGE_TRACE = True
 
 
 def get_tok_idx(tok):
-    for anchor in tok['anchors']:
-        if 'token' in anchor:
-            return anchor['token']
+    for anchor in tok["anchors"]:
+        if "token" in anchor:
+            return anchor["token"]
 
 
-def apply_lemmas(wn_lemmas, dest_tagging, source_tagging, base_support, align_map, preproc_rev_map=None):
+def apply_lemmas(
+    wn_lemmas,
+    dest_tagging,
+    source_tagging,
+    base_support,
+    align_map,
+    preproc_rev_map=None,
+):
     for dest_token, dest_tag in dest_tagging.iter_tags():
-        synset = dest_tag['wnlemma'][0]
+        synset = dest_tag["wnlemma"][0]
         if synset in wn_lemmas:
             # Trace back source synset
             support = base_support.copy()
@@ -39,30 +51,32 @@ def apply_lemmas(wn_lemmas, dest_tagging, source_tagging, base_support, align_ma
             source_token = source_tagging.tokens[source_tok_idx]
             # Get source
             source_tag_id = None
-            for source_tag in source_token['tags']:
-                if source_tag['wnlemma'][0] == source_synset:
-                    source_tag_id = source_tag['id']
+            for source_tag in source_token["tags"]:
+                if source_tag["wnlemma"][0] == source_synset:
+                    source_tag_id = source_tag["id"]
                     break
             assert source_tag_id is not None
-            support['source'] = source_tag_id
+            support["source"] = source_tag_id
             # Check if it's aligned
             dest_token_idx = get_tok_idx(dest_token)
             source_token_idx = get_tok_idx(source_token)
-            aligned = (dest_token_idx is not None and source_tok_idx is not None and
-                       align_map.get(dest_token_idx) == source_tok_idx)
+            aligned = (
+                dest_token_idx is not None
+                and source_tok_idx is not None
+                and align_map.get(dest_token_idx) == source_tok_idx
+            )
             if aligned:
-                support['type'] = 'aligned-transfer'
+                support["type"] = "aligned-transfer"
             else:
-                support['type'] = 'transfer'
+                support["type"] = "transfer"
             aligned = False
-            dest_tag.setdefault('support', []).append(support)
+            dest_tag.setdefault("support", []).append(support)
 
 
 def unambg_tags(tags):
-    return dict((
-        (i, wn_lemmas)
-        for i, wn_lemmas in tags.items()
-        if len(wn_lemmas) == 1))
+    return dict(
+        ((i, wn_lemmas) for i, wn_lemmas in tags.items() if len(wn_lemmas) == 1)
+    )
 
 
 def count_chars(line):
@@ -84,7 +98,7 @@ def get_covs(tags, toks, line):
     chars_unambg_covered = [False] * len(line)
     for tok_idx, tag_idxes in tags.items():
         tok = toks[tok_idx]
-        char_range = range(tok['start'], tok['start'] + len(tok['token']))
+        char_range = range(tok["start"], tok["start"] + len(tok["token"]))
         if len(tag_idxes) == 1:
             for char_idx in char_range:
                 chars_unambg_covered[char_idx] = True
@@ -93,15 +107,21 @@ def get_covs(tags, toks, line):
     num_chars_covered = chars_covered.count(True)
     num_chars_unambg_covered = chars_unambg_covered.count(True)
     total_chars = count_chars(line)
-    return cov, unambg_cov, num_chars_covered / total_chars, num_chars_unambg_covered / total_chars
+    return (
+        cov,
+        unambg_cov,
+        num_chars_covered / total_chars,
+        num_chars_unambg_covered / total_chars,
+    )
 
 
 def cov_trace(df, tags, toks, line):
     # synsets in s1 covered by s2
     cov, unambg, char, char_unambg = get_covs(tags, toks, line)
     if COVERAGE_TRACE:
-        print(f"cov: {cov} unambg: {unambg}\n"
-              f"char: {char} char_unambg: {char_unambg}")
+        print(
+            f"cov: {cov} unambg: {unambg}\n" f"char: {char} char_unambg: {char_unambg}"
+        )
     df.loc[len(df)] = [cov, unambg, char, char_unambg]
 
 
@@ -131,8 +151,9 @@ def add_supports_onto(tagging1, tagging2, align_map):
     deriv_lemmas = t1l & deriv
 
     apply_lemmas(common_lemmas, tagging1, tagging2, {}, align_map)
-    apply_lemmas(deriv_lemmas, tagging1, tagging2, {'preproc': ['deriv']},
-                 align_map, rev_map)
+    apply_lemmas(
+        deriv_lemmas, tagging1, tagging2, {"preproc": ["deriv"]}, align_map, rev_map
+    )
 
 
 def add_supports(tagging1, tagging2, align):
@@ -142,38 +163,40 @@ def add_supports(tagging1, tagging2, align):
 
 def write_anns(writer, lang, tagging):
     for tok in tagging.tokens:
-        if isinstance(tok['token'], str):
-            anchor = tok['token']
+        if isinstance(tok["token"], str):
+            anchor = tok["token"]
         else:
-            anchor = tok['token']['surf']
-        for tag in tok['tags']:
+            anchor = tok["token"]["surf"]
+        for tag in tok["tags"]:
             writer.write_ann(lang, anchor, tok, tag)
 
 
 def proc_line(writer, zh_untok, zh_tok, fi_tok, src, align):
     # XXX: It's pretty sloppy always converting chracter-by-character: will
     # definitely try to convert simple => simpler sometimes
-    #print("#####")
-    #print("")
-    #print(zh_untok)
-    #print(zh_tok)
-    #print(fi_tok)
+    # print("#####")
+    # print("")
+    # print(zh_untok)
+    # print(zh_tok)
+    # print(fi_tok)
     opencc = get_opencc()
     zh_untok = opencc.convert(zh_untok)
     zh_tok = opencc.convert(zh_tok)
     fi_tagging = get_synset_set_fin(fi_tok)
     zh_tagging = extract_full_zh(zh_untok, zh_tok)
-    for id, (_token, tag) in enumerate(chain(fi_tagging.iter_tags(), zh_tagging.iter_tags())):
-        tag['id'] = id
-    #if SYNS_TRACE:
-        #print(fi_tok)
-        #print(zh_untok)
-        #print('s1tok, s1d', s1tok, s1d)
-        #print('s2tok, s12', s2tok, s2d)
-    #s1d_lemma_map = dict(s1d.keys())
-    #s2d_lemma_map = dict(s2d.keys())
-    #s1 = set(s1d_lemma_map.keys())
-    #s2 = set(s2d_lemma_map.keys())
+    for id, (_token, tag) in enumerate(
+        chain(fi_tagging.iter_tags(), zh_tagging.iter_tags())
+    ):
+        tag["id"] = id
+    # if SYNS_TRACE:
+    # print(fi_tok)
+    # print(zh_untok)
+    # print('s1tok, s1d', s1tok, s1d)
+    # print('s2tok, s12', s2tok, s2d)
+    # s1d_lemma_map = dict(s1d.keys())
+    # s2d_lemma_map = dict(s2d.keys())
+    # s1 = set(s1d_lemma_map.keys())
+    # s2 = set(s2d_lemma_map.keys())
 
     add_supports(fi_tagging, zh_tagging, align)
 
@@ -186,10 +209,10 @@ def proc_line(writer, zh_untok, zh_tok, fi_tok, src, align):
     writer.end_sent()
 
 
-@click.command('tag')
-@click.argument('corpus')
-@click.argument('output')
-@click.option('--cutoff', default=None, type=int)
+@click.command("tag")
+@click.argument("corpus")
+@click.argument("output")
+@click.option("--cutoff", default=None, type=int)
 def tag(corpus, output, cutoff):
     idx = 0
     imdb_id = None
@@ -208,5 +231,5 @@ def tag(corpus, output, cutoff):
         writer.end_subtitle()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     tag()

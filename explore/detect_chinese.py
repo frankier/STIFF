@@ -13,17 +13,17 @@ import pickle
 TRACE = False
 
 MAFAN_NAMES = {
-    mafan.TRADITIONAL: 'traditional',
-    mafan.SIMPLIFIED: 'simplified',
-    mafan.EITHER: 'either',
-    mafan.BOTH: 'both',
-    mafan.NEITHER: 'neither',
+    mafan.TRADITIONAL: "traditional",
+    mafan.SIMPLIFIED: "simplified",
+    mafan.EITHER: "either",
+    mafan.BOTH: "both",
+    mafan.NEITHER: "neither",
 }
 
-opencc_s2t = opencc.OpenCC('s2t.json')
-opencc_t2s = opencc.OpenCC('t2s.json')
-if os.path.exists('yue/svm.pkl'):
-    detect_yue_clf = pickle.load(open('yue/svm.pkl', 'rb'))
+opencc_s2t = opencc.OpenCC("s2t.json")
+opencc_t2s = opencc.OpenCC("t2s.json")
+if os.path.exists("yue/svm.pkl"):
+    detect_yue_clf = pickle.load(open("yue/svm.pkl", "rb"))
 
 
 @click.group()
@@ -35,21 +35,22 @@ def opencc_detect(text):
     s2t = opencc_s2t.convert(text)
     t2s = opencc_t2s.convert(text)
     if text == s2t and text == t2s:
-        return 'either'
+        return "either"
     elif text == s2t:
-        return 'traditional'
+        return "traditional"
     elif text == t2s:
-        return 'simplified'
+        return "simplified"
     else:
-        return 'both/neither'
+        return "both/neither"
 
 
 def is_chinese_filename(filename):
-    return filename.split('.')[-1] not in ['fi', 'ids']
+    return filename.split(".")[-1] not in ["fi", "ids"]
 
 
 def proc_line(line, get_yue=False):
     from yue import feat
+
     line = line.strip()
     mefan_id = text.identify(line)
     opencc = opencc_detect(line)
@@ -57,10 +58,10 @@ def proc_line(line, get_yue=False):
     tokens = len(line.split())
     if TRACE:
         print(line)
-        print('Mefan says', MAFAN_NAMES[mefan_id])
-        print('OpenCC says', opencc)
-        print('Chars', chars)
-        print('Tokens', tokens)
+        print("Mefan says", MAFAN_NAMES[mefan_id])
+        print("OpenCC says", opencc)
+        print("Chars", chars)
+        print("Tokens", tokens)
     res = [mefan_id, opencc]
     if get_yue:
         yue = detect_yue_clf.predict([feat(line)])[0]
@@ -134,18 +135,20 @@ class MeanOut:
 
 def lines(fp):
     fp.seek(0)
-    bufgen = takewhile(lambda x: x, (fp.buffer.raw.read(1024*1024) for _ in repeat(None)))
-    res = sum(buf.count(b'\n') for buf in bufgen)
+    bufgen = takewhile(
+        lambda x: x, (fp.buffer.raw.read(1024 * 1024) for _ in repeat(None))
+    )
+    res = sum(buf.count(b"\n") for buf in bufgen)
     fp.seek(0)
     return res
 
 
 def analyse_corpus(corpus, out, ids=None, show_progress=False):
     if ids:
-        cols = ['id']
+        cols = ["id"]
     else:
         cols = []
-    cols += ['mefan', 'opencc', 'chars', 'tokens', 'chars/tokens']
+    cols += ["mefan", "opencc", "chars", "tokens", "chars/tokens"]
     out.head(cols)
     lc = lines(corpus)
     if ids:
@@ -153,11 +156,13 @@ def analyse_corpus(corpus, out, ids=None, show_progress=False):
 
         def proc_it(elem):
             out.row([elem[1].split()[0]] + proc_line(elem[0]))
+
     else:
         it = corpus
 
         def proc_it(line):
             out.row(proc_line(line))
+
     if show_progress:
         with click.progressbar(it, length=lc) as pit:
             for e in pit:
@@ -167,8 +172,8 @@ def analyse_corpus(corpus, out, ids=None, show_progress=False):
             proc_it(e)
 
 
-@cli.command('multiple')
-@click.argument('corpus')
+@cli.command("multiple")
+@click.argument("corpus")
 def multiple(corpus):
     for root, dirs, files in os.walk(corpus):
         if not any(is_chinese_filename(fn) for fn in files):
@@ -178,51 +183,51 @@ def multiple(corpus):
                 continue
 
 
-@cli.command('single')
-@click.argument('corpus', type=click.File('r'))
-@click.argument('ids', type=click.File('r'), required=False)
-@click.option('--df-out', default=None)
+@cli.command("single")
+@click.argument("corpus", type=click.File("r"))
+@click.argument("ids", type=click.File("r"), required=False)
+@click.option("--df-out", default=None)
 def single(corpus, ids, df_out):
     if df_out:
         analyse_corpus(corpus, CsvOut(df_out), ids, show_progress=True)
     else:
         if ids:
-            mean_out = MeanOut(('id',), ('id', 'mefan', 'opencc'))
+            mean_out = MeanOut(("id",), ("id", "mefan", "opencc"))
         else:
-            mean_out = MeanOut(categorical=('id', 'mefan', 'opencc'))
+            mean_out = MeanOut(categorical=("id", "mefan", "opencc"))
         analyse_corpus(corpus, mean_out, ids, show_progress=True)
         pprint(mean_out.means)
 
 
-@cli.command('yue')
-@click.argument('corpus', type=click.File('r'))
-@click.argument('ids', type=click.File('r'))
+@cli.command("yue")
+@click.argument("corpus", type=click.File("r"))
+@click.argument("ids", type=click.File("r"))
 def yue(corpus, ids):
-    mean_out = MeanOut(('id',), ('id', 'mefan', 'opencc', 'yue'))
+    mean_out = MeanOut(("id",), ("id", "mefan", "opencc", "yue"))
     analyse_corpus(corpus, mean_out, ids, show_progress=True)
     for group, counts in mean_out.means.items():
-        if counts['yue'].get('yue', 0.0) > 0.1:
+        if counts["yue"].get("yue", 0.0) > 0.1:
             print(group)
             print(counts)
 
 
-@cli.command('analyse')
-@click.argument('csv', type=click.File('r'))
+@cli.command("analyse")
+@click.argument("csv", type=click.File("r"))
 def analyse(csv):
     df = pd.DataFrame.from_csv(csv)
     print("Sentences")
     print(len(df))
     print("Mefan counts")
-    mefan_counts = df['mefan'].value_counts() / len(df)
+    mefan_counts = df["mefan"].value_counts() / len(df)
     mefan_counts.index = mefan_counts.index.map(MAFAN_NAMES)
     print(mefan_counts)
     print("OpenCC counts")
-    opencc_counts = df['opencc'].value_counts() / len(df)
+    opencc_counts = df["opencc"].value_counts() / len(df)
     print(opencc_counts)
     print("Tokens")
-    print(df['tokens'].mean())
+    print(df["tokens"].mean())
     print("Chars/token")
-    print((df['chars'] / df['tokens']).mean())
+    print((df["chars"] / df["tokens"]).mean())
 
 
 def get_movie_ids(fp):
@@ -232,22 +237,22 @@ def get_movie_ids(fp):
     return movie_ids
 
 
-@cli.command('intersect')
-@click.argument('ids1', type=click.File('r'))
-@click.argument('ids2', type=click.File('r'))
+@cli.command("intersect")
+@click.argument("ids1", type=click.File("r"))
+@click.argument("ids2", type=click.File("r"))
 def intersect_ids(ids1, ids2):
     movies1 = get_movie_ids(ids1)
     movies2 = get_movie_ids(ids2)
-    print('movies1', len(movies1))
-    print('movies2', len(movies2))
-    print('movies1 - movies2', len(movies1 - movies2))
-    print('movies2 - movies2', len(movies2 - movies1))
-    print('movies1 & movies2', len(movies1 & movies2))
-    print('movies1 | movies2', len(movies1 | movies2))
+    print("movies1", len(movies1))
+    print("movies2", len(movies2))
+    print("movies1 - movies2", len(movies1 - movies2))
+    print("movies2 - movies2", len(movies2 - movies1))
+    print("movies1 & movies2", len(movies1 & movies2))
+    print("movies1 | movies2", len(movies1 | movies2))
 
 
 def mk_mean_out():
-    return MeanOut(('id',), ('id', 'mefan', 'opencc'))
+    return MeanOut(("id",), ("id", "mefan", "opencc"))
 
 
 def get_means(corpus, ids):
@@ -258,12 +263,12 @@ def get_means(corpus, ids):
     return means
 
 
-@cli.command('confsmat-analyse')
-@click.argument('cn_corpus', type=click.File('r'))
-@click.argument('cn_ids', type=click.File('r'))
-@click.argument('tw_corpus', type=click.File('r'))
-@click.argument('tw_ids', type=click.File('r'))
-@click.argument('out', type=click.File('wb'))
+@cli.command("confsmat-analyse")
+@click.argument("cn_corpus", type=click.File("r"))
+@click.argument("cn_ids", type=click.File("r"))
+@click.argument("tw_corpus", type=click.File("r"))
+@click.argument("tw_ids", type=click.File("r"))
+@click.argument("out", type=click.File("wb"))
 def confsmat_analyse(cn_corpus, cn_ids, tw_corpus, tw_ids, out):
     cn_means = get_means(cn_corpus, cn_ids)
     tw_means = get_means(tw_corpus, tw_ids)
@@ -271,51 +276,49 @@ def confsmat_analyse(cn_corpus, cn_ids, tw_corpus, tw_ids, out):
     pickle.dump((cn_means, tw_means), out)
 
 
-@cli.command('confsmat-cls')
-@click.argument('means_pickle', type=click.File('rb'))
-@click.argument('out', type=click.File('wb'))
+@cli.command("confsmat-cls")
+@click.argument("means_pickle", type=click.File("rb"))
+@click.argument("out", type=click.File("wb"))
 def confsmat_cls(means_pickle, out):
     from itertools import chain
+
     cn_means, tw_means = pickle.load(means_pickle)
 
     print("Got means")
 
-    pred_labels = ['zh_CN'] * len(cn_means) + ['zh_TW'] * len(tw_means)
+    pred_labels = ["zh_CN"] * len(cn_means) + ["zh_TW"] * len(tw_means)
     actual_labels = []
     for group, means in chain(cn_means.items(), tw_means.items()):
-        trad = means['opencc'].get('traditional', 0.0)
-        simp = means['opencc'].get('simplified', 0.0)
-        eith = means['opencc'].get('either', 0.0)
-        neit = means['opencc'].get('both/neither', 0.0)
+        trad = means["opencc"].get("traditional", 0.0)
+        simp = means["opencc"].get("simplified", 0.0)
+        eith = means["opencc"].get("either", 0.0)
+        neit = means["opencc"].get("both/neither", 0.0)
         trad_sup = trad + eith
         simp_sup = simp + eith
         trad_opp = simp + neit
         simp_opp = trad + neit
         if trad_sup > 0.66:
-            actual_labels.append('trad')
+            actual_labels.append("trad")
         elif simp_sup > 0.66:
-            actual_labels.append('simp')
+            actual_labels.append("simp")
         else:
             print(group)
-            print('trad', trad_sup, trad_opp)
-            print('simp', simp_sup, simp_opp)
-            actual_labels.append('neit')
-    result = {
-        'pred': pred_labels,
-        'act': actual_labels,
-    }
+            print("trad", trad_sup, trad_opp)
+            print("simp", simp_sup, simp_opp)
+            actual_labels.append("neit")
+    result = {"pred": pred_labels, "act": actual_labels}
     pickle.dump(result, out)
 
 
-@cli.command('get-film')
-@click.argument('needle')
-@click.argument('corpus', type=click.File('r'))
-@click.argument('ids', type=click.File('r'))
+@cli.command("get-film")
+@click.argument("needle")
+@click.argument("corpus", type=click.File("r"))
+@click.argument("ids", type=click.File("r"))
 def get_film(needle, corpus, ids):
     for line, id in zip(corpus, ids):
         if id.split()[0] == needle:
-            print(line, end='')
+            print(line, end="")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()

@@ -9,33 +9,30 @@ import shutil
 
 ROOT = "http://opus.nlpl.eu/download/OpenSubtitles2018/"
 
-PAIRS = [
-    ('fi', 'zh_cn'),
-    ('fi', 'zh_tw'),
-]
+PAIRS = [("fi", "zh_cn"), ("fi", "zh_tw")]
 
 
 def get_zip(url, dest_dir):
     fn, headers = urlretrieve(url)
-    assert headers['Content-Type'] == 'application/zip'
-    zip = zipfile.ZipFile(fn, 'r')
+    assert headers["Content-Type"] == "application/zip"
+    zip = zipfile.ZipFile(fn, "r")
     zip.extractall(dest_dir)
     zip.close()
 
 
 def get_gzip(url, dest_dir):
     fn, headers = urlretrieve(url)
-    assert headers['Content-Type'] in ('application/gzip', 'application/x-gzip')
-    basename = urlparse(url).path.split('/')[-1]
-    assert basename.endswith('.gz')
+    assert headers["Content-Type"] in ("application/gzip", "application/x-gzip")
+    basename = urlparse(url).path.split("/")[-1]
+    assert basename.endswith(".gz")
     basename = basename[:-3]
-    with gzip.open(fn, 'rb') as f_in:
-        with open(pjoin(dest_dir, basename), 'wb') as f_out:
+    with gzip.open(fn, "rb") as f_in:
+        with open(pjoin(dest_dir, basename), "wb") as f_out:
             shutil.copyfileobj(f_in, f_out)
 
 
-@click.command('fetch')
-@click.argument('dir_name')
+@click.command("fetch")
+@click.argument("dir_name")
 def fetch_ost2018(dir_name):
     print("Fetching:")
     makedirs(dir_name, exist_ok=True)
@@ -61,5 +58,5 @@ def fetch_ost2018(dir_name):
         get_gzip("{}model/aligned.grow-diag-final-and.gz".format(base_url), full_dir)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     fetch_ost2018()

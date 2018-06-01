@@ -2,10 +2,7 @@ import re
 from os.path import join as pjoin
 
 
-CHINESES = [
-    'zh_cn',
-    'zh_tw',
-]
+CHINESES = ["zh_cn", "zh_tw"]
 
 
 class RealignException(Exception):
@@ -25,8 +22,8 @@ def realign(untok, tok, skiplimit=200):
     tok_line = tok.readline()
     skipped = 0
     while 1:
-        tok_line_nospace = re.sub(r'\s', '', tok_line)
-        untok_line_nospace = re.sub(r'\s', '', untok_line)
+        tok_line_nospace = re.sub(r"\s", "", tok_line)
+        untok_line_nospace = re.sub(r"\s", "", untok_line)
         if tok_line_nospace != untok_line_nospace:
             skipped += 1
         else:
@@ -34,8 +31,8 @@ def realign(untok, tok, skiplimit=200):
             tok_line = tok.readline()
             skipped = 0
         untok_line = untok.readline()
-        if tok_line == '':
-            if untok_line == '':
+        if tok_line == "":
+            if untok_line == "":
                 return
             else:
                 raise TokLineEndedFirstException()
@@ -54,8 +51,9 @@ def read_opensubtitles2018(dir):
         alignment_f = open(pjoin(pair_dir, "aligned.grow-diag-final-and"))
         ids_f = open(pjoin(pair_dir, "ids"))
 
-        for ((zh_untok, zh_tok), fi_tok, line_id, moses_alignment) in \
-                zip(realign(zh_untok_f, zh_tok_f), fi_tok_f, ids_f, alignment_f):
+        for ((zh_untok, zh_tok), fi_tok, line_id, moses_alignment) in zip(
+            realign(zh_untok_f, zh_tok_f), fi_tok_f, ids_f, alignment_f
+        ):
             src = get_src(line_id)
             align = WordAlignment(moses_alignment[:-1])
             yield zh_untok[:-1], zh_tok[:-1], fi_tok[:-1], src, align
@@ -65,8 +63,8 @@ def get_src(line_id):
     bits = line_id.split()
     lang1_src = bits[0]
     lang2_src = bits[1]
-    imdb1 = lang1_src.split('/')[2]
-    imdb2 = lang2_src.split('/')[2]
+    imdb1 = lang1_src.split("/")[2]
+    imdb2 = lang2_src.split("/")[2]
     assert imdb1 == imdb2
     return (lang1_src, lang2_src, imdb1)
 
@@ -77,7 +75,7 @@ class WordAlignment:
         self.t2s = {}
         if not alignment:
             return
-        for align in alignment.split(' '):
-            s, t = [int(n) for n in align.split('-')]
+        for align in alignment.split(" "):
+            s, t = [int(n) for n in align.split("-")]
             self.s2t[s] = t
             self.t2s[t] = s

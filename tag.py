@@ -1,18 +1,9 @@
-import itertools
 from nltk.corpus import wordnet
 import click
-import re
 import string
-import pandas as pd
 from itertools import chain
 
 import fix_cmn  # noqa
-from finntk import (
-    get_omorfi,
-    analysis_to_subword_dicts,
-    get_token_positions,
-    extract_lemmas_recurs,
-)
 
 from writers import Writer
 from extract import extract_full_zh, get_synset_set_fin
@@ -47,8 +38,8 @@ def apply_lemmas(
                 source_synset = preproc_rev_map[synset]
             else:
                 source_synset = synset
-            source_tok_idx = source_tagging.wnlemmas[source_synset]
-            source_token = source_tagging.tokens[source_tok_idx]
+            source_token_idx = source_tagging.wnlemmas[source_synset]
+            source_token = source_tagging.tokens[source_token_idx]
             # Get source
             source_tag_id = None
             for source_tag in source_token["tags"]:
@@ -59,11 +50,10 @@ def apply_lemmas(
             support["source"] = source_tag_id
             # Check if it's aligned
             dest_token_idx = get_tok_idx(dest_token)
-            source_token_idx = get_tok_idx(source_token)
             aligned = (
                 dest_token_idx is not None
-                and source_tok_idx is not None
-                and align_map.get(dest_token_idx) == source_tok_idx
+                and source_token_idx is not None
+                and align_map.get(dest_token_idx) == source_token_idx
             )
             if aligned:
                 support["type"] = "aligned-transfer"
@@ -223,7 +213,7 @@ def tag(corpus, output, cutoff):
                 if imdb_id is not None:
                     writer.end_subtitle()
                 imdb_id = next_imdb_id
-                writer.begin_subtitle(src, imdb_id)
+                writer.begin_subtitle(srcs, imdb_id)
             proc_line(writer, zh_untok, zh_tok, fi_tok, src, align)
             idx += 1
             if cutoff is not None and idx > cutoff:

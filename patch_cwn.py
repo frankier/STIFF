@@ -2,7 +2,6 @@ from urllib.request import urlretrieve
 import zipfile
 import shutil
 from plumbum.cmd import patch
-from nltk.corpus import wordnet
 
 
 fn, headers = urlretrieve("http://compling.hss.ntu.edu.sg/omw/wns/cmn.zip")

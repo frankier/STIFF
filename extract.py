@@ -2,7 +2,6 @@ import re
 import ahocorasick
 import pygtrie
 from nltk.corpus import wordnet
-from uuid import uuid4
 
 from finntk import get_omorfi, get_token_positions, extract_lemmas_recurs
 

@@ -1,6 +1,5 @@
 Some WordNet/OpenSubtitles2018 related exploratory scripts
 
-abbrvs.py - Find usages of grammatically meaningful abbreviations in FinnWordNet (verb + noun with case ending)
 detect_chinese.py - Detect usage of traditional versus simplified Chinese in OpenSubtitles2018
 difficulties.py - Print "difficult" cases of traditional/simplified Chinese characters including non-idempotency and one-many relationships
 confsmat.ipynb - Plot a confusion matrix of said scripts versus their classification in OpenSubtitles2018

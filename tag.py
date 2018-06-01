@@ -201,7 +201,7 @@ def proc_line(writer, zh_untok, zh_tok, fi_tok, src, align):
 
 @click.command("tag")
 @click.argument("corpus")
-@click.argument("output")
+@click.argument("output", type=click.File("w"))
 @click.option("--cutoff", default=None, type=int)
 def tag(corpus, output, cutoff):
     idx = 0

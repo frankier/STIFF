@@ -1,10 +1,9 @@
 class Writer:
-    def __init__(self, fn):
-        self.fn = fn
+    def __init__(self, outf):
+        self.outf = outf
         self.sent_idx = 0
 
     def __enter__(self):
-        self.outf = open(self.fn, "w")
         self.outf.write('<?xml version="1.0" encoding="UTF-8"?>\n')
         self.outf.write('<corpus source="europarl">\n')
         return self

@@ -23,6 +23,7 @@ pytest = "*"
 black = "==18.5b1"
 "flake8" = "*"
 pre-commit = "*"
+cihai = "*"
 
 [dev-packages]
 

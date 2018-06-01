@@ -11,7 +11,7 @@ plumbum = "*"
 pyahocorasick = "*"
 pygtrie = "*"
 opencc = "*"
-finntk = ">=0.0.5"
+finntk = ">=0.0.6"
 opus-api = "*"
 mafan = {git = "https://github.com/frankier/mafan.git", editable = true}
 pandas = "*"

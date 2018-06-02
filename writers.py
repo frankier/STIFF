@@ -1,3 +1,6 @@
+from xml.sax.saxutils import quoteattr
+
+
 class Writer:
     def __init__(self, outf):
         self.outf = outf
@@ -66,9 +69,9 @@ class Writer:
                 'lang="{}" '
                 'type="stiff" '
                 'support="{}" '
-                'anchor="{}" '
+                "anchor={} "
                 'anchor-positions="{}" '
-                'lemma="{}" '
+                "lemma={} "
                 'wordnets="{}" '
                 'lemma-path="{}">'
                 "{}</annotation>\n"
@@ -76,9 +79,9 @@ class Writer:
                 tag["id"],
                 lang,
                 " ".join(supports),
-                anchor,
+                quoteattr(anchor),
                 " ".join(anchors),
-                tag["lemma"],
+                quoteattr(tag["lemma"]),
                 " ".join(tag["wordnet"]),
                 "whole",
                 tag["wnlemma"][0],

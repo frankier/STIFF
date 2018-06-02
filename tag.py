@@ -1,6 +1,5 @@
 from nltk.corpus import wordnet
 import click
-import string
 from itertools import chain
 
 import fix_cmn  # noqa
@@ -61,58 +60,6 @@ def apply_lemmas(
                 support["type"] = "transfer"
             aligned = False
             dest_tag.setdefault("support", []).append(support)
-
-
-def unambg_tags(tags):
-    return dict(
-        ((i, wn_lemmas) for i, wn_lemmas in tags.items() if len(wn_lemmas) == 1)
-    )
-
-
-def count_chars(line):
-    return sum((len(x.strip(string.punctuation)) for x in line.split()))
-
-
-def get_covs(tags, toks, line):
-    unambg = unambg_tags(tags)
-    # tok cov
-    num_toks = len(toks)
-    if num_toks > 0:
-        cov = len(tags.keys()) / num_toks
-        unambg_cov = len(unambg) / num_toks
-    else:
-        cov = 0
-        unambg_cov = 0
-    # char cov
-    chars_covered = [False] * len(line)
-    chars_unambg_covered = [False] * len(line)
-    for tok_idx, tag_idxes in tags.items():
-        tok = toks[tok_idx]
-        char_range = range(tok["start"], tok["start"] + len(tok["token"]))
-        if len(tag_idxes) == 1:
-            for char_idx in char_range:
-                chars_unambg_covered[char_idx] = True
-        for char_idx in char_range:
-            chars_covered[char_idx] = True
-    num_chars_covered = chars_covered.count(True)
-    num_chars_unambg_covered = chars_unambg_covered.count(True)
-    total_chars = count_chars(line)
-    return (
-        cov,
-        unambg_cov,
-        num_chars_covered / total_chars,
-        num_chars_unambg_covered / total_chars,
-    )
-
-
-def cov_trace(df, tags, toks, line):
-    # synsets in s1 covered by s2
-    cov, unambg, char, char_unambg = get_covs(tags, toks, line)
-    if COVERAGE_TRACE:
-        print(
-            f"cov: {cov} unambg: {unambg}\n" f"char: {char} char_unambg: {char_unambg}"
-        )
-    df.loc[len(df)] = [cov, unambg, char, char_unambg]
 
 
 def no_expand(lemmas):

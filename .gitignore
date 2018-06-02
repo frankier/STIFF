@@ -1,3 +1,4 @@
 wn-data-cmn-fixed.tab
 *.pkl
+*.pyc
 /explore/confmat.pdf

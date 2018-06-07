@@ -5,6 +5,9 @@ from urllib.parse import parse_qsl
 import pygtrie
 
 
+WN_UNI_POS_MAP = {"n": "NOUN", "v": "VERB", "a": "ADJ", "r": "ADV"}
+
+
 @click.group("munge")
 def munge():
     pass
@@ -19,7 +22,9 @@ def stiff_to_unified(stiff, unified):
     unified.write('<text id="stiff">\n')
 
     for sent_elem in iter_sentences(stiff):
-        unified.write('<sentence id="stiff.{}">\n'.format(sent_elem.attrib["id"]))
+        unified.write(
+            '<sentence id="stiff.{:08d}">\n'.format(int(sent_elem.attrib["id"]))
+        )
         text_elem = sent_elem.xpath("text")[0]
         text_id = text_elem.attrib["id"]
         anns = []
@@ -88,7 +93,7 @@ def unified_split(inf, outf, keyout):
         for idx, inst in enumerate(sent_elem.xpath("instance")):
             key = inst.attrib["key"]
             del inst.attrib["key"]
-            key_id = "{}.{}".format(sent_id, idx)
+            key_id = "{}.{:08d}".format(sent_id, idx)
             inst.attrib["id"] = key_id
             keyout.write("{} {}\n".format(key_id, key))
 
@@ -103,7 +108,9 @@ def eurosense_to_unified(eurosense, unified):
     unified.write('<corpus lang="fi" source="eurosense">\n')
     unified.write('<text id="eurosense">\n')
     for sent_elem in iter_sentences(eurosense):
-        unified.write('<sentence id="eurosense.{}">\n'.format(sent_elem.attrib["id"]))
+        unified.write(
+            '<sentence id="eurosense.{:08d}">\n'.format(int(sent_elem.attrib["id"]))
+        )
         trie = pygtrie.StringTrie(separator=" ")
         anns = sent_elem.xpath(".//annotation")
         for ann in anns:
@@ -114,10 +121,13 @@ def eurosense_to_unified(eurosense, unified):
             match_anchor, match_val = trie.longest_prefix(sent[cursor:])
             if match_anchor:
                 sense_key, lemma = match_val
-                pos = sense_key[-1]
+                pos = WN_UNI_POS_MAP[sense_key[-1]]
                 unified.write(
                     '<instance lemma="{}" pos="{}" key="{}">{}</instance>\n'.format(
-                        lemma, pos, sense_key, match_anchor
+                        lemma.replace("#", "|").replace(" ", "_"),
+                        pos,
+                        sense_key,
+                        match_anchor,
                     )
                 )
                 cursor += len(match_anchor) + 1
@@ -146,7 +156,9 @@ def babelnet_lookup(inf, map_bn2wn, outf):
     def ann_bn2wn(ann):
         if ann.text not in bn2wn_map:
             return True
-        ann.text = bn2wn_map[ann.text]
+        wn_id = bn2wn_map[ann.text]
+        off, pos = wn_id[:-1], wn_id[-1]
+        ann.text = "{}-{}".format(off, pos)
 
     transform_blocks("annotation", inf, ann_bn2wn, outf)
 

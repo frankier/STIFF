@@ -1,4 +1,4 @@
-FROM frankierr/finntk
+FROM frankierr/finntk:requirements
 
 COPY . /stiff
 WORKDIR /stiff

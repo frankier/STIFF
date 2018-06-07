@@ -13,11 +13,10 @@ cihan.reflect_db()
 
 
 double_var = (
-    cihan.session.query(cihan.base.classes.Unihan).filter(
-        column("kTraditionalVariant").isnot(None)
-    ).filter(
-        column("kSimplifiedVariant").isnot(None)
-    ).all()
+    cihan.session.query(cihan.base.classes.Unihan)
+    .filter(column("kTraditionalVariant").isnot(None))
+    .filter(column("kSimplifiedVariant").isnot(None))
+    .all()
 )
 
 
@@ -39,11 +38,9 @@ for c in double_var:
 
 def multi_list(field, max_freq_rank=1):
     multi_q = (
-        cihan.session.query(cihan.base.classes.Unihan).filter(
-            column(field).like("% %")
-        ).filter(
-            column("kFrequency") <= max_freq_rank
-        )
+        cihan.session.query(cihan.base.classes.Unihan)
+        .filter(column(field).like("% %"))
+        .filter(column("kFrequency") <= max_freq_rank)
     )
     multi = multi_q.all()
 

@@ -34,6 +34,17 @@ def filter_lang(lang, inf, outf):
     transform_sentences(inf, remove_other_langs, outf)
 
 
+@filter.command("rm-empty")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+def rm_empty(inf, outf):
+    def remove_empty(elem):
+        if len(elem.xpath("annotations/annotation")) == 0:
+            return True
+
+    transform_sentences(inf, remove_empty, outf)
+
+
 @filter.command("align-dom")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))

@@ -12,16 +12,15 @@ def cov(inf):
     header = pd.DataFrame({"toks": [], "anns": [], "cov": []})
     sdf = DataFrame(source, example=header)
 
-    def get_cov(sent):
+    toks_sum = sdf.toks.sum().stream.gather().sink_to_list()
+    anns_sum = sdf.anns.sum().stream.gather().sink_to_list()
+
+    for sent in iter_sentences(inf):
         toks = len(sent.xpath("text")[0].text.split(" "))
         anns = len(sent.xpath("annotation"))
         source.emit(
             pd.DataFrame({"toks": [toks], "anns": [anns], "cov": [anns / toks]})
         )
-
-    toks_sum = sdf.toks.sum().stream.gather().sink_to_list()
-    anns_sum = sdf.anns.sum().stream.gather().sink_to_list()
-    iter_sentences(inf, get_cov)
     print(anns_sum[-1], toks_sum[-1])
 
 

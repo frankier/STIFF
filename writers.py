@@ -1,4 +1,5 @@
 from xml.sax.saxutils import quoteattr
+from urllib.parse import urlencode
 
 
 class Writer:
@@ -51,17 +52,8 @@ class Writer:
                 support_bits.append("preproc")
                 support_bits.extend(support["preproc"])
             supports.append(":".join(support_bits))
-        anchors = []
+        anchors = [urlencode(anchor_pos) for anchor_pos in tok["anchors"]]
 
-        for anchor_pos in tok["anchors"]:
-            anchor_text = "from:{}".format(anchor_pos["id"])
-            if "char" in anchor_pos:
-                anchor_text += ";char:{}".format(anchor_pos["char"])
-            if "token" in anchor_pos:
-                anchor_text += ";token:{}".format(anchor_pos["token"])
-            anchors.append(anchor_text)
-
-        # lemma_path = "from:XXX:chars:YY;from:XX2 {}".format(anchor_pos)
         self.outf.write(
             (
                 "<annotation "
@@ -70,7 +62,7 @@ class Writer:
                 'type="stiff" '
                 'support="{}" '
                 "anchor={} "
-                'anchor-positions="{}" '
+                "anchor-positions={} "
                 "lemma={} "
                 'wordnets="{}" '
                 'lemma-path="{}">'
@@ -80,7 +72,7 @@ class Writer:
                 lang,
                 " ".join(supports),
                 quoteattr(anchor),
-                " ".join(anchors),
+                quoteattr(" ".join(anchors)),
                 quoteattr(tag["lemma"]),
                 " ".join(tag["wordnet"]),
                 "whole",

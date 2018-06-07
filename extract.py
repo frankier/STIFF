@@ -168,7 +168,7 @@ def get_synset_set_auto(line, wn, id):
     for tok_idx, (end_pos, (token, wn_lemmas)) in enumerate(cmn_auto.iter(line)):
         tagging.add_tags(
             token,
-            [{"id": id, "char": end_pos - len(token) + 1}],
+            [{"from": id, "char": end_pos - len(token) + 1}],
             [
                 {"lemma": token, "wordnet": {wn}, "wnlemma": lemma_key(v)}
                 for v in wn_lemmas
@@ -219,7 +219,7 @@ def get_synset_set_fin(line):
                     {"lemma": lemma, "wordnet": {"fin"}, "wnlemma": lemma_key(wn_lemma)}
                 )
         tagging.add_tags(
-            token, [{"id": "fi-tok", "char": char, "token": token_idx}], tags
+            token, [{"from": "fi-tok", "char": char, "token": token_idx}], tags
         )
     # XXX: Need to put this derivationally_related_forms expansion somewhere
     # print(wn_lemma, wn_lemma.derivationally_related_forms())
@@ -243,7 +243,7 @@ def get_synset_set_tokenized(line, wn, id):
     for tok_idx, token in enumerate(line.split(" ")):
         tagging.add_tags(
             token,
-            [{"id": id, "char": start, "token": tok_idx}],
+            [{"from": id, "char": start, "token": tok_idx}],
             [
                 {"lemma": token, "wordnet": {wn}, "wnlemma": lemma_key(v)}
                 for v in wordnet.lemmas(get_rev_map(wn)(token), lang=wn)
@@ -274,8 +274,8 @@ def extract_full_zh(line_untok, line_tok):
 
     def matcher(untok_tok, tok_tok):
         # XXX: Aribitrary argument ordering required
-        assert untok_tok["id"] == "zh-untok"
-        assert tok_tok["id"] == "zh-tok"
+        assert untok_tok["from"] == "zh-untok"
+        assert tok_tok["from"] == "zh-tok"
         tok_char = tok_tok["char"]
         untok_char = untok_tok["char"]
         tok_adjust = line_tok.count(" ", 0, tok_char)

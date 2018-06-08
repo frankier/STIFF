@@ -4,7 +4,6 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-pycountry = "*"
 nltk = "*"
 click = "*"
 plumbum = "*"
@@ -13,18 +12,9 @@ pygtrie = "*"
 opencc = "*"
 finntk = ">=0.0.6"
 opus-api = "*"
-mafan = {git = "https://github.com/frankier/mafan.git", editable = true}
-pandas = "*"
-sklearn = "*"
-scikit-plot = "*"
-jupyter = "*"
-ipykernel = "*"
-pytest = "*"
 black = "==18.5b1"
 "flake8" = "*"
 pre-commit = "*"
-cihai = "*"
-streamz = "*"
 
 [dev-packages]
 

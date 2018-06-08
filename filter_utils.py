@@ -36,7 +36,7 @@ def open_tag(elem):
 
 
 def close_tag(elem):
-    return "</{}>".format(elem.tag)
+    return "</{}>{}".format(elem.tag, elem.tail or "\n")
 
 
 def transform_blocks(block, inf, transformer, outf):
@@ -45,6 +45,9 @@ def transform_blocks(block, inf, transformer, outf):
 
 
 transform_sentences = partial(transform_blocks, "sentence")
+
+BYPASS = object()
+BREAK = object()
 
 
 def transform(stream, needle_tag, transformer, outf):
@@ -72,13 +75,15 @@ def transform(stream, needle_tag, transformer, outf):
             missing_text = True
         else:
             outf.write(close_tag(elem).encode("utf-8"))
-            if elem.tail is not None:
-                outf.write(elem.tail.encode("utf-8"))
 
     def inside(elem):
-        bypass = transformer(elem)
-        if not bypass:
+        retval = transformer(elem)
+        if retval is not BYPASS:
             outf.write(etree.tostring(elem, encoding="utf-8"))
+        if retval is BREAK:
+            for par_elem in elem.iterancestors():
+                outf.write(close_tag(par_elem).encode("utf-8"))
+        return retval
 
     chunk_stream_cb(stream, needle_tag, outside, inside, always)
 
@@ -132,8 +137,10 @@ def chunk_stream_cb(stream, needle_tag, outside_cb, inside_cb, always_cb=None):
             outside_cb(event, elem)
         if event == "end" and elem.tag == needle_tag:
             inside = False
-            inside_cb(elem)
+            retval = inside_cb(elem)
             free_elem(elem)
+            if retval is BREAK:
+                break
 
 
 def chunk_cb(stream, needle_tag, inside_cb):

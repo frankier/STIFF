@@ -9,7 +9,7 @@ class Writer:
 
     def __enter__(self):
         self.outf.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-        self.outf.write('<corpus source="europarl">\n')
+        self.outf.write('<corpus source="OpenSubtitles2018">\n')
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
@@ -79,3 +79,9 @@ class Writer:
                 tag["wnlemma"][0],
             )
         )
+
+    def start_anns(self):
+        self.outf.write("<annotations>\n")
+
+    def end_anns(self):
+        self.outf.write("</annotations>\n")

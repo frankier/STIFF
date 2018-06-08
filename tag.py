@@ -99,6 +99,7 @@ def add_supports(tagging1, tagging2, align):
 
 
 def write_anns(writer, lang, tagging):
+    writer.start_anns()
     for tok in tagging.tokens:
         if isinstance(tok["token"], str):
             anchor = tok["token"]
@@ -106,6 +107,7 @@ def write_anns(writer, lang, tagging):
             anchor = tok["token"]["surf"]
         for tag in tok["tags"]:
             writer.write_ann(lang, anchor, tok, tag)
+    writer.end_anns()
 
 
 def proc_line(writer, zh_untok, zh_tok, fi_tok, src, align):

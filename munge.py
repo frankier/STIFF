@@ -124,7 +124,7 @@ def eurosense_to_unified(eurosense, unified):
                 pos = WN_UNI_POS_MAP[sense_key[-1]]
                 unified.write(
                     '<instance lemma="{}" pos="{}" key="{}">{}</instance>\n'.format(
-                        lemma.replace("#", "|").replace(" ", "_"),
+                        lemma.replace("#", "").replace(" ", "_"),
                         pos,
                         sense_key,
                         match_anchor,

@@ -1,3 +1,4 @@
+import sys
 import click
 from plumbum.cmd import zstdcat, python, zstdmt, cat
 
@@ -25,11 +26,13 @@ def eurosense2unified(inf, outf, keyout, head, babel2wn_map):
         pipeline
         | python["filter.py", "lang", "fi", "-", "-"]
         | python["munge.py", "babelnet-lookup", "-", babel2wn_map, "-"]
+        | python["munge.py", "eurosense-reanchor", "-", "-"]
+        | python["munge.py", "eurosense-lemma-fix", "--drop-unknown", "-", "-"]
         | python["filter.py", "rm-empty", "-", "-"]
         | python["munge.py", "eurosense-to-unified", "-", "-"]
         | python["munge.py", "unified-split", "-", outf, keyout]
     )
-    (pipeline)(retcode=[-13, 0])
+    pipeline(retcode=[-13, 0], stderr=sys.stderr)
 
 
 @pipeline.command("proc-stiff")

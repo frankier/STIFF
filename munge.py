@@ -1,11 +1,13 @@
+import sys
 import click
-from filter_utils import iter_sentences, transform_sentences, transform_blocks
+from filter_utils import iter_sentences, transform_sentences, transform_blocks, BYPASS
 from xml.sax.saxutils import escape
 from urllib.parse import parse_qsl
 import pygtrie
-
-
-WN_UNI_POS_MAP = {"n": "NOUN", "v": "VERB", "a": "ADJ", "r": "ADV"}
+from data import WN_UNI_POS_MAP
+from finntk.wordnet.reader import fiwn, get_en_fi_maps
+from finntk.wordnet.utils import post_id_to_pre, pre2ss
+from finntk.omor.extract import lemma_intersect
 
 
 @click.group("munge")
@@ -124,10 +126,7 @@ def eurosense_to_unified(eurosense, unified):
                 pos = WN_UNI_POS_MAP[sense_key[-1]]
                 unified.write(
                     '<instance lemma="{}" pos="{}" key="{}">{}</instance>\n'.format(
-                        lemma.replace("#", "").replace(" ", "_"),
-                        pos,
-                        sense_key,
-                        match_anchor,
+                        lemma, pos, sense_key, match_anchor
                     )
                 )
                 cursor += len(match_anchor) + 1
@@ -142,23 +141,154 @@ def eurosense_to_unified(eurosense, unified):
     unified.write("</corpus>\n")
 
 
+def iter_synsets(synset_list):
+    fi2en, en2fi = get_en_fi_maps()
+    for synset_id in synset_list.split(" "):
+        fi_pre_synset = en2fi[post_id_to_pre(synset_id)]
+        synset = pre2ss(fiwn, fi_pre_synset)
+        yield synset_id, synset
+
+
+@munge.command("eurosense-lemma-fix")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+@click.option("--keep-unknown/--drop-unknown")
+@click.option("--quiet", default=False)
+def eurosense_fix_lemmas(inf, outf, keep_unknown, quiet):
+    """
+    Eurosense contains many lemmas which are not in the set of lemmas for the
+    synset in FinnWordNet. There are two reasons this might occur.
+
+    Scenario A) Bad lemmatisation by Babelfy. In this case we can try and
+    recover the correct lemma by lemmatising ourself and combining with
+    information from WordNet
+
+    Scenario B) Extra lemmas have been associated with the WordNet synset in
+    BabelNet.  In this case there's nothing to do, and we should usually just
+    drop the annotation.
+    """
+    fi2en, en2fi = get_en_fi_maps()
+
+    def ann_fix_lemmas(ann):
+        # 1) check if their lemmatisation matches something in FiWN as is
+        orig_lemma_str = ann.attrib["lemma"]
+        orig_lemma_str = orig_lemma_str.replace("#", "").replace(" ", "_")
+
+        def mk_lemma_synset_map(lower=False):
+            lemma_synset_map = {}
+            for synset_id, synset in iter_synsets(ann.text):
+                for lemma in synset.lemmas():
+                    lemma_str = lemma.name()
+                    if lower:
+                        lemma_str = lemma_str.lower()
+                    lemma_synset_map.setdefault(lemma_str, set()).add(synset_id)
+            return lemma_synset_map
+
+        lemma_synset_map = mk_lemma_synset_map()
+
+        if orig_lemma_str in lemma_synset_map:
+            ann.text = " ".join(lemma_synset_map[orig_lemma_str])
+            ann.attrib["lemma"] = orig_lemma_str
+            return
+        # 2) Try and just use the surface as is as the lemma
+        lemmatised_anchor = ann.attrib["anchor"].replace(" ", "_")
+
+        lemma_synset_map_lower = mk_lemma_synset_map(lower=True)
+        if lemmatised_anchor.lower() in lemma_synset_map_lower:
+            ann.text = " ".join(lemma_synset_map_lower[lemmatised_anchor.lower()])
+            # XXX: Should be lemma in original case rather than anchor in original case
+            ann.attrib["lemma"] = lemmatised_anchor
+            return
+        # 3) Re-lemmatise the surface using OMorFi and try and match with FiWN
+        anchor_bits = ann.attrib["anchor"].split(" ")
+        matches = {}
+
+        for lemma_str, synset_id in lemma_synset_map.items():
+            lemma_bits = lemma_str.split("_")
+            common = lemma_intersect(anchor_bits, lemma_bits)
+            if common is not None:
+                matches.setdefault(lemma_str, set()).update(synset_id)
+        if len(matches) == 1:
+            lemma, synsets = next(iter(matches.items()))
+            ann.attrib["lemma"] = lemma
+            ann.text = " ".join(synsets)
+            return
+        elif len(matches) > 1:
+            if not quiet:
+                sys.stderr.write(
+                    "Multiple lemmas found found for {}: {}\n".format(
+                        ann.attrib["anchor"], matches
+                    )
+                )
+        # If nothing has worked, it's probably scenario B as above
+        elif len(matches) == 0:
+            if not quiet:
+                sys.stderr.write(
+                    "No lemma found for {} {} {}\n".format(
+                        ann.text, orig_lemma_str, lemmatised_anchor
+                    )
+                )
+        if keep_unknown:
+            ann.attrib["lemma"] = orig_lemma_str
+        else:
+            return BYPASS
+
+    transform_blocks("annotation", inf, ann_fix_lemmas, outf)
+
+
+@munge.command("eurosense-reanchor")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+def eurosense_reanchor(inf, outf):
+    """
+    Reanchors Eurosense lemmas which are actually forms including some "light"
+    word like ei and olla by removing said unneccesary word.
+    """
+    EXTRA_BITS = {"ei", "olla"}
+    fi2en, en2fi = get_en_fi_maps()
+
+    def ann_reanchor(ann):
+        all_lemma_names = []
+        for _, synset in iter_synsets(ann.text):
+            for lemma in synset.lemmas():
+                all_lemma_names.append(lemma.name())
+        if " " not in ann.attrib["lemma"]:
+            return
+        lem_begin, lem_rest = ann.attrib["lemma"].split(" ", 1)
+        if lem_begin not in EXTRA_BITS:
+            return
+        for lemma_name in all_lemma_names:
+            if lemma_name.split("_", 1)[0] == lem_begin:
+                return
+        ann.attrib["lemma"] = lem_rest
+        ann.attrib["anchor"] = ann.attrib["anchor"].split(" ", 1)[1]
+
+    transform_blocks("annotation", inf, ann_reanchor, outf)
+
+
 @munge.command("babelnet-lookup")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("map_bn2wn", type=click.File("r"))
 @click.argument("outf", type=click.File("wb"))
 def babelnet_lookup(inf, map_bn2wn, outf):
+    """
+    This stage converts BabelNet ids to WordNet ids.
+    """
     bn2wn_map = {}
     for line in map_bn2wn:
         bn, wn_full = line[:-1].split("\t")
         wn_off = wn_full.split(":", 1)[1]
-        bn2wn_map[bn] = wn_off
+        bn2wn_map.setdefault(bn, set()).add(wn_off)
 
     def ann_bn2wn(ann):
         if ann.text not in bn2wn_map:
-            return True
-        wn_id = bn2wn_map[ann.text]
-        off, pos = wn_id[:-1], wn_id[-1]
-        ann.text = "{}-{}".format(off, pos)
+            return BYPASS
+        wn_ids = bn2wn_map[ann.text]
+        bits = []
+        for wn_id in wn_ids:
+            off, pos = wn_id[:-1], wn_id[-1]
+            bits.append("{}-{}".format(off, pos))
+        ann.text = " ".join(bits)
 
     transform_blocks("annotation", inf, ann_bn2wn, outf)
 

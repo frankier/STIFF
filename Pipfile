@@ -4,17 +4,16 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-nltk = "*"
 click = "*"
 plumbum = "*"
 pyahocorasick = "*"
 pygtrie = "*"
 opencc = "*"
-finntk = ">=0.0.6"
 opus-api = "*"
 black = "==18.5b1"
 "flake8" = "*"
 pre-commit = "*"
+finntk = ">=0.0.9"
 
 [dev-packages]
 

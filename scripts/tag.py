@@ -2,12 +2,12 @@ from nltk.corpus import wordnet
 import click
 from itertools import chain
 
-import fix_cmn  # noqa
+import stiff.fix_cmn  # noqa
 
-from writers import Writer
-from extract import extract_full_zh, get_synset_set_fin
-from corpus_read import read_opensubtitles2018
-from utils import get_opencc
+from stiff.writers import Writer
+from stiff.extract import extract_full_zh, get_synset_set_fin
+from stiff.corpus_read import read_opensubtitles2018
+from stiff.utils import get_opencc
 
 SYNS_TRACE = True
 SIM_TRACE = False

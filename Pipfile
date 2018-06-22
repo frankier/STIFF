@@ -4,16 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-click = "*"
-plumbum = "*"
-pyahocorasick = "*"
-pygtrie = "*"
-opencc = "*"
-opus-api = "*"
-black = "==18.5b1"
-"flake8" = "*"
-pre-commit = "*"
-finntk = ">=0.0.9"
+"finntk" = {path = ".", extras = ["dev"], editable = true}
 
 [dev-packages]
 

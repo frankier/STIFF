@@ -1,5 +1,5 @@
 import click
-from filter_utils import iter_sentences
+from stiff.filter_utils import iter_sentences
 import pandas as pd
 from streamz import Stream
 from streamz.dataframe import DataFrame

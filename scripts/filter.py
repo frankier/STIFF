@@ -1,5 +1,5 @@
 import click
-from filter_utils import transform_sentences, BYPASS, BREAK
+from stiff.filter_utils import transform_sentences, BYPASS, BREAK
 
 
 @click.group()

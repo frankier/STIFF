@@ -1,10 +1,15 @@
 import sys
 import click
-from filter_utils import iter_sentences, transform_sentences, transform_blocks, BYPASS
+from stiff.filter_utils import (
+    iter_sentences,
+    transform_sentences,
+    transform_blocks,
+    BYPASS,
+)
 from xml.sax.saxutils import escape
 from urllib.parse import parse_qsl
 import pygtrie
-from data import WN_UNI_POS_MAP
+from stiff.data import WN_UNI_POS_MAP
 from finntk.wordnet.reader import fiwn, get_en_fi_maps
 from finntk.wordnet.utils import post_id_to_pre, pre2ss
 from finntk.omor.extract import lemma_intersect

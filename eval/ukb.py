@@ -5,7 +5,6 @@ from plumbum.cmd import java, python
 from stiff.filter_utils import iter_sentences
 from stiff.data import UNI_POS_WN_MAP
 
-cp = "wsdeval-fin/wsdeval_src/WSD_Unified_Evaluation_Datasets"
 ukb_wsd = local[local.env["UKB_PATH"] + "/ukb_wsd"]
 
 DICTABLE_OPTS = [("--ppr_w2w",), ("--ppr",), ("--dgraph_dfs", "--dgraph_rank", "ppr")]
@@ -38,7 +37,7 @@ def run_all(input_fn, graph_fn, dict_fn, true_tag):
         )
         print(pred_pipeline)
         pred_pipeline(stderr=sys.stderr)
-        eval_pipeline = java["-cp", cp, "Scorer", true_tag, variant_fn]
+        eval_pipeline = java["Scorer", true_tag, variant_fn]
         print(eval_pipeline)
         eval_pipeline(stdout=sys.stdout)
 

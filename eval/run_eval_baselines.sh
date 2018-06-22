@@ -1,9 +1,11 @@
 corpus=$1
 truetag=$2
 
-firstguess="`basename $corpus`first.guess.key"
-mfeguess="`basename $corpus`mfe.guess.key"
-leskguess="`basename $corpus`lesk.guess.key"
+firstguess="guess/`basename $corpus`first.guess.key"
+mfeguess="guess/`basename $corpus`mfe.guess.key"
+leskguess="guess/`basename $corpus`lesk.guess.key"
+
+mkdir -p guess
 
 echo "First"
 pipenv run python baselines.py first $corpus $firstguess

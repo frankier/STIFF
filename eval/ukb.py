@@ -1,3 +1,4 @@
+import os
 import sys
 import click
 from plumbum import local
@@ -26,9 +27,10 @@ def ukb():
 @click.argument("dict_fn")
 @click.argument("true_tag")
 def run_all(input_fn, graph_fn, dict_fn, true_tag):
+    os.makedirs("guess", exist_ok=True)
     for idx, variant in enumerate(VARIANTS):
         args = variant + ("-D", dict_fn, "-K", graph_fn, "-")
-        variant_fn = "var{}.key".format(idx)
+        variant_fn = "guess/var{}.key".format(idx)
         pred_pipeline = (
             python[sys.argv[0], "unified_to_ukb", input_fn, "-"]
             | ukb_wsd[args]

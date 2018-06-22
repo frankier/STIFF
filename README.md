@@ -14,7 +14,14 @@ You can then run
 
 ### Sampling EuroSense and convert to unified
 
-    pipenv run python pipeline.py eurosense2unified --head 1000 /path/to/eurosense.v1.0.high-precision.xml eurosense.unified.sample.xml eurosense.unified.sample.key
+You will need to set the environment variable BABEL2WN_MAP as the path to a TSV
+mapping from BabelNet synsets to WordNet synsets. This file can be obtained
+from a BabelNet dump + following the instructions at
+https://github.com/frankier/babelnet-lookup
+
+    pipenv run python pipeline.py eurosense2unified --head 1000 \
+      /path/to/eurosense.v1.0.high-precision.xml eurosense.unified.sample.xml \
+      eurosense.unified.sample.key
 
 ### Making STIFF, sampling/filtering and converting to unified
 

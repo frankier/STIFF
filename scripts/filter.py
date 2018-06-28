@@ -13,7 +13,7 @@ def filter():
 @click.argument("outf", type=click.File("wb"))
 def filter_support(inf, outf):
     def remove_no_support(elem):
-        for ann in elem.iter("annotation"):
+        for ann in elem.xpath("./annotations/annotation"):
             if ann.attrib["support"]:
                 continue
             ann.getparent().remove(ann)
@@ -27,7 +27,7 @@ def filter_support(inf, outf):
 @click.argument("outf", type=click.File("wb"))
 def filter_lang(lang, inf, outf):
     def remove_other_langs(elem):
-        for ann in elem.iter("text", "annotation"):
+        for ann in elem.xpath("./annotations/annotation | ./text"):
             if ann.attrib["lang"] == lang:
                 continue
             ann.getparent().remove(ann)
@@ -77,7 +77,7 @@ def fold_support(lang, inf, outf):
 @click.argument("outf", type=click.File("wb"))
 def rm_empty(inf, outf):
     def remove_empty(elem):
-        if len(elem.xpath("annotations/annotation")) == 0:
+        if len(elem.xpath("./annotations/annotation")) == 0:
             return BYPASS
 
     transform_sentences(inf, remove_empty, outf)
@@ -88,11 +88,13 @@ def rm_empty(inf, outf):
 @click.argument("outf", type=click.File("wb"))
 def filter_align_dom(inf, outf):
     def remove_dom_transfer(sent):
-        anns = sent.xpath('/annotation[starts-with(@support, "aligned-transfer:")]]')
+        anns = sent.xpath(
+            './annotations/annotation[starts-with(@support, "aligned-transfer:")]]'
+        )
         for ann in anns:
             dominated = sent.xpath(
                 (
-                    '/annotation[starts-with(@support, "transfer:")]'
+                    './annotations/annotation[starts-with(@support, "transfer:")]'
                     '[@anchor-positions="{}"]'
                 ).format(ann["anchor-positions"])
             )

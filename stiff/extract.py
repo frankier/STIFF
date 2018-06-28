@@ -6,7 +6,7 @@ from nltk.corpus import wordnet
 from finntk import get_omorfi, get_token_positions, extract_lemmas_recurs
 from finntk.wordnet import has_abbrv
 
-from utils import get_opencc
+from stiff.utils import get_opencc
 
 WORDNET_FILTERS = {"qcn": lambda x: get_opencc().convert(x)}
 

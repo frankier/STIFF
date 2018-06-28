@@ -55,6 +55,12 @@ def proc_stiff(method, inf, outf, head):
             | python[filter_py, "lang", "fi", "-", "-"]
             | python[filter_py, "rm-empty", "-", "-"]
         )
+    elif method == "complex":
+        pipeline = (
+            pipeline
+            | python[filter_py, "fold-support", "fi", "-", "-"]
+            | python[filter_py, "lang", "fi", "-", "-"]
+        )
     else:
         assert False, "Unknown method"
     pipeline = pipeline | zstdmt["-D", "zstd-compression-dictionary", "-", "-o", outf]

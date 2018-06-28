@@ -46,7 +46,7 @@ def apply_lemmas(
                     source_tag_id = source_tag["id"]
                     break
             assert source_tag_id is not None
-            support["source"] = source_tag_id
+            support["transfer-from"] = source_tag_id
             # Check if it's aligned
             dest_token_idx = get_tok_idx(dest_token)
             aligned = (
@@ -55,11 +55,11 @@ def apply_lemmas(
                 and align_map.get(dest_token_idx) == source_token_idx
             )
             if aligned:
-                support["type"] = "aligned-transfer"
+                support["transfer-type"] = "aligned"
             else:
-                support["type"] = "transfer"
+                support["transfer-type"] = "unaligned"
             aligned = False
-            dest_tag.setdefault("support", []).append(support)
+            dest_tag.setdefault("supports", []).append(support)
 
 
 def no_expand(lemmas):
@@ -89,7 +89,12 @@ def add_supports_onto(tagging1, tagging2, align_map):
 
     apply_lemmas(common_lemmas, tagging1, tagging2, {}, align_map)
     apply_lemmas(
-        deriv_lemmas, tagging1, tagging2, {"preproc": ["deriv"]}, align_map, rev_map
+        deriv_lemmas,
+        tagging1,
+        tagging2,
+        {"transform-chain": ["deriv"]},
+        align_map,
+        rev_map,
     )
 
 

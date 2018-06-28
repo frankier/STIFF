@@ -18,7 +18,7 @@ class Writer:
 
     def begin_subtitle(self, srcs, imdb):
         self.outf.write(
-            '<subtitle sources="{}" imdb="{}">\n'.format("; ".join(srcs), imdb)
+            '<subtitle sources="{}" imdb="{}">\n'.format(" ".join(srcs), imdb)
         )
 
     def end_subtitle(self):
@@ -45,13 +45,7 @@ class Writer:
         )
 
     def write_ann(self, lang, anchor, tok, tag):
-        supports = []
-        for support in tag.get("support", []):
-            support_bits = [support["type"], "from", str(support["source"])]
-            if "preproc" in support:
-                support_bits.append("preproc")
-                support_bits.extend(support["preproc"])
-            supports.append(":".join(support_bits))
+        supports = [urlencode(support) for support in tag.get("supports", [])]
         anchors = [urlencode(anchor_pos) for anchor_pos in tok["anchors"]]
 
         self.outf.write(
@@ -60,7 +54,7 @@ class Writer:
                 'id="{}" '
                 'lang="{}" '
                 'type="stiff" '
-                'support="{}" '
+                "support={} "
                 "anchor={} "
                 "anchor-positions={} "
                 "lemma={} "
@@ -70,7 +64,7 @@ class Writer:
             ).format(
                 tag["id"],
                 lang,
-                " ".join(supports),
+                quoteattr(" ".join(supports)),
                 quoteattr(anchor),
                 quoteattr(" ".join(anchors)),
                 quoteattr(tag["lemma"]),

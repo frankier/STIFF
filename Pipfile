@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-"finntk" = {path = ".", extras = ["dev"], editable = true}
+"stiff" = {path = ".", extras = ["dev"], editable = true}
 
 [dev-packages]
 

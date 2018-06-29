@@ -6,6 +6,7 @@ from nltk.corpus import wordnet
 from finntk import get_omorfi, get_token_positions, extract_lemmas_recurs
 from finntk.omor.extract import extract_lemmas_span
 from finntk.wordnet import has_abbrv
+from finntk.finnpos import sent_finnpos
 
 from stiff.utils import get_opencc
 
@@ -186,11 +187,12 @@ def get_synset_set_fin(line):
     trie = get_fin_trie()
     omorfi = get_omorfi()
     omor_toks = omorfi.tokenise(line)
+    finnpos_analys = sent_finnpos([tok["surf"] for tok in omor_toks])
     starts = get_token_positions(omor_toks, line)
     tagging = Tagging()
-    loc_toks = list(zip(range(0, len(omor_toks)), starts, omor_toks))
-    for token_idx, char, token in loc_toks:
-        lemmas = extract_lemmas_recurs(token)
+    loc_toks = list(zip(range(0, len(omor_toks)), starts, omor_toks, finnpos_analys))
+    for token_idx, char, token, (_fp_surf, fp_lemma, _fp_feats) in loc_toks:
+        lemmas = extract_lemmas_recurs(token) | {fp_lemma}
         tags = []
         for lemma in lemmas:
             for wn_lemma in wordnet.lemmas(lemma, lang="fin"):
@@ -201,8 +203,13 @@ def get_synset_set_fin(line):
             token, [{"from": "fi-tok", "char": char, "token": token_idx}], tags
         )
 
-    for token_idx, char, token in loc_toks:
-        loc_toks[token_idx] = (token_idx, char, token, extract_lemmas_span(token))
+    for token_idx, char, token, (_fp_surf, fp_lemma, _fp_feats) in loc_toks:
+        loc_toks[token_idx] = (
+            token_idx,
+            char,
+            token,
+            extract_lemmas_span(token) | {fp_lemma},
+        )
 
     def intersect_trie_line(loc_toks_slice):
         def traverse_cb(path_conv, path, children, lemmas=None):
@@ -217,7 +224,7 @@ def get_synset_set_fin(line):
             matches = False
             if len(path) > len(loc_toks_slice):
                 return
-            (token_idx, char, token, lemma_strs) = loc_toks_slice[len(path) - 1]
+            (_, _, _, lemma_strs) = loc_toks_slice[len(path) - 1]
             for lemma_str in lemma_strs:
                 if lemma_str == path[-1]:
                     matches = True
@@ -228,13 +235,28 @@ def get_synset_set_fin(line):
                 for wn_lemma in lemmas:
                     tags.append(
                         {
-                            "lemma": lemma,
+                            "lemma": " ".join(path),
                             "wordnet": {"fin"},
                             "wnlemma": lemma_key(wn_lemma),
                         }
                     )
+                token_idx, char, _, _ = loc_toks_slice[0]
                 tagging.add_tags(
-                    token, [{"from": "fi-tok", "char": char, "token": token_idx}], tags
+                    " ".join(
+                        [
+                            token["surf"]
+                            for _, _, token, _ in loc_toks_slice[: len(path)]
+                        ]
+                    ),
+                    [
+                        {
+                            "from": "fi-tok",
+                            "char": char,
+                            "token": token_idx,
+                            "token_length": len(path),
+                        }
+                    ],
+                    tags,
                 )
             # Recurse by iterating over children
             recurse()

@@ -4,6 +4,7 @@ import pygtrie
 from nltk.corpus import wordnet
 
 from finntk import get_omorfi, get_token_positions, extract_lemmas_recurs
+from finntk.omor.extract import extract_lemmas_span
 from finntk.wordnet import has_abbrv
 
 from stiff.utils import get_opencc
@@ -162,16 +163,16 @@ def get_fin_trie():
     for l in wordnet.all_lemma_names(lang="fin"):
         if "_" not in l or has_abbrv(l):
             continue
-        paths = []
-        for subword in l.split("_"):
-            lemmas = extract_lemmas_recurs(subword)
-            if paths:
-                for lemma in lemmas:
-                    for path in paths:
-                        path.append(lemma)
-            else:
-                for lemma in lemmas:
-                    paths.append([lemma])
+        subwords = l.split("_")
+        old_paths = [()]
+        paths = None
+        for subword in subwords:
+            paths = [
+                path + (lemma,)
+                for lemma in extract_lemmas_span(subword)
+                for path in old_paths
+            ]
+            old_paths = paths
         for path in paths:
             _fin_trie[path] = wordnet.lemmas(l, lang="fin")
     return _fin_trie
@@ -182,12 +183,13 @@ def lemma_key(lemma):
 
 
 def get_synset_set_fin(line):
-    # trie = get_fin_trie()
+    trie = get_fin_trie()
     omorfi = get_omorfi()
     omor_toks = omorfi.tokenise(line)
     starts = get_token_positions(omor_toks, line)
     tagging = Tagging()
-    for token_idx, (token, char) in enumerate(zip(omor_toks, starts)):
+    loc_toks = list(zip(range(0, len(omor_toks)), starts, omor_toks))
+    for token_idx, char, token in loc_toks:
         lemmas = extract_lemmas_recurs(token)
         tags = []
         for lemma in lemmas:
@@ -198,19 +200,50 @@ def get_synset_set_fin(line):
         tagging.add_tags(
             token, [{"from": "fi-tok", "char": char, "token": token_idx}], tags
         )
-    # XXX: Need to put this derivationally_related_forms expansion somewhere
-    # print(wn_lemma, wn_lemma.derivationally_related_forms())
-    # synset = wn_lemma.synset()
-    # for other_lemma in synset.lemmas():
-    #    print('other_lemma', other_lemma)
-    #    for deriv in other_lemma.derivationally_related_forms():
-    #        print('deriv', deriv)i
 
-    # XXX: Have to deal with confusion net/lattice/trellis like structure
-    # longest_prefix, multiword_lemmas = trie.longest_prefix(all_lemmas[i:])
-    # if multiword_lemmas is not None:
-    # for wn_lemma in multiword_lemmas:
-    # res.add(lemma_key(wn_lemma))
+    for token_idx, char, token in loc_toks:
+        loc_toks[token_idx] = (token_idx, char, token, extract_lemmas_span(token))
+
+    def intersect_trie_line(loc_toks_slice):
+        def traverse_cb(path_conv, path, children, lemmas=None):
+            def recurse():
+                if len(path) < len(loc_toks_slice):
+                    # Recurse by iterating over children
+                    return list(children)
+
+            if len(path) == 0:
+                recurse()
+                return
+            matches = False
+            if len(path) > len(loc_toks_slice):
+                return
+            (token_idx, char, token, lemma_strs) = loc_toks_slice[len(path) - 1]
+            for lemma_str in lemma_strs:
+                if lemma_str == path[-1]:
+                    matches = True
+            if not matches:
+                return
+            if lemmas is not None:
+                tags = []
+                for wn_lemma in lemmas:
+                    tags.append(
+                        {
+                            "lemma": lemma,
+                            "wordnet": {"fin"},
+                            "wnlemma": lemma_key(wn_lemma),
+                        }
+                    )
+                tagging.add_tags(
+                    token, [{"from": "fi-tok", "char": char, "token": token_idx}], tags
+                )
+            # Recurse by iterating over children
+            recurse()
+
+        return traverse_cb
+
+    for token_idx, _, _, _ in loc_toks:
+        trie.traverse(intersect_trie_line(loc_toks[token_idx:]))
+
     return tagging
 
 

@@ -63,29 +63,6 @@ class Tagging:
                 tok.append(t2)
         return Tagging(tok)
 
-    """
-        tok = self.tokens.copy()
-        other_to_tok = []
-        for t2 in other.tokens:
-            combined = False
-            for idx, t1 in enumerate(tok):
-                if t2['token'] == t1['token']:
-                    other_to_tok.append(idx)
-                    combined = True
-                    # TODO: t2 into t1
-                    break
-            if not combined:
-                other_to_tok.append(idx)
-                tok.append(t2)
-        wnlemmas = self.wnlemmas.copy()
-        for l, tis in other.wnlemmas.items():
-            if l not in wnlemmas:
-                res[l] = []
-            for ti in wnlemmas:
-                res[l].append(tok2_to_tok[ti])
-        return tok
-    """
-
     def combine_cross_wn(self, other):
         def match(t1, t2):
             assert len(t1["anchors"]) == 1

@@ -17,6 +17,7 @@ setup(
         "opencc>=0.2",
         "opus-api>=0.5.0",
         "finntk>=0.0.10",
+        "streamz>=0.3.0",
     ],
     extras_require={"dev": ["black>=18.5b1", "flake8>=3.5.0", "pre-commit>=1.10.2"]},
     zip_safe=False,

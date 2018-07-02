@@ -1,7 +1,7 @@
 from nltk.corpus import wordnet, wordnet_ic
 import click
 
-import fix_cmn  # noqa
+import stiff.fix_cmn  # noqa
 
 _semcor_ic = None
 
@@ -29,18 +29,23 @@ def important_lemmas(lang):
 
 @click.command("important")
 @click.argument("lang")
-def important(lang):
+@click.argument("limit", type=int, required=False)
+def important(lang, limit=50):
     print(" = Important = ")
     lemmas = important_lemmas(lang)
-    for x in lemmas[:50]:
+    for x in lemmas[:limit]:
         print(x)
     print()
-    print(" = Important multiwords = ")
-    for x in [y for y in lemmas if "_" in y[1]][:50]:
+    print(" = Important multiwords (+) = ")
+    for x in [y for y in lemmas if "+" in y[1]][:limit]:
+        print(x)
+    print()
+    print(" = Important multiwords (_) = ")
+    for x in [y for y in lemmas if "_" in y[1]][:limit]:
         print(x)
     print()
     print(" = Longest = ")
-    for x in sorted(lemmas, key=lambda tpl: len(tpl[1]), reverse=True)[:50]:
+    for x in sorted(lemmas, key=lambda tpl: len(tpl[1]), reverse=True)[:limit]:
         print(x)
 
 

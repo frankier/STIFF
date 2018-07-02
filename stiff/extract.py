@@ -109,6 +109,18 @@ class Tagging:
         return self._combine(other, match, combine)
 
 
+def chr_to_maybe_space(chr, lfs):
+    res = set()
+    for lf in lfs:
+        res.add(lf.replace(chr, ""))
+        res.add(lf.replace(chr, " "))
+    return res
+
+
+def multiword_variants(lf):
+    return chr_to_maybe_space("_", chr_to_maybe_space("+", [lf]))
+
+
 def get_substr_auto(lang):
     if lang in _substr_autos:
         return _substr_autos[lang]
@@ -119,7 +131,9 @@ def get_substr_auto(lang):
             lf = filter(l)
         else:
             lf = l
-        _substr_autos[lang].add_word(lf, (lf, wordnet.lemmas(l, lang=lang)))
+        lfs = multiword_variants(lf)
+        for lf in lfs:
+            _substr_autos[lang].add_word(lf, (lf, wordnet.lemmas(l, lang=lang)))
     _substr_autos[lang].make_automaton()
     return _substr_autos[lang]
 
@@ -156,6 +170,20 @@ def get_synset_set_auto(line, wn, id):
     return tagging
 
 
+def get_cmn_trie():
+    global _cmn_trie
+    if _cmn_trie is not None:
+        return _cmn_trie
+    _cmn_trie = pygtrie.Trie()
+    for ln in wordnet.all_lemma_names(lang="cmn"):
+        vars = multiword_variants(ln)
+        if len(vars) == 1:
+            continue
+        for var in vars:
+            _fin_trie[var.split(" ")] = wordnet.lemmas(ln, lang="cmn")
+    return _cmn_trie
+
+
 def get_fin_trie():
     global _fin_trie
     if _fin_trie is not None:
@@ -179,38 +207,27 @@ def get_fin_trie():
     return _fin_trie
 
 
+TRIE_GETTERS = {"fin": get_fin_trie, "cmn": get_cmn_trie}
+
+
 def lemma_key(lemma):
     return (lemma.synset().name(), lemma.name())
 
 
-def get_synset_set_fin(line):
-    trie = get_fin_trie()
-    omorfi = get_omorfi()
-    omor_toks = omorfi.tokenise(line)
-    finnpos_analys = sent_finnpos([tok["surf"] for tok in omor_toks])
-    starts = get_token_positions(omor_toks, line)
-    tagging = Tagging()
-    loc_toks = list(zip(range(0, len(omor_toks)), starts, omor_toks, finnpos_analys))
-    for token_idx, char, token, (_fp_surf, fp_lemma, _fp_feats) in loc_toks:
-        lemmas = extract_lemmas_recurs(token) | {fp_lemma}
+def add_line_tags_single(tagging, loc_toks, from_id, wn):
+    for token_idx, char, token, lemmas in loc_toks:
         tags = []
         for lemma in lemmas:
-            for wn_lemma in wordnet.lemmas(lemma, lang="fin"):
+            for wn_lemma in wordnet.lemmas(get_rev_map(wn)(lemma), lang=wn):
                 tags.append(
-                    {"lemma": lemma, "wordnet": {"fin"}, "wnlemma": lemma_key(wn_lemma)}
+                    {"lemma": lemma, "wordnet": {wn}, "wnlemma": lemma_key(wn_lemma)}
                 )
         tagging.add_tags(
-            token, [{"from": "fi-tok", "char": char, "token": token_idx}], tags
+            token, [{"from": from_id, "char": char, "token": token_idx}], tags
         )
 
-    for token_idx, char, token, (_fp_surf, fp_lemma, _fp_feats) in loc_toks:
-        loc_toks[token_idx] = (
-            token_idx,
-            char,
-            token,
-            extract_lemmas_span(token) | {fp_lemma},
-        )
 
+def add_line_tags_multi(tagging, trie, loc_toks, from_id, wn):
     def intersect_trie_line(loc_toks_slice):
         def traverse_cb(path_conv, path, children, lemmas=None):
             def recurse():
@@ -236,7 +253,7 @@ def get_synset_set_fin(line):
                     tags.append(
                         {
                             "lemma": " ".join(path),
-                            "wordnet": {"fin"},
+                            "wordnet": {wn},
                             "wnlemma": lemma_key(wn_lemma),
                         }
                     )
@@ -250,7 +267,7 @@ def get_synset_set_fin(line):
                     ),
                     [
                         {
-                            "from": "fi-tok",
+                            "from": from_id,
                             "char": char,
                             "token": token_idx,
                             "token_length": len(path),
@@ -258,7 +275,6 @@ def get_synset_set_fin(line):
                     ],
                     tags,
                 )
-            # Recurse by iterating over children
             recurse()
 
         return traverse_cb
@@ -266,22 +282,53 @@ def get_synset_set_fin(line):
     for token_idx, _, _, _ in loc_toks:
         trie.traverse(intersect_trie_line(loc_toks[token_idx:]))
 
+
+def get_synset_set_fin(line):
+    trie = get_fin_trie()
+    omorfi = get_omorfi()
+    omor_toks = omorfi.tokenise(line)
+    finnpos_analys = sent_finnpos([tok["surf"] for tok in omor_toks])
+    starts = get_token_positions(omor_toks, line)
+    tagging = Tagging()
+    loc_toks = list(
+        zip(
+            range(0, len(omor_toks)),
+            starts,
+            omor_toks,
+            (
+                extract_lemmas_recurs(token) | {fp_lemma}
+                for token, (_fp_surf, fp_lemma, _fp_feats) in zip(
+                    omor_toks, finnpos_analys
+                )
+            ),
+        )
+    )
+    add_line_tags_single(tagging, loc_toks, "fi-tok", "fin")
+    add_line_tags_multi(tagging, trie, loc_toks, "fi-tok", "fin")
+
     return tagging
+
+
+def get_tokens_starts(tokens):
+    start = 0
+    for token in tokens:
+        yield start
+        start += len(token) + 1
 
 
 def get_synset_set_tokenized(line, wn, id):
     tagging = Tagging()
-    start = 0
-    for tok_idx, token in enumerate(line.split(" ")):
-        tagging.add_tags(
-            token,
-            [{"from": id, "char": start, "token": tok_idx}],
-            [
-                {"lemma": token, "wordnet": {wn}, "wnlemma": lemma_key(v)}
-                for v in wordnet.lemmas(get_rev_map(wn)(token), lang=wn)
-            ],
-        )
-        start += len(token) + 1
+    tokens = line.split(" ")
+    loc_toks = zip(
+        range(0, len(tokens)),
+        get_tokens_starts(tokens),
+        tokens,
+        [[token] for token in tokens],
+    )
+    add_line_tags_single(tagging, loc_toks, id, wn)
+    if wn in TRIE_GETTERS:
+        trie = TRIE_GETTERS[wn]
+        add_line_tags_multi(tagging, trie, loc_toks, id, wn)
     return tagging
 
 

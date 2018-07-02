@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "4cdea5583efe023f1dd8b4cf2e0922b4f0f22d9983bb9afe3d682243f289fa45"
+            "sha256": "6dc3e4a8f745fba3a552cfd68e087266927c787cd0b6c44ed20ba1ee58883934"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -336,10 +336,9 @@
             "version": "==4.2.0"
         },
         "nltk": {
-            "hashes": [
-                "sha256:fe0eda251be65843be86d7de9abfbf7161732256f742e623b21243ec47bdb718"
-            ],
-            "version": "==3.3.0"
+            "editable": true,
+            "git": "https://github.com/frankier/nltk.git",
+            "ref": "fix-omw-satellite-pos"
         },
         "nodeenv": {
             "hashes": [

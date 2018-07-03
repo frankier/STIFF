@@ -3,6 +3,8 @@ import click
 from itertools import chain
 
 import stiff.fix_cmn  # noqa
+from finntk.wordnet.reader import fiwn_encnt, get_en_fi_maps
+from finntk.wordnet.utils import en2fi_post
 
 from stiff.writers import Writer
 from stiff.extract import extract_full_zh, get_synset_set_fin
@@ -103,6 +105,33 @@ def add_supports(tagging1, tagging2, align):
     add_supports_onto(tagging2, tagging1, align.t2s)
 
 
+def add_fi_ranks(fi_tagging):
+    for token in fi_tagging.tokens:
+        tag_counts = []
+        for tag in token["tags"]:
+            synset_str, lemma_str = tag["wnlemma"]
+            omw_synset = wordnet.synset(synset_str)
+            fi2en, en2fi = get_en_fi_maps()
+            fi_synset_key = en2fi_post(wordnet.ss2of(omw_synset))
+            fi_synset = fiwn_encnt.of2ss(fi_synset_key)
+            fi_lemma = None
+            for lemma in fi_synset.lemmas():
+                if lemma.name() == lemma_str:
+                    fi_lemma = lemma
+            if fi_lemma is None:
+                tag_counts.append((0, tag))
+            else:
+                tag_counts.append((fiwn_encnt.lemma_count(fi_lemma), tag))
+        tag_counts.sort(reverse=True, key=lambda x: x[0])
+        prev_count = float("inf")
+        rank = 1
+        for count, tag in tag_counts:
+            tag["rank"] = (rank, count)
+            if count < prev_count:
+                prev_count = count
+                rank += 1
+
+
 def write_anns(writer, lang, tagging):
     writer.start_anns()
     for tok in tagging.tokens:
@@ -143,6 +172,7 @@ def proc_line(writer, zh_untok, zh_tok, fi_tok, src, align):
     # s2 = set(s2d_lemma_map.keys())
 
     add_supports(fi_tagging, zh_tagging, align)
+    add_fi_ranks(fi_tagging)
 
     writer.begin_sent()
     writer.write_text("zh", zh_tok)

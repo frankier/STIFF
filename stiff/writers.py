@@ -48,13 +48,25 @@ class Writer:
         supports = [urlencode(support) for support in tag.get("supports", [])]
         anchors = [urlencode(anchor_pos) for anchor_pos in tok["anchors"]]
 
+        if len(supports):
+            support_attr = "support={} ".format(quoteattr(" ".join(supports)))
+        else:
+            support_attr = ""
+
+        if "rank" in tag:
+            freq_attrs = "rank={} freq={} ".format(
+                quoteattr(str(tag["rank"][0])), quoteattr(str(tag["rank"][1]))
+            )
+        else:
+            freq_attrs = ""
+
         self.outf.write(
             (
                 "<annotation "
                 'id="{}" '
                 'lang="{}" '
                 'type="stiff" '
-                "support={} "
+                "{}{}"
                 "anchor={} "
                 "anchor-positions={} "
                 "lemma={} "
@@ -64,7 +76,8 @@ class Writer:
             ).format(
                 tag["id"],
                 lang,
-                quoteattr(" ".join(supports)),
+                support_attr,
+                freq_attrs,
                 quoteattr(anchor),
                 quoteattr(" ".join(anchors)),
                 quoteattr(tag["lemma"]),

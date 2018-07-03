@@ -43,7 +43,7 @@ def fold_support(lang, inf, outf):
     def tran(elem):
         xpath = "./annotations/annotation[@lang='{}']".format(lang)
         for ann in elem.xpath(xpath):
-            support = ann.attrib["support"]
+            support = ann.attrib.get("support")
             if not support:
                 continue
             new_support = []

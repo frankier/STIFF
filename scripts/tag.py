@@ -2,7 +2,7 @@ from nltk.corpus import wordnet
 import click
 from itertools import chain
 
-import stiff.fix_cmn  # noqa
+import stiff.fixes  # noqa
 from finntk.wordnet.reader import fiwn_encnt, get_en_fi_maps
 from finntk.wordnet.utils import en2fi_post
 

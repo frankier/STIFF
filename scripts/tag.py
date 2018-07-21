@@ -133,7 +133,6 @@ def add_fi_ranks(fi_tagging):
 
 
 def write_anns(writer, lang, tagging):
-    writer.start_anns()
     for tok in tagging.tokens:
         if isinstance(tok["token"], str):
             anchor = tok["token"]
@@ -141,7 +140,6 @@ def write_anns(writer, lang, tagging):
             anchor = tok["token"]["surf"]
         for tag in tok["tags"]:
             writer.write_ann(lang, anchor, tok, tag)
-    writer.end_anns()
 
 
 def proc_line(writer, zh_untok, zh_tok, fi_tok, src, align):
@@ -178,8 +176,10 @@ def proc_line(writer, zh_untok, zh_tok, fi_tok, src, align):
     writer.write_text("zh", zh_tok)
     writer.write_text("zh", zh_untok, is_tokenised=False)
     writer.write_text("fi", fi_tok)
+    writer.start_anns()
     write_anns(writer, "fi", fi_tagging)
     write_anns(writer, "zh", zh_tagging)
+    writer.end_anns()
     writer.end_sent()
 
 

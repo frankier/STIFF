@@ -1,4 +1,5 @@
 from nltk.corpus import wordnet
+from nltk.corpus.reader.wordnet import WordNetError
 import click
 from itertools import chain
 
@@ -31,7 +32,7 @@ def apply_lemmas(
     preproc_rev_map=None,
 ):
     for dest_token, dest_tag in dest_tagging.iter_tags():
-        synset = dest_tag["wnlemma"][0]
+        wn, synset = dest_tag["synset"]
         if synset in wn_lemmas:
             # Trace back source synset
             support = base_support.copy()
@@ -39,12 +40,12 @@ def apply_lemmas(
                 source_synset = preproc_rev_map[synset]
             else:
                 source_synset = synset
-            source_token_idx = source_tagging.wnlemmas[source_synset]
+            wn, source_token_idx = source_tagging.wnlemmas[source_synset]
             source_token = source_tagging.tokens[source_token_idx]
             # Get source
             source_tag_id = None
             for source_tag in source_token["tags"]:
-                if source_tag["wnlemma"][0] == source_synset:
+                if source_tag["synset"][1] == source_synset:
                     source_tag_id = source_tag["id"]
                     break
             assert source_tag_id is not None
@@ -72,7 +73,11 @@ def expand_english_deriv(lemmas):
     res = set()
     rev_map = {}
     for lemma_key in lemmas:
-        synset = wordnet.synset(lemma_key)
+        try:
+            synset = wordnet.synset(lemma_key)
+        except WordNetError:
+            # XXX: Should try and deal with FiWN lemma keys somehow
+            continue
         for other_lemma in synset.lemmas():
             for deriv in other_lemma.derivationally_related_forms():
                 deriv_synset = deriv.synset().name()
@@ -109,11 +114,17 @@ def add_fi_ranks(fi_tagging):
     for token in fi_tagging.tokens:
         tag_counts = []
         for tag in token["tags"]:
-            synset_str, lemma_str = tag["wnlemma"]
-            omw_synset = wordnet.synset(synset_str)
-            fi2en, en2fi = get_en_fi_maps()
-            fi_synset_key = en2fi_post(wordnet.ss2of(omw_synset))
-            fi_synset = fiwn_encnt.of2ss(fi_synset_key)
+            wn, synset_str = tag["synset"]
+            lemma_str = tag["wnlemma"]
+            if wn in ("fin", "qwf"):
+                omw_synset = wordnet.synset(synset_str)
+                fi2en, en2fi = get_en_fi_maps()
+                fi_synset_key = en2fi_post(wordnet.ss2of(omw_synset))
+                fi_synset = fiwn_encnt.of2ss(fi_synset_key)
+            elif wn == "qf2":
+                fi_synset = fiwn_encnt.synset(synset_str)
+            else:
+                assert False
             fi_lemma = None
             for lemma in fi_synset.lemmas():
                 if lemma.name() == lemma_str:

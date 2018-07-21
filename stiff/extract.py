@@ -6,6 +6,7 @@ from nltk.corpus import wordnet
 from finntk import get_omorfi, get_token_positions, extract_lemmas_recurs
 from finntk.omor.extract import extract_lemmas_span
 from finntk.wordnet import has_abbrv
+from finntk.wordnet.reader import fiwn_encnt
 from finntk.finnpos import sent_finnpos
 
 from stiff.utils import get_opencc
@@ -15,6 +16,71 @@ WORDNET_FILTERS = {"qcn": lambda x: get_opencc().convert(x)}
 _substr_autos = {}
 _rev_maps = {}
 _fin_trie = None
+_cmn_trie = None
+
+
+FIN_SPACE = re.compile(r" |_")
+
+
+def wn_lemma_map(l, wns):
+    return {wn: get_rev_map(wn)(l) for wn in wns}
+
+
+def merge_lemmas(*wn_lemmas_pairs):
+    result = {}
+    for (wn, lemmas) in wn_lemmas_pairs:
+        for lemma in lemmas:
+            result.setdefault(lemma, []).append(wn)
+    return result
+
+
+def multi_lemma_names(lang):
+    if lang == "cmn":
+        return merge_lemmas(
+            ("cmn", wordnet.all_lemma_names(lang="cmn")),
+            (
+                "qcn",
+                (get_opencc().convert(l) for l in wordnet.all_lemma_names(lang="qcn")),
+            ),
+            ("qwc", wordnet.all_lemma_names(lang="qwc")),
+        )
+    elif lang == "fin":
+        return merge_lemmas(
+            ("fin", wordnet.all_lemma_names(lang="fin")),
+            ("qwf", wordnet.all_lemma_names(lang="qwf")),
+            ("qf2", fiwn_encnt.all_lemma_names()),
+        )
+    else:
+        assert False
+
+
+def multi_lemma_keys(lang, lemma):
+    def wntag(wn, lemmas):
+        return [(wn, lemma) for lemma in lemmas]
+
+    if lang == "cmn":
+        lemmas = (
+            wntag("cmn", wordnet.lemmas(lemma, lang="cmn"))
+            + wntag("qcn", wordnet.lemmas(get_rev_map("qcn")(lemma), lang="qcn"))
+            + wntag("qwc", wordnet.lemmas(lemma, lang="qwc"))
+        )
+    elif lang == "fin":
+        lemmas = (
+            wntag("fin", wordnet.lemmas(lemma, lang="fin"))
+            + wntag("qf2", fiwn_encnt.lemmas(lemma))
+            + wntag("qwf", wordnet.lemmas(lemma, lang="qwf"))
+        )
+    else:
+        assert False
+    return [(lemma_key(lemma), wn) for wn, lemma in lemmas]
+
+
+def wn_lemma_keys(wn, lemma_name):
+    if wn == "qf2":
+        lemmas = fiwn_encnt.lemmas(lemma_name)
+    else:
+        lemmas = wordnet.lemmas(lemma_name, lang=wn)
+    return [lemma_key(lemma) for lemma in lemmas]
 
 
 def same_tags(tags1, tags2):
@@ -33,18 +99,18 @@ class Tagging:
             self.tokens = tokens
             for tok_idx, tok in enumerate(self.tokens):
                 for tag in tok["tags"]:
-                    self._index_lemma(tok_idx, tag["wnlemma"])
+                    self._index_lemma(tok_idx, tag["synset"])
 
-    def _index_lemma(self, tok_idx, lemma):
-        self.wnlemmas[lemma[0]] = tok_idx
+    def _index_lemma(self, tok_idx, synset):
+        self.wnlemmas[synset[1]] = (synset[0], tok_idx)
 
     def lemma_set(self):
-        return set(synset for synset in self.wnlemmas)
+        return set(self.wnlemmas.keys())
 
     def add_tags(self, token, anchors, tags):
         self.tokens.append({"token": token, "anchors": anchors, "tags": tags})
         for tag in tags:
-            self._index_lemma(len(self.tokens) - 1, tag["wnlemma"])
+            self._index_lemma(len(self.tokens) - 1, tag["synset"])
 
     def iter_tags(self):
         for token in self.tokens:
@@ -117,23 +183,25 @@ def chr_to_maybe_space(chr, lfs):
     return res
 
 
+def chrs_to_maybe_space(chrs, lf):
+    res = [lf]
+    for chr in chrs:
+        res = chr_to_maybe_space(chr, res)
+    return res
+
+
 def multiword_variants(lf):
-    return chr_to_maybe_space("_", chr_to_maybe_space("+", [lf]))
+    return chrs_to_maybe_space(["_", "+", " "], lf)
 
 
 def get_substr_auto(lang):
     if lang in _substr_autos:
         return _substr_autos[lang]
     _substr_autos[lang] = ahocorasick.Automaton()
-    filter = WORDNET_FILTERS.get(lang)
-    for l in wordnet.all_lemma_names(lang=lang):
-        if filter is not None:
-            lf = filter(l)
-        else:
-            lf = l
-        lfs = multiword_variants(lf)
+    for l, wns in multi_lemma_names(lang).items():
+        lfs = multiword_variants(l)
         for lf in lfs:
-            _substr_autos[lang].add_word(lf, (lf, wordnet.lemmas(l, lang=lang)))
+            _substr_autos[lang].add_word(lf, (lf, wn_lemma_map(l, wns)))
     _substr_autos[lang].make_automaton()
     return _substr_autos[lang]
 
@@ -156,15 +224,16 @@ def get_rev_map(lang):
 
 
 def get_synset_set_auto(line, wn, id):
-    cmn_auto = get_substr_auto(wn)
+    auto = get_substr_auto(wn)
     tagging = Tagging()
-    for tok_idx, (end_pos, (token, wn_lemmas)) in enumerate(cmn_auto.iter(line)):
+    for tok_idx, (end_pos, (token, wn_to_lemma)) in enumerate(auto.iter(line)):
         tagging.add_tags(
             token,
             [{"from": id, "char": end_pos - len(token) + 1}],
             [
-                {"lemma": token, "wordnet": {wn}, "wnlemma": lemma_key(v)}
-                for v in wn_lemmas
+                {"lemma": token, "synset": (wn, synset_name), "wnlemma": lemma_name}
+                for wn, lemma in wn_to_lemma.items()
+                for (synset_name, lemma_name) in wn_lemma_keys(wn, lemma)
             ],
         )
     return tagging
@@ -175,12 +244,12 @@ def get_cmn_trie():
     if _cmn_trie is not None:
         return _cmn_trie
     _cmn_trie = pygtrie.Trie()
-    for ln in wordnet.all_lemma_names(lang="cmn"):
-        vars = multiword_variants(ln)
+    for l, wns in multi_lemma_names("cmn").items():
+        vars = multiword_variants(l)
         if len(vars) == 1:
             continue
         for var in vars:
-            _fin_trie[var.split(" ")] = wordnet.lemmas(ln, lang="cmn")
+            _cmn_trie[var.split(" ")] = wn_lemma_map(l, wns)
     return _cmn_trie
 
 
@@ -189,10 +258,10 @@ def get_fin_trie():
     if _fin_trie is not None:
         return _fin_trie
     _fin_trie = pygtrie.Trie()
-    for l in wordnet.all_lemma_names(lang="fin"):
-        if "_" not in l or has_abbrv(l):
+    for l, wns in multi_lemma_names("fin").items():
+        if not FIN_SPACE.search(l) or has_abbrv(l):
             continue
-        subwords = l.split("_")
+        subwords = FIN_SPACE.split(l)
         old_paths = [()]
         paths = None
         for subword in subwords:
@@ -203,7 +272,7 @@ def get_fin_trie():
             ]
             old_paths = paths
         for path in paths:
-            _fin_trie[path] = wordnet.lemmas(l, lang="fin")
+            _fin_trie[path] = wn_lemma_map(l, wns)
     return _fin_trie
 
 
@@ -218,69 +287,73 @@ def add_line_tags_single(tagging, loc_toks, from_id, wn):
     for token_idx, char, token, lemmas in loc_toks:
         tags = []
         for lemma in lemmas:
-            for wn_lemma in wordnet.lemmas(get_rev_map(wn)(lemma), lang=wn):
+            for ((synset_name, lemma_name), wni) in multi_lemma_keys(wn, lemma):
                 tags.append(
-                    {"lemma": lemma, "wordnet": {wn}, "wnlemma": lemma_key(wn_lemma)}
+                    {
+                        "lemma": lemma,
+                        "synset": (wni, synset_name),
+                        "wnlemma": lemma_name,
+                    }
                 )
+        if tags:
+            tagging.add_tags(
+                token, [{"from": from_id, "char": char, "token": token_idx}], tags
+            )
+
+
+def add_multi_tags(tagging, from_id, path, wn_to_lemma, loc_toks_slice):
+    for wn, lemma in wn_to_lemma.items():
+        tags = []
+        for (synset_name, lemma_name) in wn_lemma_keys(wn, lemma):
+            tags.append(
+                {
+                    "lemma": " ".join(path),
+                    "synset": (wn, synset_name),
+                    "wnlemma": lemma_name,
+                }
+            )
+        token_idx, char, _, _ = loc_toks_slice[0]
         tagging.add_tags(
-            token, [{"from": from_id, "char": char, "token": token_idx}], tags
+            " ".join(
+                [
+                    token["surf"] if isinstance(token, dict) else token
+                    for _, _, token, _ in loc_toks_slice[: len(path)]
+                ]
+            ),
+            [
+                {
+                    "from": from_id,
+                    "char": char,
+                    "token": token_idx,
+                    "token_length": len(path),
+                }
+            ],
+            tags,
         )
 
 
 def add_line_tags_multi(tagging, trie, loc_toks, from_id, wn):
-    def intersect_trie_line(loc_toks_slice):
-        def traverse_cb(path_conv, path, children, lemmas=None):
-            def recurse():
-                if len(path) < len(loc_toks_slice):
-                    # Recurse by iterating over children
-                    return list(children)
-
-            if len(path) == 0:
-                recurse()
-                return
-            matches = False
-            if len(path) > len(loc_toks_slice):
-                return
-            (_, _, _, lemma_strs) = loc_toks_slice[len(path) - 1]
-            for lemma_str in lemma_strs:
-                if lemma_str == path[-1]:
-                    matches = True
-            if not matches:
-                return
-            if lemmas is not None:
-                tags = []
-                for wn_lemma in lemmas:
-                    tags.append(
-                        {
-                            "lemma": " ".join(path),
-                            "wordnet": {wn},
-                            "wnlemma": lemma_key(wn_lemma),
-                        }
-                    )
-                token_idx, char, _, _ = loc_toks_slice[0]
-                tagging.add_tags(
-                    " ".join(
-                        [
-                            token["surf"]
-                            for _, _, token, _ in loc_toks_slice[: len(path)]
-                        ]
-                    ),
-                    [
-                        {
-                            "from": from_id,
-                            "char": char,
-                            "token": token_idx,
-                            "token_length": len(path),
-                        }
-                    ],
-                    tags,
-                )
-            recurse()
-
-        return traverse_cb
-
-    for token_idx, _, _, _ in loc_toks:
-        trie.traverse(intersect_trie_line(loc_toks[token_idx:]))
+    for begin_token_idx, _, _, _ in loc_toks:
+        cursors = [()]
+        for cur_token_idx in range(begin_token_idx, len(loc_toks)):
+            next_cursors = []
+            (_, _, _, lemma_strs) = loc_toks[cur_token_idx]
+            for cursor in cursors:
+                for lemma_str in lemma_strs:
+                    new_cursor = cursor + (lemma_str,)
+                    if trie.has_key(new_cursor):  # noqa: W601
+                        add_multi_tags(
+                            tagging,
+                            from_id,
+                            new_cursor,
+                            trie[new_cursor],
+                            loc_toks[begin_token_idx : cur_token_idx + 1],
+                        )
+                    if trie.has_subtrie(new_cursor):
+                        next_cursors.append(new_cursor)
+            if not len(next_cursors):
+                break
+            cursors = next_cursors
 
 
 def get_synset_set_fin(line):
@@ -319,29 +392,27 @@ def get_tokens_starts(tokens):
 def get_synset_set_tokenized(line, wn, id):
     tagging = Tagging()
     tokens = line.split(" ")
-    loc_toks = zip(
-        range(0, len(tokens)),
-        get_tokens_starts(tokens),
-        tokens,
-        [[token] for token in tokens],
+    loc_toks = list(
+        zip(
+            range(0, len(tokens)),
+            get_tokens_starts(tokens),
+            tokens,
+            [[token] for token in tokens],
+        )
     )
     add_line_tags_single(tagging, loc_toks, id, wn)
     if wn in TRIE_GETTERS:
         trie = TRIE_GETTERS[wn]
-        add_line_tags_multi(tagging, trie, loc_toks, id, wn)
+        add_line_tags_multi(tagging, trie(), loc_toks, id, wn)
     return tagging
 
 
 def extract_zh_auto(line):
-    return get_synset_set_auto(line, "cmn", "zh-untok").combine_cross_wn(
-        get_synset_set_auto(line, "qcn", "zh-untok")
-    )
+    return get_synset_set_auto(line, "cmn", "zh-untok")
 
 
 def extract_zh_tok(line):
-    return get_synset_set_tokenized(line, "cmn", "zh-tok").combine_cross_wn(
-        get_synset_set_tokenized(line, "qcn", "zh-tok")
-    )
+    return get_synset_set_tokenized(line, "cmn", "zh-tok")
 
 
 WHITESPACE_RE = re.compile(r"\s")

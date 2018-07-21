@@ -5,7 +5,7 @@ name = "pypi"
 
 [packages]
 "stiff" = {path = ".", extras = ["dev"], editable = true}
-nltk = {git = "https://github.com/frankier/nltk.git", editable = true, ref = "fix-omw-satellite-pos"}
+nltk = {editable = true, ref = "ecced11335a8942beeab4ed9020eb93f18457d10", git = "https://github.com/nltk/nltk"}
 
 [dev-packages]
 

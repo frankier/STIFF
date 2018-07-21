@@ -70,6 +70,7 @@ class Writer:
                 "anchor={} "
                 "anchor-positions={} "
                 "lemma={} "
+                "wnlemma={} "
                 'wordnets="{}" '
                 'lemma-path="{}">'
                 "{}</annotation>\n"
@@ -81,9 +82,10 @@ class Writer:
                 quoteattr(anchor),
                 quoteattr(" ".join(anchors)),
                 quoteattr(tag["lemma"]),
-                " ".join(tag["wordnet"]),
+                quoteattr(tag["wnlemma"]),
+                tag["synset"][0],
                 "whole",
-                tag["wnlemma"][0],
+                tag["synset"][1],
             )
         )
 

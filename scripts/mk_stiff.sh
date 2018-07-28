@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
 
-python tag.py cmn-fin - \
+script_path=$(dirname "$0")
+
+python $script_path/tag.py cmn-fin - \
 | zstdmt -D zstd-compression-dictionary - -o stiff.raw.xml.zstd

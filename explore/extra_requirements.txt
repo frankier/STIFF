@@ -1,7 +1,0 @@
-scikit-plot
-jupyter
-ipykernel
-cihai
-mafan
-pandas
-streamz

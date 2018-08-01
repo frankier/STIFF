@@ -9,6 +9,10 @@ from streamz.dataframe import DataFrame
 @click.argument("inf", type=click.File("rb"))
 @click.argument("subtotal", type=int, required=False)
 def cov(inf, subtotal=None):
+    """
+    Produce a report of how much of a corpus in Eurosense/STIFF format is
+    covered by annotations.
+    """
     source = Stream()
     header = pd.DataFrame({"toks": [], "anns": [], "cov": []})
     sdf = DataFrame(source, example=header)

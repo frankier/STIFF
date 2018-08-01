@@ -22,6 +22,9 @@ from contextlib import contextmanager
 
 @click.group("munge")
 def munge():
+    """
+    Munge between different stream/corpus formats.
+    """
     pass
 
 
@@ -29,6 +32,11 @@ def munge():
 @click.argument("stiff", type=click.File("rb"))
 @click.argument("unified", type=click.File("w"))
 def stiff_to_unified(stiff, unified):
+    """
+    Do the XML conversion from the STIFF format (similar to the Eurosense
+    format) to the Unified format. Note that this assumes is that previous
+    filtering has produced an unambiguous tagging.
+    """
     unified.write('<?xml version="1.0" encoding="UTF-8" ?>\n')
     unified.write('<corpus lang="fi" source="stiff">\n')
     unified.write('<text id="stiff">\n')
@@ -100,6 +108,11 @@ def stiff_to_unified(stiff, unified):
 @click.argument("outf", type=click.File("wb"))
 @click.argument("keyout", type=click.File("w"))
 def unified_split(inf, outf, keyout):
+    """
+    Split a keyfile out of a variant of the unified format which includes sense
+    keys inline.
+    """
+
     def sent_split_key(sent_elem):
         sent_id = sent_elem.attrib["id"]
         for idx, inst in enumerate(sent_elem.xpath("instance")):
@@ -116,6 +129,12 @@ def unified_split(inf, outf, keyout):
 @click.argument("eurosense", type=click.File("rb", lazy=True))
 @click.argument("unified", type=click.File("w"))
 def eurosense_to_unified(eurosense, unified):
+    """
+    Do the XML conversion from the Eurosense format to the Unified format. Note
+    that this only deals with XML and doesn't convert other things like synset
+    ids. For the full conversion pipeline see eurosense2unified in
+    `pipeline.py`.
+    """
     unified.write('<?xml version="1.0" encoding="UTF-8" ?>\n')
     unified.write('<corpus lang="fi" source="eurosense">\n')
     unified.write('<text id="eurosense">\n')

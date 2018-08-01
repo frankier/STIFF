@@ -199,6 +199,12 @@ def proc_line(writer, zh_untok, zh_tok, fi_tok, src, align):
 @click.argument("output", type=click.File("w"))
 @click.option("--cutoff", default=None, type=int)
 def tag(corpus, output, cutoff):
+    """
+    Tag Finnish and Chinese parts of OpenSubtitles2018 by writing all possible
+    taggings for each token, and adding ways in which tagging from the two
+    languages support each other. This can be made into an unambiguously tagged
+    corpus filtering with the other scripts in this repository.
+    """
     idx = 0
     imdb_id = None
     with Writer(output) as writer:

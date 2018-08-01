@@ -5,6 +5,10 @@ from urllib.parse import parse_qs, urlencode
 
 @click.group()
 def filter():
+    """
+    Filter the master STIFF corpus to produce less ambiguous or unambiguous
+    versions.
+    """
     pass
 
 
@@ -12,6 +16,10 @@ def filter():
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
 def filter_support(inf, outf):
+    """
+    Remove annotations without any support at all.
+    """
+
     def remove_no_support(elem):
         for ann in elem.xpath("./annotations/annotation"):
             if ann.attrib["support"]:
@@ -26,6 +34,11 @@ def filter_support(inf, outf):
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
 def filter_lang(lang, inf, outf):
+    """
+    Change a multilingual corpus to a monolingual one by selecting a single
+    language.
+    """
+
     def remove_other_langs(elem):
         for ann in elem.xpath("./annotations/annotation | ./text"):
             if ann.attrib["lang"] == lang:
@@ -40,6 +53,11 @@ def filter_lang(lang, inf, outf):
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
 def fold_support(lang, inf, outf):
+    """
+    Move information about how an annotation is connected to a wordnet how it
+    is anchored into annotations which it supports in LANG.
+    """
+
     def tran(elem):
         xpath = "./annotations/annotation[@lang='{}']".format(lang)
         for ann in elem.xpath(xpath):
@@ -76,6 +94,10 @@ def fold_support(lang, inf, outf):
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
 def rm_empty(inf, outf):
+    """
+    Remove sentences with no annotations.
+    """
+
     def remove_empty(elem):
         if len(elem.xpath("./annotations/annotation")) == 0:
             return BYPASS
@@ -87,6 +109,13 @@ def rm_empty(inf, outf):
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
 def filter_align_dom(inf, outf):
+    """
+    Dominance filter:
+
+    Remove annotations which are based on unaligned transfers when there is an
+    annotation based on aligned transfers of the same token.
+    """
+
     def remove_dom_transfer(sent):
         anns = sent.xpath(
             './annotations/annotation[starts-with(@support, "aligned-transfer:")]]'
@@ -109,6 +138,9 @@ def filter_align_dom(inf, outf):
 @click.argument("outf", type=click.File("wb"))
 @click.option("--sentences", default=100)
 def head(inf, outf, sentences):
+    """
+    Take the first SENTENCES sentences from INF.
+    """
     seen_sents = 0
 
     def count_break_sent(sent):

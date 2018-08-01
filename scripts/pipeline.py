@@ -11,6 +11,10 @@ munge_py = os.path.join(dir, "munge.py")
 
 @click.group()
 def pipeline():
+    """
+    These pipelines compose serveral filters and munges to convert between
+    formats and filter STIFF.
+    """
     pass
 
 
@@ -27,6 +31,10 @@ def add_head(pipeline, head):
 @click.option("--head", default=None)
 @click.option("--babel2wn-map", envvar="BABEL2WN_MAP", required=True)
 def eurosense2unified(inf, outf, keyout, head, babel2wn_map):
+    """
+    Convert from the Eurosense format to the Unified format so that Eurosense
+    tagged data can be compared with STIFF.
+    """
     pipeline = add_head(cat[inf], head)
     pipeline = (
         pipeline
@@ -47,6 +55,10 @@ def eurosense2unified(inf, outf, keyout, head, babel2wn_map):
 @click.argument("outf", type=click.Path())
 @click.option("--head", default=None)
 def proc_stiff(method, inf, outf, head):
+    """
+    Do one of several standard STIFF processing pipelines -- producing usable
+    corpora at the end.
+    """
     from plumbum.cmd import zstdcat, zstdmt
 
     pipeline = add_head(zstdcat["-D", "zstd-compression-dictionary", inf], head)

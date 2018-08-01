@@ -1,7 +1,7 @@
 import os
 import sys
 import click
-from plumbum.cmd import zstdcat, python, zstdmt, cat
+from plumbum.cmd import python, cat
 
 
 dir = os.path.dirname(os.path.realpath(__file__))
@@ -47,6 +47,8 @@ def eurosense2unified(inf, outf, keyout, head, babel2wn_map):
 @click.argument("outf", type=click.Path())
 @click.option("--head", default=None)
 def proc_stiff(method, inf, outf, head):
+    from plumbum.cmd import zstdcat, zstdmt
+
     pipeline = add_head(zstdcat["-D", "zstd-compression-dictionary", inf], head)
     if method == "simple":
         pipeline = (

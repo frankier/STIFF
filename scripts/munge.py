@@ -1,3 +1,4 @@
+from lxml import etree
 import sys
 import click
 from stiff.filter_utils import (
@@ -5,14 +6,18 @@ from stiff.filter_utils import (
     transform_sentences,
     transform_blocks,
     BYPASS,
+    chunk_cb,
 )
 from xml.sax.saxutils import escape
 from urllib.parse import parse_qsl
 import pygtrie
-from stiff.data import WN_UNI_POS_MAP
+from stiff.data import WN_UNI_POS_MAP, UNI_POS_WN_MAP
 from finntk.wordnet.reader import fiwn, get_en_fi_maps
 from finntk.wordnet.utils import post_id_to_pre, pre2ss
 from finntk.omor.extract import lemma_intersect
+from os.path import join as pjoin
+from os import makedirs, listdir
+from contextlib import contextmanager
 
 
 @click.group("munge")
@@ -296,6 +301,132 @@ def babelnet_lookup(inf, map_bn2wn, outf):
         ann.text = " ".join(bits)
 
     transform_blocks("annotation", inf, ann_bn2wn, outf)
+
+
+def lexical_sample_head(outf):
+    outf.write(
+        """<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE corpus SYSTEM "lexical-sample.dtd">
+<corpus lang="finnish">
+"""
+    )
+
+
+def lexical_sample_foot(outf):
+    outf.write("</corpus>\n")
+
+
+@contextmanager
+def lexical_sample(outf):
+    lexical_sample_head(outf)
+    yield
+    lexical_sample_foot(outf)
+
+
+def lexelt_head(lemma_str, outf):
+    outf.write("""<lexelt item="{}">\n""".format(lemma_str))
+
+
+def lexelt_foot(outf):
+    outf.write("</lexelt>\n")
+
+
+@contextmanager
+def lexelt(lemma_str, outf):
+    lexelt_head(lemma_str, outf)
+    yield
+    lexelt_foot(outf)
+
+
+@contextmanager
+def instance(inst, out_f):
+    out_f.write("""<instance id="{}">\n""".format(inst.attrib["id"]))
+    yield
+    out_f.write("</instance>\n")
+
+
+def write_context(sent_elem, out_f):
+    out_f.write("<context>\n")
+    out_f.write(
+        " ".join((escape(elem.text) for elem in sent_elem.xpath("instance|wf")))
+    )
+    out_f.write("\n</context>\n")
+
+
+@munge.command("unified-to-senseval")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("keyin", type=click.File("r"))
+@click.argument("outdir", type=click.Path())
+def unified_to_senseval(inf, keyin, outdir):
+    """
+
+    Converts from the unified format to a Senseval-3 -style format in
+    individual files. The resulting files should be directly usable to train a
+    single word model with ItMakesSense or can be gathered using.
+
+    This is a scatter type operation.
+    """
+    out_files = {}
+    for sent_elem in iter_sentences(inf):
+        for inst in sent_elem.xpath("instance"):
+            lemma_str = inst.attrib["lemma"].lower()
+            pos_str = inst.attrib["pos"]
+            lemma_pos = "{}.{}".format(lemma_str, UNI_POS_WN_MAP[pos_str])
+
+            # Write XML
+            out_dir = pjoin(outdir, lemma_pos)
+            if lemma_pos not in out_files:
+                makedirs(out_dir, exist_ok=True)
+                out_fn = pjoin(out_dir, "train.xml")
+                out_files[lemma_pos] = out_fn
+                out_f = open(out_fn, "w")
+                lexical_sample_head(out_f)
+                lexelt_head(lemma_pos, out_f)
+            else:
+                out_fn = out_files[lemma_pos]
+                out_f = open(out_fn, "a")
+            with instance(inst, out_f):
+                write_context(sent_elem, out_f)
+            out_f.close()
+
+            # Write key file
+            key_fn = pjoin(out_dir, "train.key")
+            key_line = keyin.readline()
+            key_id, key_synset = key_line.rstrip().split(" ", 1)
+            assert key_id == inst.attrib["id"]
+            with open(key_fn, "a") as key_f:
+                out_line = "{} {} {}\n".format(lemma_pos, key_id, key_synset)
+                key_f.write(out_line)
+
+    for out_fn in out_files.values():
+        with open(out_fn, "a") as out_f:
+            lexelt_foot(out_f)
+            lexical_sample_foot(out_f)
+
+
+@munge.command("senseval-gather")
+@click.argument("indir", type=click.Path())
+@click.argument("outf", type=click.File("w"))
+@click.argument("keyout", type=click.File("w"))
+def senseval_gather(indir, outf, keyout):
+    """
+    Gather individual per-word SenseEval files into one big file, usable by
+    ItMakesSense and Context2Vec.
+    """
+    with lexical_sample(outf):
+        for word_dir in listdir(indir):
+            train_fn = pjoin(indir, word_dir, "train.xml")
+            key_fn = pjoin(indir, word_dir, "train.key")
+            with open(train_fn, "rb") as train_f:
+                stream = etree.iterparse(train_f, events=("start", "end"))
+
+                def cb(lexelt):
+                    outf.write(etree.tostring(lexelt, encoding="unicode"))
+
+                chunk_cb(stream, "lexelt", cb)
+
+            with open(key_fn) as key_f:
+                keyout.write(key_f.read())
 
 
 if __name__ == "__main__":

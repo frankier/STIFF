@@ -10,7 +10,7 @@ You can then run
 
     $ ./install.sh
 
-## Conversions
+## Example conversions
 
 ### Sampling EuroSense and convert to unified
 
@@ -29,3 +29,19 @@ https://github.com/frankier/babelnet-lookup
     ./mk_stiff.sh
     pipenv run python pipeline.py proc-stiff simple --head 1000 stiff.raw.xml.zstd stiff.simplefiltered.sample.xml.zstd
     ./stiff2unified.sh stiff.simplefiltered.sample.xml.zstd stiff.unified.sample.xml stiff.unified.sample.key
+
+
+## Organisation & usage
+
+For help using the tools, try running with `--help`. The main entry points are
+in `scripts`.
+
+Innards
+    `scripts/tag.py`: Produce an unfiltered STIFF
+    `scripts/filter.py`: Filter STIFF according to various criteria
+    `scripts/munge.py`: Convert between different corpus/stream formats
+
+Wrappers:
+    `scripts/mk_stiff.sh`: Produce an unfiltered STIFF with the default settings
+    `scripts/stiff2unified.sh`: Convert from STIFF format to the unified format
+    `scripts/pipeline.py`: Various pipelines composing multiple layers of filtering/conversion

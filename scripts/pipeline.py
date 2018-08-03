@@ -1,8 +1,10 @@
 import os
 import sys
 import click
-from plumbum.cmd import python, cat
+from plumbum.cmd import cat
+from plumbum import local
 
+python = local[sys.executable]
 
 dir = os.path.dirname(os.path.realpath(__file__))
 filter_py = os.path.join(dir, "filter.py")

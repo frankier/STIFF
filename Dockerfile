@@ -6,3 +6,6 @@ RUN ln -s locale.h /usr/include/xlocale.h
 COPY . /stiff
 WORKDIR /stiff
 RUN pipenv install --deploy --system
+
+# Install WordNet
+RUN python3 -c "from nltk import download as d; d('wordnet'); d('omw'); d('punkt')"

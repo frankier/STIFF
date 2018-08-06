@@ -3,3 +3,4 @@ wn-data-cmn-fixed.tab
 *.pyc
 /explore/confmat.pdf
 /data/
+/.pytest_cache/

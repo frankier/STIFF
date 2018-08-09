@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-"stiff" = {path = ".", extras = ["dev"], editable = true}
+"stiff" = {editable = true, path = ".", extras = ["dev"]}
 nltk = {editable = true, ref = "ecced11335a8942beeab4ed9020eb93f18457d10", git = "https://github.com/nltk/nltk"}
 
 [dev-packages]

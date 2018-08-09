@@ -364,11 +364,16 @@ def instance(inst, out_f):
     out_f.write("</instance>\n")
 
 
-def write_context(sent_elem, out_f):
+def write_context(sent_elem, inst, out_f):
     out_f.write("<context>\n")
-    out_f.write(
-        " ".join((escape(elem.text) for elem in sent_elem.xpath("instance|wf")))
-    )
+    for idx, elem in enumerate(sent_elem.xpath("instance|wf")):
+        if idx > 0:
+            out_f.write(" ")
+        if elem == inst:
+            out_f.write("<head>")
+        out_f.write(escape(elem.text))
+        if elem == inst:
+            out_f.write("</head>")
     out_f.write("\n</context>\n")
 
 
@@ -405,7 +410,7 @@ def unified_to_senseval(inf, keyin, outdir):
                 out_fn = out_files[lemma_pos]
                 out_f = open(out_fn, "a")
             with instance(inst, out_f):
-                write_context(sent_elem, out_f)
+                write_context(sent_elem, inst, out_f)
             out_f.close()
 
             # Write key file

@@ -402,7 +402,6 @@ def unified_to_senseval(inf, keyin, outdir):
             if lemma_pos not in out_files:
                 makedirs(out_dir, exist_ok=True)
                 out_fn = pjoin(out_dir, "train.xml")
-                out_files[lemma_pos] = out_fn
                 out_f = open(out_fn, "w")
                 lexical_sample_head(out_f)
                 lexelt_head(lemma_pos, out_f)
@@ -418,9 +417,17 @@ def unified_to_senseval(inf, keyin, outdir):
             key_line = keyin.readline()
             key_id, key_synset = key_line.rstrip().split(" ", 1)
             assert key_id == inst.attrib["id"]
-            with open(key_fn, "a") as key_f:
-                out_line = "{} {} {}\n".format(lemma_pos, key_id, key_synset)
-                key_f.write(out_line)
+            if lemma_pos not in out_files:
+                key_f = open(key_fn, "w")
+            else:
+                key_f = open(key_fn, "a")
+            out_line = "{} {} {}\n".format(lemma_pos, key_id, key_synset)
+            key_f.write(out_line)
+            key_f.close()
+
+            # Add to out_files
+            if lemma_pos not in out_files:
+                out_files[lemma_pos] = out_fn
 
     for out_fn in out_files.values():
         with open(out_fn, "a") as out_f:

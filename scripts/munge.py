@@ -460,5 +460,19 @@ def senseval_gather(indir, outf, keyout):
                 keyout.write(key_f.read())
 
 
+@munge.command("senseval2-key-to-senseval")
+@click.argument("keyin", type=click.File("r"))
+@click.argument("keyout", type=click.File("w"))
+def senseval2_key_to_senseval(keyin, keyout):
+    for line in keyin:
+        bits = line.split(" ")
+        lemma_pos = bits[0]
+        iden = bits[1]
+        guesses = bits[2:]
+        if guesses:
+            guessed = guesses[0].split("/")[0]
+            keyout.write("{} {} {}\n".format(lemma_pos, iden, guessed))
+
+
 if __name__ == "__main__":
     munge()

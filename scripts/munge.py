@@ -1,3 +1,4 @@
+import re
 from lxml import etree
 import sys
 import click
@@ -15,6 +16,7 @@ from stiff.data import WN_UNI_POS_MAP, UNI_POS_WN_MAP
 from finntk.wordnet.reader import fiwn, get_en_fi_maps
 from finntk.wordnet.utils import post_id_to_pre, pre2ss
 from finntk.omor.extract import lemma_intersect
+from finntk.finnpos import sent_finnpos
 from os.path import join as pjoin
 from os import makedirs, listdir
 from contextlib import contextmanager
@@ -460,10 +462,10 @@ def senseval_gather(indir, outf, keyout):
                 keyout.write(key_f.read())
 
 
-@munge.command("senseval2-key-to-senseval")
+@munge.command("context2vec-key-to-unified")
 @click.argument("keyin", type=click.File("r"))
 @click.argument("keyout", type=click.File("w"))
-def senseval2_key_to_senseval(keyin, keyout):
+def context2vec_key_to_unified(keyin, keyout):
     for line in keyin:
         bits = line.split(" ")
         lemma_pos = bits[0]
@@ -472,6 +474,54 @@ def senseval2_key_to_senseval(keyin, keyout):
         if guesses:
             guessed = guesses[0].split("/")[0]
             keyout.write("{} {} {}\n".format(lemma_pos, iden, guessed))
+
+
+@munge.command("unified-key-to-ims-test")
+@click.argument("keyin", type=click.File("r"))
+@click.argument("keyout", type=click.File("w"))
+def unified_key_to_ims_test(keyin, keyout):
+    for line in keyin:
+        bits = line.split(" ")
+        iden = bits[1]
+        guesses = bits[2:]
+        keyout.write("{} {}".format(iden, " ".join(guesses)))
+
+
+HEAD_REGEX = re.compile("(.*)<head>(.*)</head>(.*)")
+
+
+@munge.command("finnpos-senseval")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+def finnpos_senseval(inf, outf):
+    def fmt_analy(analy):
+        surf, lemma, tags = analy
+        return "{}/{}/{}".format(surf, lemma, tags["pos"])
+
+    def transform_context(context):
+        sent = []
+        before = context.text
+        head_tag = context[0]
+        head = head_tag.text
+        after = head_tag.tail
+
+        before_tok = before.strip().split(" ")
+        head_tok = head.split(" ")
+        after_tok = after.strip().split(" ")
+
+        sent = before_tok + head_tok + after_tok
+        analysed = sent_finnpos(sent)
+
+        ana_before = analysed[: len(before_tok)]
+        ana_head = analysed[len(before_tok) : len(before_tok) + len(head_tok)]
+        ana_after = analysed[len(before_tok) + len(head_tok) :]
+
+        context.text = "".join(fmt_analy(ana) + " " for ana in ana_before)
+        head_tag.text = " ".join(fmt_analy(ana) for ana in ana_head)
+        head_tag.tail = "".join(" " + fmt_analy(ana) for ana in ana_after)
+        return context
+
+    transform_blocks("context", inf, transform_context, outf)
 
 
 if __name__ == "__main__":

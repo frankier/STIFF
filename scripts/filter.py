@@ -1,5 +1,14 @@
+from lxml import etree
 import click
-from stiff.filter_utils import transform_sentences, BYPASS, BREAK
+from stiff.filter_utils import (
+    fixup_missing_text,
+    transform_sentences,
+    write_event,
+    BYPASS,
+    BREAK,
+    free_elem,
+    close_all,
+)
 from urllib.parse import parse_qs, urlencode
 
 
@@ -152,6 +161,79 @@ def head(inf, outf, sentences):
     transform_sentences(inf, count_break_sent, outf)
     inf.close()
     outf.close()
+
+
+class MultiFile:
+    def __init__(self, *fps):
+        self.fps = fps
+
+    def write(self, payload):
+        for fp in self.fps:
+            fp.write(payload)
+
+    def close(self, payload):
+        for fp in self.fps:
+            fp.close(payload)
+
+
+def split_xml(inf, testf, trainf, sentences):
+    from io import BytesIO
+
+    been_inside = False
+    seen_sents = 0
+    head_bio = BytesIO()
+    outf = MultiFile(testf, head_bio)
+    stream = etree.iterparse(inf, events=("start", "end"))
+    started = False
+    find_instance = False
+    switch_instance = None
+    for event, elem in stream:
+        if started:
+            fixup_missing_text(event, elem, outf)
+        if event == "start" and elem.tag == "sentence":
+            if not been_inside:
+                outf = testf
+            been_inside = True
+            seen_sents += 1
+        if find_instance and event == "start" and elem.tag == "instance":
+            switch_instance = elem.attrib["id"]
+            find_instance = False
+        write_event(event, elem, outf)
+        if event == "end" and elem.tag == "sentence":
+            if seen_sents == sentences:
+                close_all(elem, outf)
+                outf = trainf
+                outf.write(head_bio.getvalue())
+                find_instance = True
+            free_elem(elem)
+        started = True
+    return switch_instance
+
+
+@filter.command("split")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("testf", type=click.File("wb"))
+@click.argument("trainf", type=click.File("wb"))
+@click.argument("keyin", type=click.File("r"), required=False)
+@click.argument("testkey", type=click.File("w"), required=False)
+@click.argument("trainkey", type=click.File("w"), required=False)
+@click.option("--sentences", default=100)
+def split(inf, testf, trainf, keyin, testkey, trainkey, sentences):
+    """
+    Put the first SENTENCES sentences from INF into TESTF and the rest into
+    TRAINF.
+    """
+    switch_instance = split_xml(inf, testf, trainf, sentences)
+
+    if keyin:
+        switched = False
+        for line in keyin:
+            if line.split()[0] == switch_instance:
+                switched = True
+            if switched:
+                trainkey.write(line)
+            else:
+                testkey.write(line)
 
 
 if __name__ == "__main__":

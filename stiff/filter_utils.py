@@ -50,6 +50,33 @@ BYPASS = object()
 BREAK = object()
 
 
+def write_event(event, elem, outf):
+    if event == "start":
+        outf.write(open_tag(elem).encode("utf-8"))
+        return True
+    else:
+        outf.write(close_tag(elem).encode("utf-8"))
+        return False
+
+
+def fixup_missing_text(event, elem, outf):
+    if event == "end":
+        prev_elem = elem
+        if len(elem):
+            return
+    else:
+        prev_elem = elem.getparent()
+        if prev_elem[0] != elem:
+            return
+    if prev_elem.text is not None:
+        outf.write(escape(prev_elem.text).encode("utf-8"))
+
+
+def close_all(elem, outf):
+    for par_elem in elem.iterancestors():
+        outf.write(close_tag(par_elem).encode("utf-8"))
+
+
 def transform(stream, needle_tag, transformer, outf):
     outf.write(b"<?xml version='1.0' encoding='UTF-8'?>\n")
 
@@ -57,32 +84,20 @@ def transform(stream, needle_tag, transformer, outf):
 
     def always(event, elem):
         nonlocal missing_text
-
         if missing_text:
-            if event == "end":
-                prev_elem = elem
-            else:
-                prev_elem = elem.getparent()
-            if prev_elem.text is not None:
-                outf.write(escape(prev_elem.text).encode("utf-8"))
+            fixup_missing_text(event, elem)
             missing_text = False
 
     def outside(event, elem):
         nonlocal missing_text
-
-        if event == "start":
-            outf.write(open_tag(elem).encode("utf-8"))
-            missing_text = True
-        else:
-            outf.write(close_tag(elem).encode("utf-8"))
+        missing_text = write_event(event, elem, outf)
 
     def inside(elem):
         retval = transformer(elem)
         if retval is not BYPASS:
             outf.write(etree.tostring(elem, encoding="utf-8"))
         if retval is BREAK:
-            for par_elem in elem.iterancestors():
-                outf.write(close_tag(par_elem).encode("utf-8"))
+            close_all(elem, outf)
         return retval
 
     chunk_stream_cb(stream, needle_tag, outside, inside, always)

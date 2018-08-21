@@ -5,7 +5,7 @@ name = "pypi"
 
 [packages]
 "stiff" = {editable = true, path = ".", extras = ["dev"]}
-nltk = {editable = true, ref = "ecced11335a8942beeab4ed9020eb93f18457d10", git = "https://github.com/nltk/nltk"}
+nltk = {editable = true, ref = "b8eeed7731e505b6fe11aa366e022a6774c03caf", git = "https://github.com/frankier/nltk"}
 
 [dev-packages]
 

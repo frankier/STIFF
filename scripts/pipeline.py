@@ -1,3 +1,4 @@
+import tempfile
 import os
 import sys
 import click
@@ -81,6 +82,26 @@ def proc_stiff(method, inf, outf, head):
         assert False, "Unknown method"
     pipeline = pipeline | zstdmt["-D", "zstd-compression-dictionary", "-", "-o", outf]
     pipeline(retcode=[-13, 0])
+
+
+@pipeline.command("unified-to-sup")
+@click.argument("inf", type=click.Path(exists=True))
+@click.argument("keyin", type=click.Path(exists=True))
+@click.argument("outf", type=click.Path())
+@click.argument("taggedoutf", type=click.Path())
+@click.argument("keyout", type=click.Path())
+def unified_to_sup(inf, keyin, outf, taggedoutf, keyout):
+    """
+    Make the unified format into the senseval format used by the supervised
+    systems (at least It Makes Sense) for both training and test data.
+    """
+    tempdir = tempfile.mkdtemp(prefix="train")
+    python(munge_py, "unified_to_senseval", inf, keyin, tempdir)
+    (
+        python[munge_py, "senseval-gather", tempdir, outf, "-"]
+        | python[munge_py, "unified-key-to-ims-test", "-", keyout]
+    )()
+    python(munge_py, "finnpos-senseval", outf, taggedoutf)
 
 
 if __name__ == "__main__":

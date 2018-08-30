@@ -85,7 +85,7 @@ def transform(stream, needle_tag, transformer, outf):
     def always(event, elem):
         nonlocal missing_text
         if missing_text:
-            fixup_missing_text(event, elem)
+            fixup_missing_text(event, elem, outf)
             missing_text = False
 
     def outside(event, elem):

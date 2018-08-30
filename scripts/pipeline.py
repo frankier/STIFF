@@ -77,6 +77,7 @@ def proc_stiff(method, inf, outf, head):
             pipeline
             | python[filter_py, "fold-support", "fi", "-", "-"]
             | python[filter_py, "lang", "fi", "-", "-"]
+            | python[filter_py, "align-dom", "-", "-"]
         )
     else:
         assert False, "Unknown method"

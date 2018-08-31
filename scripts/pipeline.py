@@ -97,7 +97,7 @@ def unified_to_sup(inf, keyin, outf, keyout):
     systems (at least It Makes Sense) for both training and test data.
     """
     tempdir = tempfile.mkdtemp(prefix="train")
-    python(munge_py, "unified_to_senseval", inf, keyin, tempdir)
+    python(munge_py, "unified-to-senseval", inf, keyin, tempdir)
     (
         python[munge_py, "senseval-gather", tempdir, outf, "-"]
         | python[munge_py, "unified-key-to-ims-test", "-", keyout]

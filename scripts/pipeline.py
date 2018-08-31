@@ -10,6 +10,7 @@ python = local[sys.executable]
 dir = os.path.dirname(os.path.realpath(__file__))
 filter_py = os.path.join(dir, "filter.py")
 munge_py = os.path.join(dir, "munge.py")
+tag_py = os.path.join(dir, "tag.py")
 
 
 @click.group()
@@ -103,6 +104,21 @@ def unified_to_sup(inf, keyin, outf, taggedoutf, keyout):
         | python[munge_py, "unified-key-to-ims-test", "-", keyout]
     )()
     python(munge_py, "finnpos-senseval", outf, taggedoutf)
+
+
+@pipeline.command("mk-stiff")
+@click.argument("indir", type=click.Path(exists=True))
+@click.argument("outf", type=click.Path())
+def mk_stiff(indir, outf):
+    """
+    Make the raw, unfiltered version of STIFF.
+    """
+    from plumbum.cmd import zstdmt
+
+    (
+        python[tag_py, indir, "-"]
+        | zstdmt["-D", "zstd-compression-dictionary", "-", "-o", outf]
+    )()
 
 
 if __name__ == "__main__":

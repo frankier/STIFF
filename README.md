@@ -26,7 +26,7 @@ https://github.com/frankier/babelnet-lookup
 ### Making STIFF, sampling/filtering and converting to unified
 
     pipenv run python scripts/fetch_opensubtitles2018.py cmn-fin
-    ./mk_stiff.sh
+    pipenv run python scripts/pipeline.py mk-stiff cmn-fin stiff.raw.xml.zstd 
     pipenv run python scripts/pipeline.py proc-stiff simple --head 1000 stiff.raw.xml.zstd stiff.simplefiltered.sample.xml.zstd
     ./stiff2unified.sh stiff.simplefiltered.sample.xml.zstd stiff.unified.sample.xml stiff.unified.sample.key
 
@@ -42,6 +42,5 @@ Innards
     `scripts/munge.py`: Convert between different corpus/stream formats
 
 Wrappers:
-    `scripts/mk_stiff.sh`: Produce an unfiltered STIFF with the default settings
     `scripts/stiff2unified.sh`: Convert from STIFF format to the unified format
     `scripts/pipeline.py`: Various pipelines composing multiple layers of filtering/conversion

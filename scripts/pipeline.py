@@ -90,9 +90,8 @@ def proc_stiff(method, inf, outf, head):
 @click.argument("inf", type=click.Path(exists=True))
 @click.argument("keyin", type=click.Path(exists=True))
 @click.argument("outf", type=click.Path())
-@click.argument("taggedoutf", type=click.Path())
 @click.argument("keyout", type=click.Path())
-def unified_to_sup(inf, keyin, outf, taggedoutf, keyout):
+def unified_to_sup(inf, keyin, outf, keyout):
     """
     Make the unified format into the senseval format used by the supervised
     systems (at least It Makes Sense) for both training and test data.
@@ -103,7 +102,38 @@ def unified_to_sup(inf, keyin, outf, taggedoutf, keyout):
         python[munge_py, "senseval-gather", tempdir, outf, "-"]
         | python[munge_py, "unified-key-to-ims-test", "-", keyout]
     )()
-    python(munge_py, "finnpos-senseval", outf, taggedoutf)
+
+
+@pipeline.command("unified-to-eval")
+@click.argument("inf", type=click.Path(exists=True))
+@click.argument("keyin", type=click.Path(exists=True))
+@click.argument("dirout", type=click.Path())
+def unified_to_eval(inf, keyin, dirout):
+    """
+    Converts a unified corpus into all the data needed for finn-wsd-eval in a
+    directory.
+    """
+    from stiff.eval import get_eval_paths
+
+    if not os.path.exists(dirout):
+        os.makedirs(dirout, exist_ok=True)
+    ps = get_eval_paths(dirout)
+    python(
+        filter_py,
+        "split",
+        inf,
+        ps["test"]["unified"],
+        ps["train"]["unified"],
+        keyin,
+        ps["test"]["unikey"],
+        ps["train"]["unikey"],
+    )
+    for pdict in ps.values():
+        unified_to_sup.callback(
+            pdict["unified"], pdict["unikey"], pdict["sup"], pdict["supkey"]
+        )
+        python(munge_py, "finnpos-senseval", pdict["sup"], pdict["suptag"])
+        python(munge_py, "omorfi-segment-senseval", pdict["sup"], pdict["supseg"])
 
 
 @pipeline.command("mk-stiff")

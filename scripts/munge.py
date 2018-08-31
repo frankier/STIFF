@@ -476,14 +476,7 @@ def unified_key_to_ims_test(keyin, keyout):
 HEAD_REGEX = re.compile("(.*)<head>(.*)</head>(.*)")
 
 
-@munge.command("finnpos-senseval")
-@click.argument("inf", type=click.File("rb"))
-@click.argument("outf", type=click.File("wb"))
-def finnpos_senseval(inf, outf):
-    def fmt_analy(analy):
-        surf, lemma, tags = analy
-        return "{}/{}/{}".format(surf, lemma, tags["pos"])
-
+def transform_senseval_contexts(inf, transform_tokens, outf):
     def transform_context(context):
         sent = []
         before = context.text
@@ -496,18 +489,55 @@ def finnpos_senseval(inf, outf):
         after_tok = after.strip().split(" ")
 
         sent = before_tok + head_tok + after_tok
-        analysed = sent_finnpos(sent)
+        new_sent = transform_tokens(sent)
 
-        ana_before = analysed[: len(before_tok)]
-        ana_head = analysed[len(before_tok) : len(before_tok) + len(head_tok)]
-        ana_after = analysed[len(before_tok) + len(head_tok) :]
+        new_before = new_sent[: len(before_tok)]
+        new_head = new_sent[len(before_tok) : len(before_tok) + len(head_tok)]
+        new_after = new_sent[len(before_tok) + len(head_tok) :]
 
-        context.text = "".join(fmt_analy(ana) + " " for ana in ana_before)
-        head_tag.text = " ".join(fmt_analy(ana) for ana in ana_head)
-        head_tag.tail = "".join(" " + fmt_analy(ana) for ana in ana_after)
+        context.text = "".join(tok + " " for tok in new_before)
+        head_tag.text = " ".join(tok for tok in new_head)
+        head_tag.tail = "".join(" " + tok for tok in new_after)
         return context
 
     transform_blocks("context", inf, transform_context, outf)
+
+
+@munge.command("finnpos-senseval")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+def finnpos_senseval(inf, outf):
+    def fmt_analy(analy):
+        surf, lemma, tags = analy
+        return "{}/{}/{}".format(surf, lemma, tags["pos"])
+
+    def tag_tokens(sent):
+        analysed = sent_finnpos(sent)
+        return [fmt_analy(ana) for ana in analysed]
+
+    transform_senseval_contexts(inf, tag_tokens, outf)
+
+
+@munge.command("omorfi-segment-senseval")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+def omorfi_segment_senseval(inf, outf):
+    # XXX: we should move any segments after the last of the lemma segment
+    # outside of the <head> tag -- might mean transform_senseval_contexts needs
+    # to be reworked
+
+    def seg_token(token):
+        from finntk.omor.inst import get_omorfi
+        from omorfi.token import get_segments
+
+        omorfi = get_omorfi()
+        segments = omorfi.segment(token)
+        return "→ ←".join(get_segments(segments[0], True, True, True, False, False))
+
+    def seg_tokens(sent):
+        return [seg_token(tok) for tok in sent]
+
+    transform_senseval_contexts(inf, seg_tokens, outf)
 
 
 if __name__ == "__main__":

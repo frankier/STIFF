@@ -3,12 +3,12 @@ import click
 import stiff.fixes  # noqa
 
 from stiff.writers import AnnWriter
-from stiff.extract import get_anchor, get_synset_set_fin
+from stiff.extract import get_anchor, extract_full_fin
 from stiff.corpus_read import read_opensubtitles2018
 
 
 def man_ann_line(writer, fi_tok):
-    tagging = get_synset_set_fin(fi_tok)
+    tagging = extract_full_fin(fi_tok)
     writer.begin_sent()
     writer.write_text("fi", fi_tok)
     writer.start_anns()

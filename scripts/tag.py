@@ -7,7 +7,7 @@ import stiff.fixes  # noqa
 from finntk.wordnet.reader import fiwn_encnt
 
 from stiff.writers import Writer
-from stiff.extract import extract_full_zh, get_synset_set_fin, get_anchor
+from stiff.extract import extract_full_cmn, extract_full_fin, get_anchor
 from stiff.corpus_read import read_opensubtitles2018
 from stiff.utils import get_opencc
 
@@ -157,8 +157,8 @@ def proc_line(writer, zh_untok, zh_tok, fi_tok, align):
     opencc = get_opencc()
     zh_untok = opencc.convert(zh_untok)
     zh_tok = opencc.convert(zh_tok)
-    fi_tagging = get_synset_set_fin(fi_tok)
-    zh_tagging = extract_full_zh(zh_untok, zh_tok)
+    fi_tagging = extract_full_fin(fi_tok)
+    zh_tagging = extract_full_cmn(zh_untok, zh_tok)
     for id, (_token, tag) in enumerate(
         chain(fi_tagging.iter_tags(), zh_tagging.iter_tags())
     ):

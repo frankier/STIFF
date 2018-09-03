@@ -10,7 +10,7 @@ nltk = {editable = true, ref = "e1b3fda3768288ba96309dd92fd1ee7943cc43f9", git =
 [dev-packages]
 
 [requires]
-python_version = "3.6"
+python_version = "3.7"
 
 [pipenv]
 allow_prereleases = true

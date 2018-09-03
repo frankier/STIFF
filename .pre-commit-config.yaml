@@ -1,10 +1,4 @@
 repos:
--   repo: https://github.com/ambv/black
-    rev: 18.6b4
-    hooks:
-    - id: black
-      args: []
-      python_version: python3.6
 -   repo: git://github.com/pre-commit/pre-commit-hooks
     rev: master
     hooks:

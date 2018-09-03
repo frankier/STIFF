@@ -51,12 +51,17 @@ def read_opensubtitles2018(dir):
         alignment_f = open(pjoin(pair_dir, "aligned.grow-diag-final-and"))
         ids_f = open(pjoin(pair_dir, "ids"))
 
-        for ((zh_untok, zh_tok), fi_tok, line_id, moses_alignment) in zip(
-            realign(zh_untok_f, zh_tok_f), fi_tok_f, ids_f, alignment_f
+        prev_imdb_id = None
+        for idx, ((zh_untok, zh_tok), fi_tok, line_id, moses_alignment) in enumerate(
+            zip(realign(zh_untok_f, zh_tok_f), fi_tok_f, ids_f, alignment_f)
         ):
             src = get_src(line_id)
+            srcs, imdb_id = src[:-1], src[-1]
             align = WordAlignment(moses_alignment[:-1])
-            yield zh_untok[:-1], zh_tok[:-1], fi_tok[:-1], src, align
+            yield idx, zh_untok[:-1], zh_tok[:-1], fi_tok[
+                :-1
+            ], srcs, imdb_id, prev_imdb_id != imdb_id, align
+            prev_imdb_id = imdb_id
 
 
 def get_src(line_id):

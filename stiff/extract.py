@@ -1,3 +1,4 @@
+from collections import defaultdict
 import re
 import ahocorasick
 import pygtrie
@@ -6,7 +7,8 @@ from nltk.corpus import wordnet
 from finntk import get_omorfi, get_token_positions, extract_lemmas_recurs
 from finntk.omor.extract import extract_lemmas_span
 from finntk.wordnet import has_abbrv
-from finntk.wordnet.reader import fiwn_encnt
+from finntk.wordnet.utils import ss2pre
+from finntk.wordnet.reader import get_en_fi_maps, fiwn_encnt
 from finntk.finnpos import sent_finnpos
 
 from stiff.utils import get_opencc
@@ -54,25 +56,49 @@ def multi_lemma_names(lang):
         assert False
 
 
+def synset_group_lemmas(wordnet_lemmas, synset_mappers=None):
+    if synset_mappers is None:
+        synset_mappers = {}
+
+    def default_mapper(lemma_obj):
+        return ss2pre(lemma_obj.synset())
+
+    grouped_lemmas = defaultdict(list)
+    for wn, lemmas in wordnet_lemmas.items():
+        for lemma_obj in lemmas:
+            grouped_lemmas[synset_mappers.get(wn, default_mapper)(lemma_obj)].append(
+                (wn, lemma_obj)
+            )
+    return grouped_lemmas.values()
+
+
 def multi_lemma_keys(lang, lemma):
     def wntag(wn, lemmas):
-        return [(wn, lemma) for lemma in lemmas]
+        return [[(wn, lemma)] for lemma in lemmas]
 
     if lang == "cmn":
-        lemmas = (
-            wntag("cmn", wordnet.lemmas(lemma, lang="cmn"))
-            + wntag("qcn", wordnet.lemmas(get_rev_map("qcn")(lemma), lang="qcn"))
-            + wntag("qwc", wordnet.lemmas(lemma, lang="qwc"))
+        lemmas = synset_group_lemmas(
+            {
+                "cmn": wordnet.lemmas(lemma, lang="cmn"),
+                "qcn": wordnet.lemmas(get_rev_map("qcn")(lemma), lang="qcn"),
+                "qwc": wordnet.lemmas(lemma, lang="qwc"),
+            }
         )
     elif lang == "fin":
-        lemmas = (
-            wntag("fin", wordnet.lemmas(lemma, lang="fin"))
-            + wntag("qf2", fiwn_encnt.lemmas(lemma))
-            + wntag("qwf", wordnet.lemmas(lemma, lang="qwf"))
+        fi2en, en2fi = get_en_fi_maps()
+        lemmas = synset_group_lemmas(
+            {
+                "fin": wordnet.lemmas(lemma, lang="fin"),
+                "qf2": fiwn_encnt.lemmas(lemma),
+                "qwf": wordnet.lemmas(lemma, lang="qwf"),
+            },
+            {"qf2": lambda lemma_obj: fi2en[ss2pre(lemma_obj.synset())]},
         )
     else:
         assert False
-    return [(lemma_key(lemma), wn) for wn, lemma in lemmas]
+    return [
+        [(lemma_key(lemma), wn, lemma) for (wn, lemma) in wnlemma] for wnlemma in lemmas
+    ]
 
 
 def wn_lemma_keys(wn, lemma_name):
@@ -80,7 +106,7 @@ def wn_lemma_keys(wn, lemma_name):
         lemmas = fiwn_encnt.lemmas(lemma_name)
     else:
         lemmas = wordnet.lemmas(lemma_name, lang=wn)
-    return [lemma_key(lemma) for lemma in lemmas]
+    return [(lemma_key(lemma), lemma) for lemma in lemmas]
 
 
 def same_tags(tags1, tags2):
@@ -98,8 +124,12 @@ class Tagging:
         else:
             self.tokens = tokens
             for tok_idx, tok in enumerate(self.tokens):
-                for tag in tok["tags"]:
-                    self._index_lemma(tok_idx, tag["synset"])
+                self._index_tags(tok_idx, tok["tags"])
+
+    def _index_tags(self, tok_idx, tags):
+        for tag in tags:
+            for synset in tag["synset"]:
+                self._index_lemma(tok_idx, synset)
 
     def _index_lemma(self, tok_idx, synset):
         self.wnlemmas[synset[1]] = (synset[0], tok_idx)
@@ -109,8 +139,7 @@ class Tagging:
 
     def add_tags(self, token, anchors, tags):
         self.tokens.append({"token": token, "anchors": anchors, "tags": tags})
-        for tag in tags:
-            self._index_lemma(len(self.tokens) - 1, tag["synset"])
+        self._index_tags(len(self.tokens) - 1, tags)
 
     def iter_tags(self):
         for token in self.tokens:
@@ -227,15 +256,21 @@ def get_synset_set_auto(line, wn, id):
     auto = get_substr_auto(wn)
     tagging = Tagging()
     for tok_idx, (end_pos, (token, wn_to_lemma)) in enumerate(auto.iter(line)):
-        tagging.add_tags(
-            token,
-            [{"from": id, "char": end_pos - len(token) + 1}],
-            [
-                {"lemma": token, "synset": (wn, synset_name), "wnlemma": lemma_name}
-                for wn, lemma in wn_to_lemma.items()
-                for (synset_name, lemma_name) in wn_lemma_keys(wn, lemma)
-            ],
-        )
+        grouped_lemmas = defaultdict(list)
+        for wn, lemma in wn_to_lemma.items():
+            for ((synset_name, lemma_name), lemma_obj) in wn_lemma_keys(wn, lemma):
+                grouped_lemmas[ss2pre(lemma_obj.synset())].append(
+                    (wn, synset_name, lemma_name, lemma_obj)
+                )
+        tags = []
+        for group in grouped_lemmas.values():
+            tag_group = {"lemma": token, "synset": [], "wnlemma": [], "lemma_obj": []}
+            for wn, synset_name, lemma_name, lemma_obj in group:
+                tag_group["synset"].append((wn, synset_name))
+                tag_group["wnlemma"].append(lemma_name)
+                tag_group["lemma_obj"].append(lemma_obj)
+            tags.append(tag_group)
+        tagging.add_tags(token, [{"from": id, "char": end_pos - len(token) + 1}], tags)
     return tagging
 
 
@@ -283,18 +318,17 @@ def lemma_key(lemma):
     return (lemma.synset().name(), lemma.name())
 
 
-def add_line_tags_single(tagging, loc_toks, from_id, wn):
+def add_line_tags_single(tagging, loc_toks, from_id, lang):
     for token_idx, char, token, lemmas in loc_toks:
         tags = []
         for lemma in lemmas:
-            for ((synset_name, lemma_name), wni) in multi_lemma_keys(wn, lemma):
-                tags.append(
-                    {
-                        "lemma": lemma,
-                        "synset": (wni, synset_name),
-                        "wnlemma": lemma_name,
-                    }
-                )
+            for group in multi_lemma_keys(lang, lemma):
+                tag = {"lemma": lemma, "synset": [], "wnlemma": [], "lemma_obj": []}
+                for ((synset_name, lemma_name), wni, lemma_obj) in group:
+                    tag["synset"].append((wni, synset_name))
+                    tag["wnlemma"].append(lemma_name)
+                    tag["lemma_obj"].append(lemma_obj)
+                tags.append(tag)
         if tags:
             tagging.add_tags(
                 token, [{"from": from_id, "char": char, "token": token_idx}], tags
@@ -302,34 +336,43 @@ def add_line_tags_single(tagging, loc_toks, from_id, wn):
 
 
 def add_multi_tags(tagging, from_id, path, wn_to_lemma, loc_toks_slice):
+    grouped_lemmas = defaultdict(list)
     for wn, lemma in wn_to_lemma.items():
-        tags = []
-        for (synset_name, lemma_name) in wn_lemma_keys(wn, lemma):
-            tags.append(
-                {
-                    "lemma": " ".join(path),
-                    "synset": (wn, synset_name),
-                    "wnlemma": lemma_name,
-                }
+        for ((synset_name, lemma_name), lemma_obj) in wn_lemma_keys(wn, lemma):
+            grouped_lemmas[ss2pre(lemma_obj.synset())].append(
+                (wn, synset_name, lemma_name, lemma_obj)
             )
-        token_idx, char, _, _ = loc_toks_slice[0]
-        tagging.add_tags(
-            " ".join(
-                [
-                    token["surf"] if isinstance(token, dict) else token
-                    for _, _, token, _ in loc_toks_slice[: len(path)]
-                ]
-            ),
+    tags = []
+    for group in grouped_lemmas.values():
+        tag_group = {
+            "lemma": " ".join(path),
+            "synset": [],
+            "wnlemma": [],
+            "lemma_obj": [],
+        }
+        for wn, synset_name, lemma_name, lemma_obj in group:
+            tag_group["synset"].append((wn, synset_name))
+            tag_group["wnlemma"].append(lemma_name)
+            tag_group["lemma_obj"].append(lemma_obj)
+        tags.append(tag_group)
+    token_idx, char, _, _ = loc_toks_slice[0]
+    tagging.add_tags(
+        " ".join(
             [
-                {
-                    "from": from_id,
-                    "char": char,
-                    "token": token_idx,
-                    "token_length": len(path),
-                }
-            ],
-            tags,
-        )
+                token["surf"] if isinstance(token, dict) else token
+                for _, _, token, _ in loc_toks_slice[: len(path)]
+            ]
+        ),
+        [
+            {
+                "from": from_id,
+                "char": char,
+                "token": token_idx,
+                "token_length": len(path),
+            }
+        ],
+        tags,
+    )
 
 
 def add_line_tags_multi(tagging, trie, loc_toks, from_id, wn):
@@ -433,3 +476,10 @@ def extract_full_zh(line_untok, line_tok):
         return tok_char - tok_adjust == untok_adjust - untok_adjust
 
     return untok_synsets.combine_cross_toks(tok_synsets, matcher)
+
+
+def get_anchor(tok):
+    if isinstance(tok["token"], str):
+        return tok["token"]
+    else:
+        return tok["token"]["surf"]

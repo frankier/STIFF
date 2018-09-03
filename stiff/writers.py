@@ -44,9 +44,35 @@ class Writer:
             )
         )
 
+    def ann_common_attrs(self, lang, anchor, tok, tag):
+        anchors = [urlencode(anchor_pos) for anchor_pos in tok["anchors"]]
+        return (
+            " ".join(
+                "{}={}".format(k, quoteattr(v))
+                for k, v in (
+                    ("lang", lang),
+                    ("anchor", anchor),
+                    ("anchor-positions", " ".join(anchors)),
+                    ("lemma", tag["lemma"]),
+                    ("wnlemma", " ".join(set(tag["wnlemma"]))),
+                    ("wordnets", " ".join((ss[0] for ss in tag["synset"]))),
+                )
+            )
+            + " "
+        )
+
+    def ann_text(self, tag):
+        bits = set((ss[1] for ss in tag["synset"]))
+        bits = list(bits)
+        wn_to_lemma = dict(tag["synset"])
+        if "qf2" in wn_to_lemma and wn_to_lemma["qf2"] in bits:
+            qf2_lemma = wn_to_lemma["qf2"]
+            bits.remove(qf2_lemma)
+            bits.append(qf2_lemma)
+        return " ".join(bits)
+
     def write_ann(self, lang, anchor, tok, tag):
         supports = [urlencode(support) for support in tag.get("supports", [])]
-        anchors = [urlencode(anchor_pos) for anchor_pos in tok["anchors"]]
 
         if len(supports):
             support_attr = "support={} ".format(quoteattr(" ".join(supports)))
@@ -64,28 +90,16 @@ class Writer:
             (
                 "<annotation "
                 'id="{}" '
-                'lang="{}" '
                 'type="stiff" '
-                "{}{}"
-                "anchor={} "
-                "anchor-positions={} "
-                "lemma={} "
-                "wnlemma={} "
-                'wordnets="{}" '
-                'lemma-path="{}">'
+                "{}{}{}"
+                'lemma-path="whole">'
                 "{}</annotation>\n"
             ).format(
                 tag["id"],
-                lang,
                 support_attr,
                 freq_attrs,
-                quoteattr(anchor),
-                quoteattr(" ".join(anchors)),
-                quoteattr(tag["lemma"]),
-                quoteattr(tag["wnlemma"]),
-                tag["synset"][0],
-                "whole",
-                tag["synset"][1],
+                self.ann_common_attrs(lang, anchor, tok, tag),
+                self.ann_text(tag),
             )
         )
 
@@ -94,3 +108,42 @@ class Writer:
 
     def end_anns(self):
         self.outf.write("</annotations>\n")
+
+
+class AnnWriter(Writer):
+    def begin_subtitle(self, srcs, imdb):
+        self.srcs = srcs
+        self.imdb = imdb
+
+    def end_subtitle(self):
+        pass
+
+    def inc_sent(self):
+        self.sent_idx += 1
+
+    def begin_sent(self):
+        self.outf.write(
+            '<sentence id="{}">\n'.format(
+                "{}; {}; {}".format(" ".join(self.srcs), self.imdb, self.sent_idx)
+            )
+        )
+
+    def write_ann(self, lang, anchor, tok, tag):
+        synsets = set((lo.synset() for lo in tag["lemma_obj"]))
+        syn_list = ", ".join(ln for ss in synsets for ln in ss.lemma_names())
+        synset = synsets.pop()
+        defn = synset.definition()
+        self.outf.write(
+            (
+                "<annotation "
+                'type="man-ann" '
+                'lemma-path="whole" {}>'
+                "{}</annotation>\n"
+                "<!-- {}: {} -->\n"
+            ).format(
+                self.ann_common_attrs(lang, anchor, tok, tag),
+                self.ann_text(tag),
+                syn_list,
+                defn,
+            )
+        )

@@ -4,11 +4,10 @@ import click
 from itertools import chain
 
 import stiff.fixes  # noqa
-from finntk.wordnet.reader import fiwn_encnt, get_en_fi_maps
-from finntk.wordnet.utils import en2fi_post
+from finntk.wordnet.reader import fiwn_encnt
 
 from stiff.writers import Writer
-from stiff.extract import extract_full_zh, get_synset_set_fin
+from stiff.extract import extract_full_zh, get_synset_set_fin, get_anchor
 from stiff.corpus_read import read_opensubtitles2018
 from stiff.utils import get_opencc
 
@@ -32,8 +31,14 @@ def apply_lemmas(
     preproc_rev_map=None,
 ):
     for dest_token, dest_tag in dest_tagging.iter_tags():
-        wn, synset = dest_tag["synset"]
-        if synset in wn_lemmas:
+        matching_synsets = set()
+        for wn, synset in dest_tag["synset"]:
+            if synset in wn_lemmas:
+                matching_synsets.add(synset)
+        matching_synsets = list(matching_synsets)
+        assert len(matching_synsets) <= 1
+        if len(matching_synsets) == 1:
+            synset = matching_synsets[0]
             # Trace back source synset
             support = base_support.copy()
             if preproc_rev_map:
@@ -45,9 +50,10 @@ def apply_lemmas(
             # Get source
             source_tag_id = None
             for source_tag in source_token["tags"]:
-                if source_tag["synset"][1] == source_synset:
-                    source_tag_id = source_tag["id"]
-                    break
+                for synset in source_tag["synset"]:
+                    if synset[1] == source_synset:
+                        source_tag_id = source_tag["id"]
+                        break
             assert source_tag_id is not None
             support["transfer-from"] = source_tag_id
             # Check if it's aligned
@@ -114,21 +120,11 @@ def add_fi_ranks(fi_tagging):
     for token in fi_tagging.tokens:
         tag_counts = []
         for tag in token["tags"]:
-            wn, synset_str = tag["synset"]
-            lemma_str = tag["wnlemma"]
-            if wn in ("fin", "qwf"):
-                omw_synset = wordnet.synset(synset_str)
-                fi2en, en2fi = get_en_fi_maps()
-                fi_synset_key = en2fi_post(wordnet.ss2of(omw_synset))
-                fi_synset = fiwn_encnt.of2ss(fi_synset_key)
-            elif wn == "qf2":
-                fi_synset = fiwn_encnt.synset(synset_str)
-            else:
-                assert False
             fi_lemma = None
-            for lemma in fi_synset.lemmas():
-                if lemma.name() == lemma_str:
-                    fi_lemma = lemma
+            for lemma_obj, synset in zip(tag["lemma_obj"], tag["synset"]):
+                wn, synset_str = synset
+                if wn == "qf2":
+                    fi_lemma = lemma_obj
             if fi_lemma is None:
                 tag_counts.append((0, tag))
             else:
@@ -145,15 +141,12 @@ def add_fi_ranks(fi_tagging):
 
 def write_anns(writer, lang, tagging):
     for tok in tagging.tokens:
-        if isinstance(tok["token"], str):
-            anchor = tok["token"]
-        else:
-            anchor = tok["token"]["surf"]
+        anchor = get_anchor(tok)
         for tag in tok["tags"]:
             writer.write_ann(lang, anchor, tok, tag)
 
 
-def proc_line(writer, zh_untok, zh_tok, fi_tok, src, align):
+def proc_line(writer, zh_untok, zh_tok, fi_tok, align):
     # XXX: It's pretty sloppy always converting chracter-by-character: will
     # definitely try to convert simple => simpler sometimes
     # print("#####")
@@ -205,18 +198,13 @@ def tag(corpus, output, cutoff):
     languages support each other. This can be made into an unambiguously tagged
     corpus filtering with the other scripts in this repository.
     """
-    idx = 0
-    imdb_id = None
     with Writer(output) as writer:
-        for zh_untok, zh_tok, fi_tok, src, align in read_opensubtitles2018(corpus):
-            srcs, next_imdb_id = src[:-1], src[-1]
-            if next_imdb_id != imdb_id:
-                if imdb_id is not None:
+        for idx, zh_untok, zh_tok, fi_tok, srcs, imdb_id, new_imdb_id, align in read_opensubtitles2018(corpus):
+            if new_imdb_id:
+                if idx > 0:
                     writer.end_subtitle()
-                imdb_id = next_imdb_id
                 writer.begin_subtitle(srcs, imdb_id)
-            proc_line(writer, zh_untok, zh_tok, fi_tok, src, align)
-            idx += 1
+            proc_line(writer, zh_untok, zh_tok, fi_tok, align)
             if cutoff is not None and idx > cutoff:
                 break
         writer.end_subtitle()

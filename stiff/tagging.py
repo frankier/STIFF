@@ -57,7 +57,9 @@ class TaggedLemma:
     def wn_synset_names(self) -> List[Tuple[str, str]]:
         return [(wn, lemma_obj.synset().name()) for (wn, lemma_obj) in self.lemma_objs]
 
-    def __eq__(self, other: 'TaggedLemma'):
+    def __eq__(self, other: object):
+        if not isinstance(other, TaggedLemma):
+            return False
         return (
             self.lemma == other.lemma
             and self.lemma_objs == other.lemma_objs

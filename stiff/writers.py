@@ -46,10 +46,11 @@ class Writer:
         )
 
     def ann_common_attrs(self, lang: str, tok: Token, tag: TaggedLemma) -> str:
-        anchors = [anchor.urlencode() for anchor in tok.anchors]
+        anchor_positions = [anchor.urlencode() for anchor in tok.anchors]
         attrs = (
             ("lang", lang),
-            ("anchors", " ".join(anchors)),
+            ("anchor", tok.token),
+            ("anchor-positions", " ".join(anchor_positions)),
             ("lemma", tag.lemma),
             ("wnlemma", " ".join(tag.lemma_names)),
             ("wordnets", " ".join((tag.wordnets))),
@@ -137,7 +138,8 @@ class AnnWriter(Writer):
             (
                 "<annotation "
                 'type="man-ann" '
-                'lemma-path="whole" {}>'
+                '{}'
+                'lemma-path="whole">'
                 "{}</annotation>\n"
                 "<!-- {}: {} -->\n"
             ).format(

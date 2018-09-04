@@ -1,23 +1,23 @@
 import re
 from pygtrie import Trie
 from .common import (
-    multi_lemma_names,
-    multiword_variants,
+    get_substr_auto,
     wn_lemma_map,
-    get_synset_set_auto,
-    get_synset_set_tokenized,
 )
+from .mw_utils import multiword_variants
+from .wordnet.cmn import Wordnet as WordnetCmn
+from .gen import extract_auto, extract_tokenized
 from stiff.tagging import Anchor
 
 _cmn_trie = None
 
 
-def get_cmn_trie():
+def get_cmn_trie() -> Trie:
     global _cmn_trie
     if _cmn_trie is not None:
         return _cmn_trie
     _cmn_trie = Trie()
-    for l, wns in multi_lemma_names("cmn").items():
+    for l, wns in WordnetCmn.lemma_names().items():
         vars = multiword_variants(l)
         if len(vars) == 1:
             continue
@@ -26,12 +26,12 @@ def get_cmn_trie():
     return _cmn_trie
 
 
-def extract_zh_auto(line):
-    return get_synset_set_auto(line, "cmn", "zh-untok")
+def extract_zh_auto(line: str):
+    return extract_auto(line, get_substr_auto(WordnetCmn), "zh-untok")
 
 
-def extract_zh_tok(line):
-    return get_synset_set_tokenized(line, "cmn", get_cmn_trie(), "zh-tok")
+def extract_zh_tok(line: str):
+    return extract_tokenized(line, WordnetCmn, get_cmn_trie(), "zh-tok")
 
 
 WHITESPACE_RE = re.compile(r"\s")

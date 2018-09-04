@@ -45,14 +45,14 @@ class Writer:
             )
         )
 
-    def ann_common_attrs(self, lang: str, tok: Token, tag: TaggedLemma):
+    def ann_common_attrs(self, lang: str, tok: Token, tag: TaggedLemma) -> str:
         anchors = [anchor.urlencode() for anchor in tok.anchors]
         attrs = (
             ("lang", lang),
             ("anchors", " ".join(anchors)),
             ("lemma", tag.lemma),
-            ("wnlemma", " ".join(set(tag.wnlemma))),
-            ("wordnets", " ".join((ss[0] for ss in tag.synset))),
+            ("wnlemma", " ".join(tag.lemma_names)),
+            ("wordnets", " ".join((tag.wordnets))),
         )  # type: Tuple[Tuple[str, str], ...]
         return (
             " ".join(
@@ -62,11 +62,11 @@ class Writer:
             + " "
         )
 
-    def ann_text(self, tag: TaggedLemma):
-        bits = list(set((ss[1] for ss in tag.synset)))
-        wn_to_lemma = dict(tag.synset)
-        if "qf2" in wn_to_lemma and wn_to_lemma["qf2"] in bits:
-            qf2_lemma = wn_to_lemma["qf2"]
+    def ann_text(self, tag: TaggedLemma) -> str:
+        bits = list(tag.synset_names)
+        wn_to_synset_name = dict(tag.wn_synset_names)
+        if "qf2" in wn_to_synset_name and wn_to_synset_name["qf2"] in bits:
+            qf2_lemma = wn_to_synset_name["qf2"]
             bits.remove(qf2_lemma)
             bits.append(qf2_lemma)
         return " ".join(bits)
@@ -129,7 +129,7 @@ class AnnWriter(Writer):
         )
 
     def write_ann(self, lang: str, tok: Token, tag: TaggedLemma):
-        synsets = set((lo.synset() for lo in tag.lemma_obj))
+        synsets = set((lemma_obj.synset() for (wn, lemma_obj) in tag.lemma_objs))
         syn_list = ", ".join(ln for ss in synsets for ln in ss.lemma_names())
         synset = synsets.pop()
         defn = synset.definition()

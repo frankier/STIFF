@@ -36,7 +36,7 @@ def apply_lemmas(
 ):
     for dest_token, dest_tag in dest_tagging.iter_tags():
         matching_synsets = set()
-        for wn, synset in dest_tag.synset:
+        for wn, synset in dest_tag.wn_synset_names:
             if synset in wn_lemmas:
                 matching_synsets.add(synset)
         matching_synsets_list = list(matching_synsets)
@@ -54,7 +54,7 @@ def apply_lemmas(
             # Get source
             source_tag_id = None
             for source_tag in source_token.tags:
-                for synset_pair in source_tag.synset:
+                for synset_pair in source_tag.wn_synset_names:
                     if synset_pair[1] == source_synset:
                         source_tag_id = source_tag.id
                         break
@@ -125,8 +125,7 @@ def add_fi_ranks(fi_tagging: Tagging):
         tag_counts = []
         for tag in token.tags:
             fi_lemma = None
-            for lemma_obj, synset in zip(tag.lemma_obj, tag.synset):
-                wn, synset_str = synset
+            for wn, lemma_obj in tag.lemma_objs:
                 if wn == "qf2":
                     fi_lemma = lemma_obj
             if fi_lemma is None:

@@ -1,10 +1,10 @@
 import pygtrie
 from .common import (
-    multi_lemma_names,
     wn_lemma_map,
     add_line_tags_single,
     add_line_tags_multi,
 )
+from .wordnet.fin import Wordnet as WordnetFin
 from finntk.wordnet import has_abbrv
 from finntk.omor.extract import extract_lemmas_span
 from finntk import get_omorfi, get_token_positions, extract_lemmas_recurs
@@ -22,7 +22,7 @@ def get_fin_trie():
     if _fin_trie is not None:
         return _fin_trie
     _fin_trie = pygtrie.Trie()
-    for l, wns in multi_lemma_names("fin").items():
+    for l, wns in WordnetFin.lemma_names().items():
         if not FIN_SPACE.search(l) or has_abbrv(l):
             continue
         subwords = FIN_SPACE.split(l)
@@ -60,7 +60,7 @@ def extract_full_fin(line: str):
             ),
         )
     )
-    add_line_tags_single(tagging, loc_toks, "fi-tok", "fin")
-    add_line_tags_multi(tagging, trie, loc_toks, "fi-tok", "fin")
+    add_line_tags_single(tagging, loc_toks, "fi-tok", WordnetFin)
+    add_line_tags_multi(tagging, trie, loc_toks, "fi-tok")
 
     return tagging

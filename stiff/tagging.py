@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field, asdict
 from nltk.corpus.reader import Lemma
-from typing import Callable, Dict, Optional, List, Tuple, Iterator
+from typing import Callable, Dict, Optional, List, Tuple, Iterator, Set
 from urllib.parse import urlencode
 
 
@@ -36,19 +36,31 @@ class TagSupport(DataUtilMixin):
 @dataclass
 class TaggedLemma:
     lemma: str
-    synset: List[Tuple[str, str]] = field(default_factory=list)
-    wnlemma: List[str] = field(default_factory=list)
-    lemma_obj: List[Lemma] = field(default_factory=list)
+    lemma_objs: List[Tuple[str, Lemma]] = field(default_factory=list)
     id: Optional[int] = None
     supports: List[TagSupport] = field(default_factory=list)
     rank: Optional[Tuple[int, int]] = None
 
-    def __eq__(self, other):
+    @property
+    def wordnets(self) -> List[str]:
+        return [wn for (wn, _lemma_obj) in self.lemma_objs]
+
+    @property
+    def lemma_names(self) -> Set[str]:
+        return set((lemma_obj.name() for (_wn, lemma_obj) in self.lemma_objs))
+
+    @property
+    def synset_names(self) -> Set[str]:
+        return set((lemma_obj.synset().name() for (_wn, lemma_obj) in self.lemma_objs))
+
+    @property
+    def wn_synset_names(self) -> List[Tuple[str, str]]:
+        return [(wn, lemma_obj.synset().name()) for (wn, lemma_obj) in self.lemma_objs]
+
+    def __eq__(self, other: 'TaggedLemma'):
         return (
             self.lemma == other.lemma
-            and self.synset == other.synset
-            and self.wnlemma == other.wnlemma
-            and self.lemma_obj == other.lemma_obj
+            and self.lemma_objs == other.lemma_objs
         )
 
 
@@ -74,11 +86,12 @@ class Tagging:
 
     def _index_tags(self, tok_idx: int, tags: List[TaggedLemma]):
         for tag in tags:
-            for synset in tag.synset:
-                self._index_lemma(tok_idx, synset)
+            for wn_synset_name in tag.wn_synset_names:
+                self._index_lemma(tok_idx, wn_synset_name)
 
-    def _index_lemma(self, tok_idx: int, synset: Tuple[str, str]):
-        self.wnlemmas[synset[1]] = (synset[0], tok_idx)
+    def _index_lemma(self, tok_idx: int, wn_synset_name: Tuple[str, str]):
+        wn, synset_name = wn_synset_name
+        self.wnlemmas[synset_name] = (wn, tok_idx)
 
     def lemma_set(self):
         return set(self.wnlemmas.keys())

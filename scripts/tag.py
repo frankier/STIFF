@@ -2,45 +2,49 @@ from nltk.corpus import wordnet
 from nltk.corpus.reader.wordnet import WordNetError
 import click
 from itertools import chain
+from copy import copy
 
 import stiff.fixes  # noqa
 from finntk.wordnet.reader import fiwn_encnt
 
 from stiff.writers import Writer
-from stiff.extract import extract_full_cmn, extract_full_fin, get_anchor
-from stiff.corpus_read import read_opensubtitles2018
+from stiff.extract import extract_full_cmn, extract_full_fin
+from stiff.corpus_read import read_opensubtitles2018, WordAlignment
 from stiff.utils import get_opencc
+from stiff.tagging import Tagging, Token, TagSupport
+from typing import Dict, Set, Optional
 
 SYNS_TRACE = True
 SIM_TRACE = False
 COVERAGE_TRACE = True
 
 
-def get_tok_idx(tok):
-    for anchor in tok["anchors"]:
-        if "token" in anchor:
-            return anchor["token"]
+def get_tok_idx(tok: Token) -> Optional[int]:
+    for anchor in tok.anchors:
+        if anchor.token is not None:
+            return anchor.token
+    return None
 
 
 def apply_lemmas(
-    wn_lemmas,
-    dest_tagging,
-    source_tagging,
-    base_support,
-    align_map,
+    wn_lemmas: Set[str],
+    dest_tagging: Tagging,
+    source_tagging: Tagging,
+    base_support: TagSupport,
+    align_map: Dict[int, int],
     preproc_rev_map=None,
 ):
     for dest_token, dest_tag in dest_tagging.iter_tags():
         matching_synsets = set()
-        for wn, synset in dest_tag["synset"]:
+        for wn, synset in dest_tag.synset:
             if synset in wn_lemmas:
                 matching_synsets.add(synset)
-        matching_synsets = list(matching_synsets)
-        assert len(matching_synsets) <= 1
-        if len(matching_synsets) == 1:
-            synset = matching_synsets[0]
+        matching_synsets_list = list(matching_synsets)
+        assert len(matching_synsets_list) <= 1
+        if len(matching_synsets_list) == 1:
+            synset = matching_synsets_list[0]
             # Trace back source synset
-            support = base_support.copy()
+            support = copy(base_support)
             if preproc_rev_map:
                 source_synset = preproc_rev_map[synset]
             else:
@@ -49,13 +53,13 @@ def apply_lemmas(
             source_token = source_tagging.tokens[source_token_idx]
             # Get source
             source_tag_id = None
-            for source_tag in source_token["tags"]:
-                for synset in source_tag["synset"]:
-                    if synset[1] == source_synset:
-                        source_tag_id = source_tag["id"]
+            for source_tag in source_token.tags:
+                for synset_pair in source_tag.synset:
+                    if synset_pair[1] == source_synset:
+                        source_tag_id = source_tag.id
                         break
             assert source_tag_id is not None
-            support["transfer-from"] = source_tag_id
+            support.transfer_from = source_tag_id
             # Check if it's aligned
             dest_token_idx = get_tok_idx(dest_token)
             aligned = (
@@ -64,11 +68,11 @@ def apply_lemmas(
                 and align_map.get(dest_token_idx) == source_token_idx
             )
             if aligned:
-                support["transfer-type"] = "aligned"
+                support.transfer_type = "aligned"
             else:
-                support["transfer-type"] = "unaligned"
+                support.transfer_type = "unaligned"
             aligned = False
-            dest_tag.setdefault("supports", []).append(support)
+            dest_tag.supports.append(support)
 
 
 def no_expand(lemmas):
@@ -92,7 +96,7 @@ def expand_english_deriv(lemmas):
     return res, rev_map
 
 
-def add_supports_onto(tagging1, tagging2, align_map):
+def add_supports_onto(tagging1, tagging2, align_map: Dict[int, int]):
     t1l = tagging1.lemma_set()
     t2l = tagging2.lemma_set()
     common_lemmas = t1l & t2l
@@ -100,28 +104,28 @@ def add_supports_onto(tagging1, tagging2, align_map):
     deriv, rev_map = expand_english_deriv(t2l)
     deriv_lemmas = t1l & deriv
 
-    apply_lemmas(common_lemmas, tagging1, tagging2, {}, align_map)
+    apply_lemmas(common_lemmas, tagging1, tagging2, TagSupport(), align_map)
     apply_lemmas(
         deriv_lemmas,
         tagging1,
         tagging2,
-        {"transform-chain": ["deriv"]},
+        TagSupport(transform_chain=["deriv"]),
         align_map,
         rev_map,
     )
 
 
-def add_supports(tagging1, tagging2, align):
+def add_supports(tagging1: Tagging, tagging2: Tagging, align):
     add_supports_onto(tagging1, tagging2, align.s2t)
     add_supports_onto(tagging2, tagging1, align.t2s)
 
 
-def add_fi_ranks(fi_tagging):
+def add_fi_ranks(fi_tagging: Tagging):
     for token in fi_tagging.tokens:
         tag_counts = []
-        for tag in token["tags"]:
+        for tag in token.tags:
             fi_lemma = None
-            for lemma_obj, synset in zip(tag["lemma_obj"], tag["synset"]):
+            for lemma_obj, synset in zip(tag.lemma_obj, tag.synset):
                 wn, synset_str = synset
                 if wn == "qf2":
                     fi_lemma = lemma_obj
@@ -133,20 +137,19 @@ def add_fi_ranks(fi_tagging):
         prev_count = float("inf")
         rank = 1
         for count, tag in tag_counts:
-            tag["rank"] = (rank, count)
+            tag.rank = (rank, count)
             if count < prev_count:
                 prev_count = count
                 rank += 1
 
 
-def write_anns(writer, lang, tagging):
+def write_anns(writer: Writer, lang: str, tagging: Tagging):
     for tok in tagging.tokens:
-        anchor = get_anchor(tok)
-        for tag in tok["tags"]:
-            writer.write_ann(lang, anchor, tok, tag)
+        for tag in tok.tags:
+            writer.write_ann(lang, tok, tag)
 
 
-def proc_line(writer, zh_untok, zh_tok, fi_tok, align):
+def proc_line(writer, zh_untok: str, zh_tok: str, fi_tok: str, align: WordAlignment):
     # XXX: It's pretty sloppy always converting chracter-by-character: will
     # definitely try to convert simple => simpler sometimes
     # print("#####")
@@ -162,7 +165,7 @@ def proc_line(writer, zh_untok, zh_tok, fi_tok, align):
     for id, (_token, tag) in enumerate(
         chain(fi_tagging.iter_tags(), zh_tagging.iter_tags())
     ):
-        tag["id"] = id
+        tag.id = id
     # if SYNS_TRACE:
     # print(fi_tok)
     # print(zh_untok)

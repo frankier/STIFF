@@ -2,9 +2,10 @@ from nltk.corpus import wordnet
 from finntk.wordnet.utils import ss2pre
 from collections import defaultdict
 from stiff.utils import get_opencc
+from typing import Dict
 
 WORDNET_FILTERS = {"qcn": lambda x: get_opencc().convert(x)}
-_rev_maps = {}
+_rev_maps: Dict[str, Dict[str, str]] = {}
 
 
 def wn_lemma_map(l, wns):

@@ -21,7 +21,7 @@ setup(
         "lxml>=4.2.3",
     ],
     extras_require={
-        "dev": ["black>=18.5b1", "flake8>=3.5.0", "pre-commit>=1.10.2", "pytest"]
+        "dev": ["black>=18.5b1", "flake8>=3.5.0", "pre-commit>=1.10.2", "pytest", "mypy"]
     },
     zip_safe=False,
 )

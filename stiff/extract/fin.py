@@ -40,7 +40,7 @@ def get_fin_trie():
     return _fin_trie
 
 
-def extract_full_fin(line):
+def extract_full_fin(line: str):
     trie = get_fin_trie()
     omorfi = get_omorfi()
     omor_toks = omorfi.tokenise(line)
@@ -51,7 +51,7 @@ def extract_full_fin(line):
         zip(
             range(0, len(omor_toks)),
             starts,
-            omor_toks,
+            (tok["surf"] for tok in omor_toks),
             (
                 extract_lemmas_recurs(token) | {fp_lemma}
                 for token, (_fp_surf, fp_lemma, _fp_feats) in zip(

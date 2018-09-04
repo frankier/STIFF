@@ -1,5 +1,6 @@
 from xml.sax.saxutils import quoteattr
-from urllib.parse import urlencode
+from stiff.tagging import Token, TaggedLemma
+from typing import Tuple
 
 
 class Writer:
@@ -44,44 +45,43 @@ class Writer:
             )
         )
 
-    def ann_common_attrs(self, lang, anchor, tok, tag):
-        anchors = [urlencode(anchor_pos) for anchor_pos in tok["anchors"]]
+    def ann_common_attrs(self, lang: str, tok: Token, tag: TaggedLemma):
+        anchors = [anchor.urlencode() for anchor in tok.anchors]
+        attrs = (
+            ("lang", lang),
+            ("anchors", " ".join(anchors)),
+            ("lemma", tag.lemma),
+            ("wnlemma", " ".join(set(tag.wnlemma))),
+            ("wordnets", " ".join((ss[0] for ss in tag.synset))),
+        )  # type: Tuple[Tuple[str, str], ...]
         return (
             " ".join(
                 "{}={}".format(k, quoteattr(v))
-                for k, v in (
-                    ("lang", lang),
-                    ("anchor", anchor),
-                    ("anchor-positions", " ".join(anchors)),
-                    ("lemma", tag["lemma"]),
-                    ("wnlemma", " ".join(set(tag["wnlemma"]))),
-                    ("wordnets", " ".join((ss[0] for ss in tag["synset"]))),
-                )
+                for k, v in attrs
             )
             + " "
         )
 
-    def ann_text(self, tag):
-        bits = set((ss[1] for ss in tag["synset"]))
-        bits = list(bits)
-        wn_to_lemma = dict(tag["synset"])
+    def ann_text(self, tag: TaggedLemma):
+        bits = list(set((ss[1] for ss in tag.synset)))
+        wn_to_lemma = dict(tag.synset)
         if "qf2" in wn_to_lemma and wn_to_lemma["qf2"] in bits:
             qf2_lemma = wn_to_lemma["qf2"]
             bits.remove(qf2_lemma)
             bits.append(qf2_lemma)
         return " ".join(bits)
 
-    def write_ann(self, lang, anchor, tok, tag):
-        supports = [urlencode(support) for support in tag.get("supports", [])]
+    def write_ann(self, lang: str, tok: Token, tag: TaggedLemma):
+        supports = [support.urlencode() for support in tag.supports]
 
         if len(supports):
             support_attr = "support={} ".format(quoteattr(" ".join(supports)))
         else:
             support_attr = ""
 
-        if "rank" in tag:
+        if tag.rank is not None:
             freq_attrs = "rank={} freq={} ".format(
-                quoteattr(str(tag["rank"][0])), quoteattr(str(tag["rank"][1]))
+                quoteattr(str(tag.rank[0])), quoteattr(str(tag.rank[1]))
             )
         else:
             freq_attrs = ""
@@ -95,10 +95,10 @@ class Writer:
                 'lemma-path="whole">'
                 "{}</annotation>\n"
             ).format(
-                tag["id"],
+                tag.id,
                 support_attr,
                 freq_attrs,
-                self.ann_common_attrs(lang, anchor, tok, tag),
+                self.ann_common_attrs(lang, tok, tag),
                 self.ann_text(tag),
             )
         )
@@ -128,8 +128,8 @@ class AnnWriter(Writer):
             )
         )
 
-    def write_ann(self, lang, anchor, tok, tag):
-        synsets = set((lo.synset() for lo in tag["lemma_obj"]))
+    def write_ann(self, lang: str, tok: Token, tag: TaggedLemma):
+        synsets = set((lo.synset() for lo in tag.lemma_obj))
         syn_list = ", ".join(ln for ss in synsets for ln in ss.lemma_names())
         synset = synsets.pop()
         defn = synset.definition()
@@ -141,7 +141,7 @@ class AnnWriter(Writer):
                 "{}</annotation>\n"
                 "<!-- {}: {} -->\n"
             ).format(
-                self.ann_common_attrs(lang, anchor, tok, tag),
+                self.ann_common_attrs(lang, tok, tag),
                 self.ann_text(tag),
                 syn_list,
                 defn,

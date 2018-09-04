@@ -1,11 +1,14 @@
 from collections import defaultdict
 import ahocorasick
+from typing import Dict, List, Tuple, DefaultDict
+from nltk.corpus.reader import Lemma
+from pygtrie import Trie
 
-from stiff.tagging import Tagging
+from stiff.tagging import Tagging, Anchor, TaggedLemma, LocToks
 from finntk.wordnet.utils import ss2pre
 from .wordnet import multi_lemma_names, multi_lemma_keys, wn_lemma_keys, wn_lemma_map
 
-_substr_autos = {}
+_substr_autos: Dict[str, ahocorasick.Automaton] = {}
 
 
 def chr_to_maybe_space(chr, lfs):
@@ -39,11 +42,11 @@ def get_substr_auto(lang):
     return _substr_autos[lang]
 
 
-def get_synset_set_auto(line, wn, id):
+def get_synset_set_auto(line: str, wn: str, from_id: str):
     auto = get_substr_auto(wn)
     tagging = Tagging()
     for tok_idx, (end_pos, (token, wn_to_lemma)) in enumerate(auto.iter(line)):
-        grouped_lemmas = defaultdict(list)
+        grouped_lemmas: DefaultDict[str, List[Tuple[str, str, str, Lemma]]] = defaultdict(list)
         for wn, lemma in wn_to_lemma.items():
             for ((synset_name, lemma_name), lemma_obj) in wn_lemma_keys(wn, lemma):
                 grouped_lemmas[ss2pre(lemma_obj.synset())].append(
@@ -51,35 +54,35 @@ def get_synset_set_auto(line, wn, id):
                 )
         tags = []
         for group in grouped_lemmas.values():
-            tag_group = {"lemma": token, "synset": [], "wnlemma": [], "lemma_obj": []}
+            tag_group = TaggedLemma(token)
             for wn, synset_name, lemma_name, lemma_obj in group:
-                tag_group["synset"].append((wn, synset_name))
-                tag_group["wnlemma"].append(lemma_name)
-                tag_group["lemma_obj"].append(lemma_obj)
+                tag_group.synset.append((wn, synset_name))
+                tag_group.wnlemma.append(lemma_name)
+                tag_group.lemma_obj.append(lemma_obj)
             tags.append(tag_group)
-        tagging.add_tags(token, [{"from": id, "char": end_pos - len(token) + 1}], tags)
+        tagging.add_tags(token, [Anchor(from_id, end_pos - len(token) + 1)], tags)
     return tagging
 
 
-def add_line_tags_single(tagging, loc_toks, from_id, lang):
+def add_line_tags_single(tagging: Tagging, loc_toks: LocToks, from_id: str, lang: str):
     for token_idx, char, token, lemmas in loc_toks:
         tags = []
         for lemma in lemmas:
             for group in multi_lemma_keys(lang, lemma):
-                tag = {"lemma": lemma, "synset": [], "wnlemma": [], "lemma_obj": []}
+                tag_group = TaggedLemma(token)
                 for ((synset_name, lemma_name), wni, lemma_obj) in group:
-                    tag["synset"].append((wni, synset_name))
-                    tag["wnlemma"].append(lemma_name)
-                    tag["lemma_obj"].append(lemma_obj)
-                tags.append(tag)
+                    tag_group.synset.append((wni, synset_name))
+                    tag_group.wnlemma.append(lemma_name)
+                    tag_group.lemma_obj.append(lemma_obj)
+                tags.append(tag_group)
         if tags:
             tagging.add_tags(
-                token, [{"from": from_id, "char": char, "token": token_idx}], tags
+                token, [Anchor(from_id, char, token_idx)], tags
             )
 
 
-def add_multi_tags(tagging, from_id, path, wn_to_lemma, loc_toks_slice):
-    grouped_lemmas = defaultdict(list)
+def add_multi_tags(tagging: Tagging, from_id: str, path, wn_to_lemma: Dict[str, str], loc_toks_slice: LocToks):
+    grouped_lemmas: DefaultDict[str, List[Tuple[str, str, str, Lemma]]] = defaultdict(list)
     for wn, lemma in wn_to_lemma.items():
         for ((synset_name, lemma_name), lemma_obj) in wn_lemma_keys(wn, lemma):
             grouped_lemmas[ss2pre(lemma_obj.synset())].append(
@@ -87,46 +90,41 @@ def add_multi_tags(tagging, from_id, path, wn_to_lemma, loc_toks_slice):
             )
     tags = []
     for group in grouped_lemmas.values():
-        tag_group = {
-            "lemma": " ".join(path),
-            "synset": [],
-            "wnlemma": [],
-            "lemma_obj": [],
-        }
+        tag_group = TaggedLemma(" ".join(path))
         for wn, synset_name, lemma_name, lemma_obj in group:
-            tag_group["synset"].append((wn, synset_name))
-            tag_group["wnlemma"].append(lemma_name)
-            tag_group["lemma_obj"].append(lemma_obj)
+            tag_group.synset.append((wn, synset_name))
+            tag_group.wnlemma.append(lemma_name)
+            tag_group.lemma_obj.append(lemma_obj)
         tags.append(tag_group)
     token_idx, char, _, _ = loc_toks_slice[0]
     tagging.add_tags(
         " ".join(
             [
-                token["surf"] if isinstance(token, dict) else token
+                token
                 for _, _, token, _ in loc_toks_slice[: len(path)]
             ]
         ),
         [
-            {
-                "from": from_id,
-                "char": char,
-                "token": token_idx,
-                "token_length": len(path),
-            }
+            Anchor(
+                from_id,
+                char,
+                token_idx,
+                len(path),
+            )
         ],
         tags,
     )
 
 
-def add_line_tags_multi(tagging, trie, loc_toks, from_id, wn):
+def add_line_tags_multi(tagging: Tagging, trie: Trie, loc_toks: LocToks, from_id: str, wn: str):
     for begin_token_idx, _, _, _ in loc_toks:
-        cursors = [()]
+        cursors: List[Tuple[str, ...]] = [()]
         for cur_token_idx in range(begin_token_idx, len(loc_toks)):
-            next_cursors = []
+            next_cursors: List[Tuple[str, ...]] = []
             (_, _, _, lemma_strs) = loc_toks[cur_token_idx]
             for cursor in cursors:
                 for lemma_str in lemma_strs:
-                    new_cursor = cursor + (lemma_str,)
+                    new_cursor: Tuple[str, ...] = cursor + (lemma_str,)
                     if trie.has_key(new_cursor):  # noqa: W601
                         add_multi_tags(
                             tagging,
@@ -149,7 +147,7 @@ def get_tokens_starts(tokens):
         start += len(token) + 1
 
 
-def get_synset_set_tokenized(line, wn, trie, id):
+def get_synset_set_tokenized(line: str, wn: str, trie: Trie, id: str):
     tagging = Tagging()
     tokens = line.split(" ")
     loc_toks = list(

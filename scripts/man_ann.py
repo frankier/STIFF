@@ -3,7 +3,7 @@ import click
 import stiff.fixes  # noqa
 
 from stiff.writers import AnnWriter
-from stiff.extract import get_anchor, extract_full_fin
+from stiff.extract import extract_full_fin
 from stiff.corpus_read import read_opensubtitles2018
 
 
@@ -13,9 +13,8 @@ def man_ann_line(writer, fi_tok):
     writer.write_text("fi", fi_tok)
     writer.start_anns()
     for tok in tagging.tokens:
-        anchor = get_anchor(tok)
         for tag in tok["tags"]:
-            writer.write_ann("fi", anchor, tok, tag)
+            writer.write_ann("fi", tok, tag)
     writer.end_anns()
     writer.end_sent()
 

@@ -106,32 +106,6 @@ class Tagging:
                 tok.append(t2)
         return Tagging(tok)
 
-    """
-    def combine_cross_wn(self, other: 'Tagging'):
-        def match(t1: Token, t2: Token) -> bool:
-            assert len(t1.anchors) == 1
-            assert len(t2.anchors) == 1
-            return t1.token == t2.token and t1.anchors[0] == t2.anchors[0]
-
-        def combine(t1: Token, t2: Token):
-            if len(t1.tags) == 0 and len(t2.tags) == 0:
-                return
-            # XXX: Aribitrary limitation: Currently all lemmas must be the same
-            lemma = t1.tags[0].lemma if t1.tags else t2.tags[0].lemma
-            for other_tag in t2.tags:
-                assert other_tag.lemma == lemma
-                combined = False
-                for tag in t1.tags[:]:
-                    assert tag.lemma == lemma
-                    if other_tag.wnlemma == tag.wnlemma:
-                        tag.wordnet |= other_tag.wordnet
-                        combined = True
-                if not combined:
-                    t1.tags.append(other_tag)
-
-        return self._combine(other, match, combine)
-    """
-
     def combine_cross_toks(self, other: 'Tagging', matcher: Callable[[Anchor, Anchor], bool]):
         def match(untok_tok: Token, tok_tok: Token) -> bool:
             # XXX: Aribitrary number of anchors required

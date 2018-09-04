@@ -1,5 +1,6 @@
 import re
 from os.path import join as pjoin
+from typing import Dict, IO, Iterator, Tuple
 
 
 CHINESES = ["zh_cn", "zh_tw"]
@@ -17,7 +18,7 @@ class TokLineEndedFirstException(RealignException):
     pass
 
 
-def realign(untok, tok, skiplimit=200):
+def realign(untok: IO, tok: IO, skiplimit=200) -> Iterator[Tuple[str, str]]:
     untok_line = untok.readline()
     tok_line = tok.readline()
     skipped = 0
@@ -40,7 +41,7 @@ def realign(untok, tok, skiplimit=200):
             raise SkippedTooMuchException()
 
 
-def read_opensubtitles2018(dir):
+def read_opensubtitles2018(dir: str) -> Iterator[Tuple[int, str, str, str, str, str, bool, 'WordAlignment']]:
     for zh in CHINESES:
         pair = "fi-{}".format(zh)
         pair_dir = pjoin(dir, pair)
@@ -64,7 +65,7 @@ def read_opensubtitles2018(dir):
             prev_imdb_id = imdb_id
 
 
-def get_src(line_id):
+def get_src(line_id: str):
     bits = line_id.split()
     lang1_src = bits[0]
     lang2_src = bits[1]
@@ -75,7 +76,10 @@ def get_src(line_id):
 
 
 class WordAlignment:
-    def __init__(self, alignment):
+    s2t: Dict[int, int]
+    t2s: Dict[int, int]
+
+    def __init__(self, alignment: str) -> None:
         self.s2t = {}
         self.t2s = {}
         if not alignment:

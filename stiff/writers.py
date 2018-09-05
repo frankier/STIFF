@@ -3,6 +3,55 @@ from stiff.tagging import Token, TaggedLemma
 from typing import Tuple
 
 
+def ann_common_attrs(lang: str, tok: Token, tag: TaggedLemma) -> str:
+    anchor_positions = [anchor.urlencode() for anchor in tok.anchors]
+    attrs = (
+        ("lang", lang),
+        ("anchor", tok.token),
+        ("anchor-positions", " ".join(anchor_positions)),
+        ("lemma", tag.lemma),
+        ("wnlemma", " ".join(tag.lemma_names)),
+        ("wordnets", " ".join((tag.wordnets))),
+    )  # type: Tuple[Tuple[str, str], ...]
+    return (
+        " ".join(
+            "{}={}".format(k, quoteattr(v))
+            for k, v in attrs
+        )
+        + " "
+    )
+
+
+def ann_text(tag: TaggedLemma) -> str:
+    bits = list(tag.synset_names)
+    wn_to_synset_name = dict(tag.wn_synset_names)
+    if "qf2" in wn_to_synset_name and wn_to_synset_name["qf2"] in bits:
+        qf2_lemma = wn_to_synset_name["qf2"]
+        bits.remove(qf2_lemma)
+        bits.append(qf2_lemma)
+    return " ".join(bits)
+
+
+def man_ann_ann(lang: str, tok: Token, tag: TaggedLemma) -> str:
+    synsets = set((lemma_obj.synset() for (wn, lemma_obj) in tag.lemma_objs))
+    syn_list = ", ".join(ln for ss in synsets for ln in ss.lemma_names())
+    synset = synsets.pop()
+    defn = synset.definition().replace("--", "-")
+    return (
+        "<annotation "
+        'type="man-ann" '
+        '{}'
+        'lemma-path="whole">'
+        "{}</annotation>\n"
+        "<!-- {}: {} -->\n"
+    ).format(
+        ann_common_attrs(lang, tok, tag),
+        ann_text(tag),
+        syn_list,
+        defn,
+    )
+
+
 class Writer:
     def __init__(self, outf):
         self.outf = outf
@@ -14,7 +63,7 @@ class Writer:
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
-        self.outf.write("</corpus>")
+        self.outf.write("</corpus>\n")
         self.outf.close()
 
     def begin_subtitle(self, srcs, imdb):
@@ -45,33 +94,6 @@ class Writer:
             )
         )
 
-    def ann_common_attrs(self, lang: str, tok: Token, tag: TaggedLemma) -> str:
-        anchor_positions = [anchor.urlencode() for anchor in tok.anchors]
-        attrs = (
-            ("lang", lang),
-            ("anchor", tok.token),
-            ("anchor-positions", " ".join(anchor_positions)),
-            ("lemma", tag.lemma),
-            ("wnlemma", " ".join(tag.lemma_names)),
-            ("wordnets", " ".join((tag.wordnets))),
-        )  # type: Tuple[Tuple[str, str], ...]
-        return (
-            " ".join(
-                "{}={}".format(k, quoteattr(v))
-                for k, v in attrs
-            )
-            + " "
-        )
-
-    def ann_text(self, tag: TaggedLemma) -> str:
-        bits = list(tag.synset_names)
-        wn_to_synset_name = dict(tag.wn_synset_names)
-        if "qf2" in wn_to_synset_name and wn_to_synset_name["qf2"] in bits:
-            qf2_lemma = wn_to_synset_name["qf2"]
-            bits.remove(qf2_lemma)
-            bits.append(qf2_lemma)
-        return " ".join(bits)
-
     def write_ann(self, lang: str, tok: Token, tag: TaggedLemma):
         supports = [support.urlencode() for support in tag.supports]
 
@@ -99,8 +121,8 @@ class Writer:
                 tag.id,
                 support_attr,
                 freq_attrs,
-                self.ann_common_attrs(lang, tok, tag),
-                self.ann_text(tag),
+                ann_common_attrs(lang, tok, tag),
+                ann_text(tag),
             )
         )
 
@@ -130,22 +152,4 @@ class AnnWriter(Writer):
         )
 
     def write_ann(self, lang: str, tok: Token, tag: TaggedLemma):
-        synsets = set((lemma_obj.synset() for (wn, lemma_obj) in tag.lemma_objs))
-        syn_list = ", ".join(ln for ss in synsets for ln in ss.lemma_names())
-        synset = synsets.pop()
-        defn = synset.definition()
-        self.outf.write(
-            (
-                "<annotation "
-                'type="man-ann" '
-                '{}'
-                'lemma-path="whole">'
-                "{}</annotation>\n"
-                "<!-- {}: {} -->\n"
-            ).format(
-                self.ann_common_attrs(lang, tok, tag),
-                self.ann_text(tag),
-                syn_list,
-                defn,
-            )
-        )
+        self.outf.write(man_ann_ann(lang, tok, tag))

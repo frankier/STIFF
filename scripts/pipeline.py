@@ -11,6 +11,7 @@ dir = os.path.dirname(os.path.realpath(__file__))
 filter_py = os.path.join(dir, "filter.py")
 munge_py = os.path.join(dir, "munge.py")
 tag_py = os.path.join(dir, "tag.py")
+man_ann_py = os.path.join(dir, "man_ann.py")
 
 
 @click.group()
@@ -149,6 +150,31 @@ def mk_stiff(indir, outf):
         python[tag_py, indir, "-"]
         | zstdmt["-D", "zstd-compression-dictionary", "-", "-o", outf]
     )()
+
+
+@pipeline.command("man-ann-eurosense")
+@click.argument("inf", type=click.Path(exists=True))
+@click.argument("outf", type=click.File('w'))
+def man_ann_eurosense(inf, outf):
+    (
+        python[filter_py, "lang", "fi", inf, "-"]
+        | python[filter_py, "rm-empty", "--text", "-", "-"]
+        | python[filter_py, "sample", "-", "-"]
+        | python[man_ann_py, "filter", "-", "-"]
+        > outf
+    )(retcode=[0, 1])
+
+
+@pipeline.command("man-ann-tdt")
+@click.argument("inf", type=click.Path(exists=True))
+@click.argument("outf", type=click.File('w'))
+def man_ann_tdt(inf, outf):
+    (
+        python[man_ann_py, "conllu-gen", inf, "-"]
+        | python[filter_py, "sample", "-", "-"]
+        | python[man_ann_py, "filter", "-", "-"]
+        > outf
+    )(retcode=[0, 1])
 
 
 if __name__ == "__main__":

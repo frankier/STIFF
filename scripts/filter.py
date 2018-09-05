@@ -1,3 +1,5 @@
+import os
+import sys
 from lxml import etree
 import click
 from stiff.filter_utils import (
@@ -9,6 +11,7 @@ from stiff.filter_utils import (
     free_elem,
     close_all,
 )
+from stiff.data import DEFAULT_SAMPLE_LINES, DEFAULT_SAMPLE_MAX
 from urllib.parse import parse_qs, urlencode
 
 
@@ -102,13 +105,14 @@ def fold_support(lang, inf, outf):
 @filter.command("rm-empty")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
-def rm_empty(inf, outf):
+@click.option("--text/--annotations")
+def rm_empty(inf, outf, text):
     """
-    Remove sentences with no annotations.
+    Remove sentences with no annotations, or optionally with no text instead.
     """
 
     def remove_empty(elem):
-        if len(elem.xpath("./annotations/annotation")) == 0:
+        if len(elem.xpath("./text")) == 0 if text else len(elem.xpath("./annotations/annotation")) == 0:
             return BYPASS
 
     transform_sentences(inf, remove_empty, outf)
@@ -161,6 +165,30 @@ def head(inf, outf, sentences):
     transform_sentences(inf, count_break_sent, outf)
     inf.close()
     outf.close()
+
+
+@filter.command("sample")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+def sample(inf, outf):
+    """
+    Sample the sentences in DEFAULT_SAMPLE_LINES (fixed) from inf
+    """
+    seen_sents = 0
+
+    def count_break_sent(sent):
+        nonlocal seen_sents
+        if seen_sents >= DEFAULT_SAMPLE_MAX:
+            return BREAK
+        if seen_sents not in DEFAULT_SAMPLE_LINES:
+            seen_sents += 1
+            return BYPASS
+        seen_sents += 1
+
+    transform_sentences(inf, count_break_sent, outf)
+
+    if seen_sents <= max(DEFAULT_SAMPLE_LINES):
+        print("Not enough sentences in input to sample.")
 
 
 class MultiFile:
@@ -234,6 +262,20 @@ def split(inf, testf, trainf, keyin, testkey, trainkey, sentences):
                 trainkey.write(line)
             else:
                 testkey.write(line)
+
+
+@filter.command("join")
+@click.argument("infs", nargs=-1, type=click.File("r"))
+@click.argument("outf", nargs=1, type=click.File("w"))
+def join(infs, outf):
+    outf.write("<?xml version='1.0' encoding='UTF-8'?>\n")
+    outf.write("<corpora>\n")
+    for inf in infs:
+        for line in inf:
+            if line.startswith("<?xml"):
+                continue
+            outf.write(line)
+    outf.write("</corpora>\n")
 
 
 if __name__ == "__main__":

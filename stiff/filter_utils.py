@@ -3,6 +3,18 @@ from xml.sax.saxutils import quoteattr, escape
 from functools import partial
 
 
+def eq_matcher(tag_name):
+    def inner(other):
+        return tag_name == other
+    return inner
+
+
+def in_matcher(*tag_names):
+    def inner(other):
+        return other in tag_names
+    return inner
+
+
 def free_elem(elem):
     # It's safe to call clear() here because no descendants will be
     # accessed
@@ -39,12 +51,12 @@ def close_tag(elem):
     return "</{}>{}".format(elem.tag, elem.tail or "\n")
 
 
-def transform_blocks(block, inf, transformer, outf):
+def transform_blocks(matcher, inf, transformer, outf):
     stream = etree.iterparse(inf, events=("start", "end"))
-    transform(stream, block, transformer, outf)
+    transform(stream, matcher, transformer, outf)
 
 
-transform_sentences = partial(transform_blocks, "sentence")
+transform_sentences = partial(transform_blocks, eq_matcher("sentence"))
 
 BYPASS = object()
 BREAK = object()
@@ -77,7 +89,7 @@ def close_all(elem, outf):
         outf.write(close_tag(par_elem).encode("utf-8"))
 
 
-def transform(stream, needle_tag, transformer, outf):
+def transform(stream, matcher, transformer, outf):
     outf.write(b"<?xml version='1.0' encoding='UTF-8'?>\n")
 
     missing_text = False
@@ -94,13 +106,14 @@ def transform(stream, needle_tag, transformer, outf):
 
     def inside(elem):
         retval = transformer(elem)
-        if retval is not BYPASS:
-            outf.write(etree.tostring(elem, encoding="utf-8"))
         if retval is BREAK:
             close_all(elem, outf)
+            return retval
+        if retval is not BYPASS:
+            outf.write(etree.tostring(elem, encoding="utf-8"))
         return retval
 
-    chunk_stream_cb(stream, needle_tag, outside, inside, always)
+    chunk_stream_cb(stream, matcher, outside, inside, always)
 
 
 def cb_to_iter(f):
@@ -135,22 +148,22 @@ def cb_to_iter(f):
 
 def cb_sentences(inf, cb):
     stream = etree.iterparse(inf, events=("start", "end"))
-    chunk_cb(stream, "sentence", cb)
+    chunk_cb(stream, eq_matcher("sentence"), cb)
 
 
 iter_sentences = cb_to_iter(cb_sentences)
 
 
-def chunk_stream_cb(stream, needle_tag, outside_cb, inside_cb, always_cb=None):
+def chunk_stream_cb(stream, matcher, outside_cb, inside_cb, always_cb=None):
     inside = False
     for event, elem in stream:
-        if event == "start" and elem.tag == needle_tag:
+        if event == "start" and matcher(elem.tag):
             inside = True
         if always_cb is not None:
             always_cb(event, elem)
         if not inside:
             outside_cb(event, elem)
-        if event == "end" and elem.tag == needle_tag:
+        if event == "end" and matcher(elem.tag):
             inside = False
             retval = inside_cb(elem)
             free_elem(elem)
@@ -158,5 +171,5 @@ def chunk_stream_cb(stream, needle_tag, outside_cb, inside_cb, always_cb=None):
                 break
 
 
-def chunk_cb(stream, needle_tag, inside_cb):
-    return chunk_stream_cb(stream, needle_tag, lambda x, y: None, inside_cb)
+def chunk_cb(stream, matcher, inside_cb):
+    return chunk_stream_cb(stream, matcher, lambda x, y: None, inside_cb)

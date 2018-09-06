@@ -1,16 +1,19 @@
 from lxml import etree
 from xml.sax.saxutils import quoteattr, escape
 from functools import partial
+from typing import Callable
+
+Matcher = Callable[[str], bool]
 
 
-def eq_matcher(tag_name):
-    def inner(other):
+def eq_matcher(tag_name: str) -> Matcher:
+    def inner(other: str) -> bool:
         return tag_name == other
     return inner
 
 
-def in_matcher(*tag_names):
-    def inner(other):
+def in_matcher(*tag_names: str) -> Matcher:
+    def inner(other: str):
         return other in tag_names
     return inner
 
@@ -89,7 +92,7 @@ def close_all(elem, outf):
         outf.write(close_tag(par_elem).encode("utf-8"))
 
 
-def transform(stream, matcher, transformer, outf):
+def transform(stream, matcher: Matcher, transformer, outf):
     outf.write(b"<?xml version='1.0' encoding='UTF-8'?>\n")
 
     missing_text = False
@@ -154,7 +157,7 @@ def cb_sentences(inf, cb):
 iter_sentences = cb_to_iter(cb_sentences)
 
 
-def chunk_stream_cb(stream, matcher, outside_cb, inside_cb, always_cb=None):
+def chunk_stream_cb(stream, matcher: Matcher, outside_cb, inside_cb, always_cb=None):
     inside = False
     for event, elem in stream:
         if event == "start" and matcher(elem.tag):
@@ -171,5 +174,5 @@ def chunk_stream_cb(stream, matcher, outside_cb, inside_cb, always_cb=None):
                 break
 
 
-def chunk_cb(stream, matcher, inside_cb):
+def chunk_cb(stream, matcher: Matcher, inside_cb):
     return chunk_stream_cb(stream, matcher, lambda x, y: None, inside_cb)

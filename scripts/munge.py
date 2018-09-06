@@ -20,6 +20,7 @@ from finntk.finnpos import sent_finnpos
 from os.path import join as pjoin
 from os import makedirs, listdir
 from contextlib import contextmanager
+from typing import Dict, Set, IO
 
 
 @click.group("munge")
@@ -33,7 +34,7 @@ def munge():
 @munge.command("stiff-to-unified")
 @click.argument("stiff", type=click.File("rb"))
 @click.argument("unified", type=click.File("w"))
-def stiff_to_unified(stiff, unified):
+def stiff_to_unified(stiff: IO, unified: IO):
     """
     Do the XML conversion from the STIFF format (similar to the Eurosense
     format) to the Unified format. Note that this assumes is that previous
@@ -109,7 +110,7 @@ def stiff_to_unified(stiff, unified):
 @click.argument("inf", type=click.File("rb", lazy=True))
 @click.argument("outf", type=click.File("wb"))
 @click.argument("keyout", type=click.File("w"))
-def unified_split(inf, outf, keyout):
+def unified_split(inf: IO, outf: IO, keyout: IO):
     """
     Split a keyfile out of a variant of the unified format which includes sense
     keys inline.
@@ -130,7 +131,7 @@ def unified_split(inf, outf, keyout):
 @munge.command("eurosense-to-unified")
 @click.argument("eurosense", type=click.File("rb", lazy=True))
 @click.argument("unified", type=click.File("w"))
-def eurosense_to_unified(eurosense, unified):
+def eurosense_to_unified(eurosense: IO, unified: IO):
     """
     Do the XML conversion from the Eurosense format to the Unified format. Note
     that this only deals with XML and doesn't convert other things like synset
@@ -185,7 +186,7 @@ def iter_synsets(synset_list):
 @click.argument("outf", type=click.File("wb"))
 @click.option("--keep-unknown/--drop-unknown")
 @click.option("--quiet", default=False)
-def eurosense_fix_lemmas(inf, outf, keep_unknown, quiet):
+def eurosense_fix_lemmas(inf: IO, outf: IO, keep_unknown: bool, quiet: bool):
     """
     Eurosense contains many lemmas which are not in the set of lemmas for the
     synset in FinnWordNet. There are two reasons this might occur.
@@ -270,7 +271,7 @@ def eurosense_fix_lemmas(inf, outf, keep_unknown, quiet):
 @munge.command("eurosense-reanchor")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
-def eurosense_reanchor(inf, outf):
+def eurosense_reanchor(inf: IO, outf: IO):
     """
     Reanchors Eurosense lemmas which are actually forms including some "light"
     word like ei and olla by removing said unneccesary word.
@@ -301,11 +302,11 @@ def eurosense_reanchor(inf, outf):
 @click.argument("inf", type=click.File("rb"))
 @click.argument("map_bn2wn", type=click.File("r"))
 @click.argument("outf", type=click.File("wb"))
-def babelnet_lookup(inf, map_bn2wn, outf):
+def babelnet_lookup(inf: IO, map_bn2wn: IO, outf: IO):
     """
     This stage converts BabelNet ids to WordNet ids.
     """
-    bn2wn_map = {}
+    bn2wn_map: Dict[str, Set[str]] = {}
     for line in map_bn2wn:
         bn, wn_full = line[:-1].split("\t")
         wn_off = wn_full.split(":", 1)[1]
@@ -383,7 +384,7 @@ def write_context(sent_elem, inst, out_f):
 @click.argument("inf", type=click.File("rb"))
 @click.argument("keyin", type=click.File("r"))
 @click.argument("outdir", type=click.Path())
-def unified_to_senseval(inf, keyin, outdir):
+def unified_to_senseval(inf: IO, keyin: IO, outdir: str):
     """
 
     Converts from the unified format to a Senseval-3 -style format in
@@ -392,7 +393,7 @@ def unified_to_senseval(inf, keyin, outdir):
 
     This is a scatter type operation.
     """
-    out_files = {}
+    out_files: Dict[str, str] = {}
     for sent_elem in iter_sentences(inf):
         for inst in sent_elem.xpath("instance"):
             lemma_str = inst.attrib["lemma"].lower()
@@ -441,7 +442,7 @@ def unified_to_senseval(inf, keyin, outdir):
 @click.argument("indir", type=click.Path())
 @click.argument("outf", type=click.File("w"))
 @click.argument("keyout", type=click.File("w"))
-def senseval_gather(indir, outf, keyout):
+def senseval_gather(indir: str, outf: IO, keyout: IO):
     """
     Gather individual per-word SenseEval files into one big file, usable by
     ItMakesSense and Context2Vec.
@@ -465,7 +466,7 @@ def senseval_gather(indir, outf, keyout):
 @munge.command("unified-key-to-ims-test")
 @click.argument("keyin", type=click.File("r"))
 @click.argument("keyout", type=click.File("w"))
-def unified_key_to_ims_test(keyin, keyout):
+def unified_key_to_ims_test(keyin: IO, keyout: IO):
     for line in keyin:
         bits = line.split(" ")
         iden = bits[1]
@@ -506,7 +507,7 @@ def transform_senseval_contexts(inf, transform_tokens, outf):
 @munge.command("finnpos-senseval")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
-def finnpos_senseval(inf, outf):
+def finnpos_senseval(inf: IO, outf: IO):
     def fmt_analy(analy):
         surf, lemma, tags = analy
         return "{}/{}/{}".format(surf, lemma, tags["pos"])
@@ -521,7 +522,7 @@ def finnpos_senseval(inf, outf):
 @munge.command("omorfi-segment-senseval")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
-def omorfi_segment_senseval(inf, outf):
+def omorfi_segment_senseval(inf: IO, outf: IO):
     # XXX: we should move any segments after the last of the lemma segment
     # outside of the <head> tag -- might mean transform_senseval_contexts needs
     # to be reworked

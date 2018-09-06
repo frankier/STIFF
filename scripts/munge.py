@@ -3,6 +3,7 @@ from lxml import etree
 import sys
 import click
 from stiff.filter_utils import (
+    eq_matcher,
     iter_sentences,
     transform_sentences,
     transform_blocks,
@@ -457,7 +458,7 @@ def senseval_gather(indir: str, outf: IO, keyout: IO):
                 def cb(lexelt):
                     outf.write(etree.tostring(lexelt, encoding="unicode"))
 
-                chunk_cb(stream, "lexelt", cb)
+                chunk_cb(stream, eq_matcher("lexelt"), cb)
 
             with open(key_fn) as key_f:
                 keyout.write(key_f.read())

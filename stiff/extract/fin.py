@@ -67,6 +67,6 @@ def extract_full_fin(line: str):
         )
     )
     add_line_tags_single(tagging, loc_toks, "fi-tok", WordnetFin)
-    add_line_tags_multi(tagging, trie, loc_toks, "fi-tok")
+    add_line_tags_multi(tagging, trie, loc_toks, "fi-tok", WordnetFin)
 
     return tagging

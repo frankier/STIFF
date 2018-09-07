@@ -27,7 +27,7 @@ def get_cmn_trie() -> Trie:
 
 
 def extract_zh_auto(line: str):
-    return extract_auto(line, get_substr_auto(WordnetCmn), "zh-untok")
+    return extract_auto(line, WordnetCmn, get_substr_auto(WordnetCmn), "zh-untok")
 
 
 def extract_zh_tok(line: str):

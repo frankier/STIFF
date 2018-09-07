@@ -1,12 +1,9 @@
-from collections import defaultdict
 import ahocorasick
-from typing import Dict, List, Tuple, DefaultDict, Type
-from nltk.corpus.reader import Lemma
+from typing import Dict, List, Tuple, Type
 from pygtrie import Trie
 
 from stiff.tagging import Tagging, Anchor, TaggedLemma, LocToks
-from finntk.wordnet.utils import ss2pre
-from .wordnet import wn_lemma_keys, wn_lemma_map, ExtractableWordnet
+from .wordnet import wn_lemma_map, ExtractableWordnet, objify_lemmas
 from .mw_utils import multiword_variants
 
 _substr_autos: Dict[str, ahocorasick.Automaton] = {}
@@ -39,15 +36,10 @@ def add_line_tags_single(tagging: Tagging, loc_toks: LocToks, from_id: str, word
             )
 
 
-def add_multi_tags(tagging: Tagging, from_id: str, path, wn_to_lemma: Dict[str, str], loc_toks_slice: LocToks):
-    grouped_lemmas: DefaultDict[str, List[Tuple[str, Lemma]]] = defaultdict(list)
-    for wn, lemma in wn_to_lemma.items():
-        for lemma_obj in wn_lemma_keys(wn, lemma):
-            grouped_lemmas[ss2pre(lemma_obj.synset())].append(
-                (wn, lemma_obj)
-            )
+def add_multi_tags(tagging: Tagging, from_id: str, path, wn_to_lemma: Dict[str, str], loc_toks_slice: LocToks, wordnet: Type[ExtractableWordnet]):
+    groups = wordnet.synset_group_lemmas(objify_lemmas(wn_to_lemma))
     tags = []
-    for group in grouped_lemmas.values():
+    for group in groups:
         tag_group = TaggedLemma(" ".join(path))
         tag_group.lemma_objs = group
         tags.append(tag_group)
@@ -71,7 +63,7 @@ def add_multi_tags(tagging: Tagging, from_id: str, path, wn_to_lemma: Dict[str, 
     )
 
 
-def add_line_tags_multi(tagging: Tagging, trie: Trie, loc_toks: LocToks, from_id: str):
+def add_line_tags_multi(tagging: Tagging, trie: Trie, loc_toks: LocToks, from_id: str, wordnet: Type[ExtractableWordnet]):
     for begin_token_idx, _, _, _ in loc_toks:
         cursors: List[Tuple[str, ...]] = [()]
         for cur_token_idx in range(begin_token_idx, len(loc_toks)):
@@ -87,6 +79,7 @@ def add_line_tags_multi(tagging: Tagging, trie: Trie, loc_toks: LocToks, from_id
                             new_cursor,
                             trie[new_cursor],
                             loc_toks[begin_token_idx : cur_token_idx + 1],
+                            wordnet
                         )
                     if trie.has_subtrie(new_cursor):
                         next_cursors.append(new_cursor)

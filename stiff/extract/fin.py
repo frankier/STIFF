@@ -11,10 +11,18 @@ from finntk import get_omorfi, get_token_positions, extract_lemmas_recurs
 from finntk.finnpos import sent_finnpos
 from stiff.tagging import Tagging
 import re
+from typing import Iterator, Tuple, List
 
 
 FIN_SPACE = re.compile(r" |_")
 _fin_trie = None
+
+
+def _fin_multiwords() -> Iterator[Tuple[str, List[str]]]:
+    for l, wns in WordnetFin.lemma_names().items():
+        if not FIN_SPACE.search(l) or has_abbrv(l):
+            continue
+        yield l, wns
 
 
 def get_fin_trie():
@@ -22,9 +30,7 @@ def get_fin_trie():
     if _fin_trie is not None:
         return _fin_trie
     _fin_trie = pygtrie.Trie()
-    for l, wns in WordnetFin.lemma_names().items():
-        if not FIN_SPACE.search(l) or has_abbrv(l):
-            continue
+    for l, wns in _fin_multiwords():
         subwords = FIN_SPACE.split(l)
         old_paths = [()]
         paths = None

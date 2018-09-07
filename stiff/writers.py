@@ -34,7 +34,8 @@ def ann_text(tag: TaggedLemma) -> str:
 
 def man_ann_ann(lang: str, tok: Token, tag: TaggedLemma) -> str:
     synsets = set((lemma_obj.synset() for (wn, lemma_obj) in tag.lemma_objs))
-    syn_list = ", ".join(ln for ss in synsets for ln in ss.lemma_names())
+    lemma_name_set = {ln for ss in synsets for ln in ss.lemma_names()}
+    lemma_names = sorted(lemma_name_set)
     synset = synsets.pop()
     defn = synset.definition().replace("--", "-")
     return (
@@ -47,7 +48,7 @@ def man_ann_ann(lang: str, tok: Token, tag: TaggedLemma) -> str:
     ).format(
         ann_common_attrs(lang, tok, tag),
         ann_text(tag),
-        syn_list,
+        ", ".join(lemma_names),
         defn,
     )
 

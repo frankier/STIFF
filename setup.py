@@ -19,6 +19,7 @@ setup(
         "finntk>=0.0.19",
         "streamz>=0.3.0",
         "lxml>=4.2.3",
+        "conllu>=1.1",
     ],
     extras_require={
         "dev": ["black>=18.5b1", "flake8>=3.5.0", "pre-commit>=1.10.2", "pytest", "mypy"]

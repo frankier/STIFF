@@ -16,7 +16,7 @@ setup(
         "pygtrie>=2.2",
         "opencc>=0.2",
         "opus-api>=0.6.2",
-        "finntk>=0.0.18",
+        "finntk>=0.0.19",
         "streamz>=0.3.0",
         "lxml>=4.2.3",
     ],

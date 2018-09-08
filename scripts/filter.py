@@ -1,5 +1,3 @@
-import os
-import sys
 from lxml import etree
 import click
 from stiff.filter_utils import (

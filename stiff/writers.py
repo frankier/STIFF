@@ -1,6 +1,6 @@
 from xml.sax.saxutils import quoteattr
 from stiff.tagging import Token, TaggedLemma
-from typing import Tuple
+from typing import Tuple  # noqa: F401
 
 
 def ann_common_attrs(lang: str, tok: Token, tag: TaggedLemma) -> str:

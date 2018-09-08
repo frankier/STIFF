@@ -266,7 +266,7 @@ def eurosense_fix_lemmas(inf: IO, outf: IO, keep_unknown: bool, quiet: bool):
         else:
             return BYPASS
 
-    transform_blocks("annotation", inf, ann_fix_lemmas, outf)
+    transform_blocks(eq_matcher("annotation"), inf, ann_fix_lemmas, outf)
 
 
 @munge.command("eurosense-reanchor")
@@ -296,7 +296,7 @@ def eurosense_reanchor(inf: IO, outf: IO):
         ann.attrib["lemma"] = lem_rest
         ann.attrib["anchor"] = ann.attrib["anchor"].split(" ", 1)[1]
 
-    transform_blocks("annotation", inf, ann_reanchor, outf)
+    transform_blocks(eq_matcher("annotation"), inf, ann_reanchor, outf)
 
 
 @munge.command("babelnet-lookup")
@@ -323,7 +323,7 @@ def babelnet_lookup(inf: IO, map_bn2wn: IO, outf: IO):
             bits.append("{}-{}".format(off, pos))
         ann.text = " ".join(bits)
 
-    transform_blocks("annotation", inf, ann_bn2wn, outf)
+    transform_blocks(eq_matcher("annotation"), inf, ann_bn2wn, outf)
 
 
 def lexical_sample_head(outf):
@@ -502,7 +502,7 @@ def transform_senseval_contexts(inf: IO, transform_tokens: Callable[[List[str]],
         head_tag.tail = "".join(" " + tok for tok in new_after)
         return context
 
-    transform_blocks("context", inf, transform_context, outf)
+    transform_blocks(eq_matcher("context"), inf, transform_context, outf)
 
 
 @munge.command("finnpos-senseval")

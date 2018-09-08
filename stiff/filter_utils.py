@@ -1,10 +1,10 @@
-from lxml import etree, ElementBase
+from lxml import etree
 from xml.sax.saxutils import quoteattr, escape
 from functools import partial
 from typing import Callable, IO
 
 Matcher = Callable[[str], bool]
-Transformer = Callable[[ElementBase], ElementBase]
+Transformer = Callable[[etree.ElementBase], etree.ElementBase]
 
 
 def eq_matcher(tag_name: str) -> Matcher:

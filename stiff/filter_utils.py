@@ -1,9 +1,10 @@
-from lxml import etree
+from lxml import etree, ElementBase
 from xml.sax.saxutils import quoteattr, escape
 from functools import partial
-from typing import Callable
+from typing import Callable, IO
 
 Matcher = Callable[[str], bool]
+Transformer = Callable[[ElementBase], ElementBase]
 
 
 def eq_matcher(tag_name: str) -> Matcher:
@@ -54,7 +55,7 @@ def close_tag(elem):
     return "</{}>{}".format(elem.tag, elem.tail or "\n")
 
 
-def transform_blocks(matcher, inf, transformer, outf):
+def transform_blocks(matcher: Matcher, inf: IO, transformer: Transformer, outf: IO):
     stream = etree.iterparse(inf, events=("start", "end"))
     transform(stream, matcher, transformer, outf)
 
@@ -92,7 +93,7 @@ def close_all(elem, outf):
         outf.write(close_tag(par_elem).encode("utf-8"))
 
 
-def transform(stream, matcher: Matcher, transformer, outf):
+def transform(stream, matcher: Matcher, transformer: Transformer, outf: IO):
     outf.write(b"<?xml version='1.0' encoding='UTF-8'?>\n")
 
     missing_text = False

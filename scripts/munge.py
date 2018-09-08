@@ -21,7 +21,7 @@ from finntk.finnpos import sent_finnpos
 from os.path import join as pjoin
 from os import makedirs, listdir
 from contextlib import contextmanager
-from typing import Dict, Set, IO
+from typing import Callable, Dict, Set, IO, List
 
 
 @click.group("munge")
@@ -478,9 +478,9 @@ def unified_key_to_ims_test(keyin: IO, keyout: IO):
 HEAD_REGEX = re.compile("(.*)<head>(.*)</head>(.*)")
 
 
-def transform_senseval_contexts(inf, transform_tokens, outf):
-    def transform_context(context):
-        sent = []
+def transform_senseval_contexts(inf: IO, transform_tokens: Callable[[List[str]], List[str]], outf: IO) -> None:
+    def transform_context(context: etree.ElementBase) -> etree.ElementBase:
+        sent: List[str] = []
         before = context.text
         head_tag = context[0]
         head = head_tag.text
@@ -509,11 +509,11 @@ def transform_senseval_contexts(inf, transform_tokens, outf):
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
 def finnpos_senseval(inf: IO, outf: IO):
-    def fmt_analy(analy):
+    def fmt_analy(analy) -> str:
         surf, lemma, tags = analy
         return "{}/{}/{}".format(surf, lemma, tags["pos"])
 
-    def tag_tokens(sent):
+    def tag_tokens(sent: List[str]) -> List[str]:
         analysed = sent_finnpos(sent)
         return [fmt_analy(ana) for ana in analysed]
 
@@ -528,7 +528,7 @@ def omorfi_segment_senseval(inf: IO, outf: IO):
     # outside of the <head> tag -- might mean transform_senseval_contexts needs
     # to be reworked
 
-    def seg_token(token):
+    def seg_token(token: str) -> str:
         from finntk.omor.inst import get_omorfi
         from omorfi.token import get_segments
 
@@ -536,7 +536,7 @@ def omorfi_segment_senseval(inf: IO, outf: IO):
         segments = omorfi.segment(token)
         return "→ ←".join(get_segments(segments[0], True, True, True, False, False))
 
-    def seg_tokens(sent):
+    def seg_tokens(sent: List[str]) -> List[str]:
         return [seg_token(tok) for tok in sent]
 
     transform_senseval_contexts(inf, seg_tokens, outf)

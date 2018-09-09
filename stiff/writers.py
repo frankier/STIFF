@@ -1,6 +1,8 @@
 from xml.sax.saxutils import quoteattr
+from nltk.corpus.reader.wordnet import Synset, WordNetError
 from stiff.tagging import Token, TaggedLemma
 from typing import Tuple  # noqa: F401
+from typing import Optional
 
 
 def ann_common_attrs(lang: str, tok: Token, tag: TaggedLemma) -> str:
@@ -32,11 +34,37 @@ def ann_text(tag: TaggedLemma) -> str:
     return " ".join(bits)
 
 
-def man_ann_ann(lang: str, tok: Token, tag: TaggedLemma) -> str:
+def maybe_fi2en_ss(ss: Synset) -> Optional[Synset]:
+    from finntk.wordnet.reader import get_en_fi_maps
+    from finntk.wordnet.utils import ss2pre, pre2ss
+    from nltk.corpus import wordnet
+    fi2en, _en2fi = get_en_fi_maps()
+    pre_fi = ss2pre(ss)
+    pre_en = fi2en.get(pre_fi)
+    if pre_en is None:
+        return None
+    try:
+        return pre2ss(wordnet, pre_en)
+    except WordNetError:
+        return None
+
+
+def related_lemma_list(tag: TaggedLemma) -> str:
     synsets = set((lemma_obj.synset() for (wn, lemma_obj) in tag.lemma_objs))
-    lemma_name_set = {ln for ss in synsets for ln in ss.lemma_names()}
+    related_synsets = synsets.copy()
+    if len(tag.lemma_objs) == 1:
+        wn, lemma_obj = tag.lemma_objs[0]
+        if wn == 'qf2':
+            extra_ss = maybe_fi2en_ss(lemma_obj.synset())
+            if extra_ss:
+                related_synsets.add(extra_ss)
+    lemma_name_set = {ln for ss in related_synsets for ln in ss.lemma_names()}
     lemma_names = sorted(lemma_name_set)
-    synset = synsets.pop()
+    return ", ".join(lemma_names)
+
+
+def man_ann_ann(lang: str, tok: Token, tag: TaggedLemma) -> str:
+    synset = tag.lemma_objs[0][1].synset()
     defn = synset.definition().replace("--", "-")
     return (
         "<annotation "
@@ -48,7 +76,7 @@ def man_ann_ann(lang: str, tok: Token, tag: TaggedLemma) -> str:
     ).format(
         ann_common_attrs(lang, tok, tag),
         ann_text(tag),
-        ", ".join(lemma_names),
+        related_lemma_list(tag),
         defn,
     )
 

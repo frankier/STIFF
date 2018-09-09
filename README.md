@@ -4,7 +4,11 @@
 <a href="https://gitlab.com/frankier/STIFF/pipelines"><img alt="pipeline status" src="https://gitlab.com/frankier/STIFF/badges/master/pipeline.svg" /></a>
 </p>
 
-Work In Progress
+This repository contains code to automatically create a tagged sense corpus
+from OpenSubtitles2018. It also contains a lot of corpora wrangling code, most
+notably code to convert (the CC-NC licensed)
+[EuroSense](http://lcl.uniroma1.it/eurosense/) into a format usable by
+[finn-wsd-eval](https://github.com/frankier/finn-wsd-eval).
 
 ## Set up
 

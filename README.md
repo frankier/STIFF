@@ -1,5 +1,9 @@
 # STIFF - Sense Tagged Instances For Finnish
 
+<p align="center">
+<a href="https://gitlab.com/frankier/STIFF/pipelines"><img alt="pipeline status" src="https://gitlab.com/frankier/STIFF/badges/master/pipeline.svg" /></a>
+</p>
+
 Work In Progress
 
 ## Set up

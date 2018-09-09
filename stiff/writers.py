@@ -71,7 +71,7 @@ def preferred_synset(tag: TaggedLemma) -> Synset:
 
 def man_ann_ann(lang: str, tok: Token, tag: TaggedLemma) -> str:
     def maybe_fmt_list(title: str, synsets: List[Synset]) -> str:
-        names = [hyp.name() for hyp in synsets]
+        names = sorted([hyp.name() for hyp in synsets])
         if names:
             return "{}: {}; ".format(title, ", ".join(names))
         return ""

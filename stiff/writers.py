@@ -66,6 +66,7 @@ def related_lemma_list(tag: TaggedLemma) -> str:
 def preferred_synset(tag: TaggedLemma) -> Synset:
     d = dict(tag.lemma_objs)
     lemma = d.get('fin') or d.get('qf2') or d.get('qwf')
+    assert lemma is not None
     return lemma.synset()
 
 

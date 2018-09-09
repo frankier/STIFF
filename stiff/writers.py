@@ -2,7 +2,7 @@ from xml.sax.saxutils import quoteattr
 from nltk.corpus.reader.wordnet import Synset, WordNetError
 from stiff.tagging import Token, TaggedLemma
 from typing import Tuple  # noqa: F401
-from typing import Optional
+from typing import Optional, List
 
 
 def ann_common_attrs(lang: str, tok: Token, tag: TaggedLemma) -> str:
@@ -63,8 +63,20 @@ def related_lemma_list(tag: TaggedLemma) -> str:
     return ", ".join(lemma_names)
 
 
+def preferred_synset(tag: TaggedLemma) -> Synset:
+    d = dict(tag.lemma_objs)
+    lemma = d.get('fin') or d.get('qf2') or d.get('qwf')
+    return lemma.synset()
+
+
 def man_ann_ann(lang: str, tok: Token, tag: TaggedLemma) -> str:
-    synset = tag.lemma_objs[0][1].synset()
+    def maybe_fmt_list(title: str, synsets: List[Synset]) -> str:
+        names = [hyp.name() for hyp in synsets]
+        if names:
+            return "{}: {}; ".format(title, ", ".join(names))
+        return ""
+
+    synset = preferred_synset(tag)
     defn = synset.definition().replace("--", "-")
     return (
         "<annotation "
@@ -72,12 +84,15 @@ def man_ann_ann(lang: str, tok: Token, tag: TaggedLemma) -> str:
         '{}'
         'lemma-path="whole">'
         "{}</annotation>\n"
-        "<!-- {}: {} -->\n"
+        "<!-- {}: {} ({}{}lexname: {}) -->\n"
     ).format(
         ann_common_attrs(lang, tok, tag),
         ann_text(tag),
         related_lemma_list(tag),
         defn,
+        maybe_fmt_list("hyp", synset.hypernyms()),
+        maybe_fmt_list("root", synset.root_hypernyms()),
+        synset.lexname(),
     )
 
 

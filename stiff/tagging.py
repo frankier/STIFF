@@ -32,6 +32,17 @@ class Anchor(DataUtilMixin):
     token: Optional[int] = None
     token_length: Optional[int] = None
 
+    def urlencode(self):
+        # Specialised for speed
+        res = ["from_id=", self.from_id, "&char={}", str(self.char)]
+        if self.token is not None:
+            res.append("&token=")
+            res.append(str(self.token))
+        if self.token_length is not None:
+            res.append("&token_length=")
+            res.append(str(self.token_length))
+        return "".join(res)
+
 
 @dataclass
 class TagSupport(DataUtilMixin):

@@ -1,1 +1,1 @@
-pipenv run black *.py explore
+pipenv run black stiff scripts

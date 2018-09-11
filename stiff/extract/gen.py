@@ -1,5 +1,4 @@
 from stiff.tagging import (
-    Tagging,
     UntokenizedTagging,
     TokenizedTagging,
     Anchor,

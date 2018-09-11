@@ -1,4 +1,3 @@
-from nltk.corpus.reader.wordnet import Lemma
 from itertools import chain
 from copy import copy
 

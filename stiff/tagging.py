@@ -168,9 +168,9 @@ class TokenizedTagging(Tagging):
         self, other_untok: "UntokenizedTagging", matcher: CrossToksMatcher
     ) -> Tagging:
         def match(tok_tok: Token, untok_tok: Token) -> bool:
-            # XXX: Aribitrary number of anchors required
+            if len(tok_tok.anchors) > 1:
+                return False
             assert len(untok_tok.anchors) == 1
-            assert len(tok_tok.anchors) == 1
             matched = untok_tok.token == tok_tok.token and matcher(
                 tok_tok.anchors[0], untok_tok.anchors[0]
             )

@@ -1,1 +1,1 @@
-pipenv run flake8 *.py explore
+pipenv run flake8 stiff scripts tests

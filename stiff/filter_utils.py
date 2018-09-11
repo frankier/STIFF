@@ -10,12 +10,14 @@ Transformer = Callable[[etree.ElementBase], etree.ElementBase]
 def eq_matcher(tag_name: str) -> Matcher:
     def inner(other: str) -> bool:
         return tag_name == other
+
     return inner
 
 
 def in_matcher(*tag_names: str) -> Matcher:
     def inner(other: str):
         return other in tag_names
+
     return inner
 
 

@@ -13,9 +13,7 @@ def _map_qf2(lemma_obj):
 
 
 class Wordnet(ExtractableWordnet):
-    _synset_mappers = {
-        "qf2": _map_qf2,
-    }
+    _synset_mappers = {"qf2": _map_qf2}
 
     @staticmethod
     def lang() -> str:
@@ -36,5 +34,5 @@ class Wordnet(ExtractableWordnet):
                 "fin": wordnet.lemmas(lemma, lang="fin"),
                 "qf2": fiwn_encnt.lemmas(lemma),
                 "qwf": wordnet.lemmas(lemma, lang="qwf"),
-            },
+            }
         )

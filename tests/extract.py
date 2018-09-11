@@ -1,4 +1,4 @@
-from stiff.extract import extract_full_fin
+from stiff.extract import extract_full_cmn, extract_full_fin
 import stiff.fixes  # noqa
 
 
@@ -23,3 +23,17 @@ def test_extract_fin_ei_koskaan():
     tagging = extract_full_fin("Älä koskaan sano mitään tuollaista hänestä !")
     ei_koskaan_tokens = _filter_toks(tagging, "ei_koskaan")
     assert 1 <= len(ei_koskaan_tokens) <= 2
+
+
+def test_extract_zh_hollywood():
+    zh_tok = "好莱坞"
+    zh_untok = "好莱坞"
+    zh_tagging = extract_full_cmn(zh_untok, zh_tok)
+    matching_token = None
+    for tok in zh_tagging.tokens:
+        if tok.token == "好莱坞":
+            matching_token = tok
+    assert matching_token is not None
+    assert len(matching_token.anchors) == 2
+    assert len(matching_token.tags) == 2
+    # XXX: Assert one is cmn, one qwc?

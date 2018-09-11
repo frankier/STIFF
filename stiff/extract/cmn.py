@@ -1,9 +1,6 @@
 import re
 from pygtrie import Trie
-from .common import (
-    get_substr_auto,
-    wn_lemma_map,
-)
+from .common import get_substr_auto, wn_lemma_map
 from .mw_utils import multiword_variants
 from .wordnet.cmn import Wordnet as WordnetCmn
 from .gen import extract_auto, extract_tokenized
@@ -41,7 +38,7 @@ def extract_full_cmn(line_untok: str, line_tok: str):
     untok_synsets = extract_zh_auto(line_untok)
     tok_synsets = extract_zh_tok(line_tok)
 
-    def matcher(untok_tok: Anchor, tok_tok: Anchor) -> bool:
+    def matcher(tok_tok: Anchor, untok_tok: Anchor) -> bool:
         # XXX: Aribitrary argument ordering required
         assert untok_tok.from_id == "zh-untok"
         assert tok_tok.from_id == "zh-tok"

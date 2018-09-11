@@ -1,9 +1,9 @@
 from nltk.corpus import wordnet
 from nltk.corpus.reader.wordnet import Lemma
-from finntk.wordnet.utils import ss2pre
 from collections import defaultdict
 from stiff.utils import get_opencc
-from typing import Dict, Tuple, List, Iterator, Iterable, DefaultDict
+from typing import Dict, Tuple, List, Iterator, Iterable, DefaultDict, Type
+from stiff.extract.wordnet.base import ExtractableWordnet
 
 WORDNET_FILTERS = {"qcn": lambda x: get_opencc().convert(x)}
 _rev_maps: Dict[str, Dict[str, str]] = {}
@@ -21,17 +21,13 @@ def merge_lemmas(*wn_lemmas_pairs: Tuple[str, Iterator[str]]) -> Dict[str, List[
     return result
 
 
-def synset_group_lemmas(wordnet_lemmas: Dict[str, List[Lemma]], synset_mappers=None) -> Iterable[List[Tuple[str, Lemma]]]:
-    if synset_mappers is None:
-        synset_mappers = {}
-
-    def default_mapper(lemma_obj):
-        return ss2pre(lemma_obj.synset())
-
+def synset_group_lemmas(
+    wordnet_lemmas: Dict[str, List[Lemma]], wordnet: Type[ExtractableWordnet]
+) -> Iterable[List[Tuple[str, Lemma]]]:
     grouped_lemmas: DefaultDict[str, List[Tuple[str, Lemma]]] = defaultdict(list)
     for wn, lemmas in wordnet_lemmas.items():
         for lemma_obj in lemmas:
-            grouped_lemmas[synset_mappers.get(wn, default_mapper)(lemma_obj)].append(
+            grouped_lemmas[wordnet.canonical_synset_id(wn, lemma_obj)].append(
                 (wn, lemma_obj)
             )
     return grouped_lemmas.values()

@@ -1,9 +1,5 @@
 import pygtrie
-from .common import (
-    wn_lemma_map,
-    add_line_tags_single,
-    add_line_tags_multi,
-)
+from .common import wn_lemma_map, add_line_tags_single, add_line_tags_multi
 from .wordnet.fin import Wordnet as WordnetFin
 from finntk.wordnet import has_abbrv
 from finntk.omor.extract import extract_lemmas_span
@@ -52,7 +48,7 @@ def extract_full_fin(line: str):
     omor_toks = omorfi.tokenise(line)
     finnpos_analys = sent_finnpos([tok["surf"] for tok in omor_toks])
     starts = get_token_positions(omor_toks, line)
-    tagging = Tagging()
+    tagging = Tagging(WordnetFin)
     loc_toks = list(
         zip(
             range(0, len(omor_toks)),

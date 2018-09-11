@@ -16,7 +16,10 @@ class Wordnet(ExtractableWordnet):
     def lemma_names() -> Dict[str, List[str]]:
         return merge_lemmas(
             ("cmn", wordnet.all_lemma_names(lang="cmn")),
-            ("qcn", (get_opencc().convert(l) for l in wordnet.all_lemma_names(lang="qcn"))),
+            (
+                "qcn",
+                (get_opencc().convert(l) for l in wordnet.all_lemma_names(lang="qcn")),
+            ),
             ("qwc", wordnet.all_lemma_names(lang="qwc")),
         )
 
@@ -27,5 +30,6 @@ class Wordnet(ExtractableWordnet):
                 "cmn": wordnet.lemmas(lemma, lang="cmn"),
                 "qcn": wordnet.lemmas(get_rev_map("qcn")(lemma), lang="qcn"),
                 "qwc": wordnet.lemmas(lemma, lang="qwc"),
-            }
+            },
+            cls,
         )

@@ -1,5 +1,4 @@
-from nltk.corpus import wordnet
-from nltk.corpus.reader.wordnet import WordNetError
+from nltk.corpus.reader.wordnet import Lemma
 from itertools import chain
 from copy import copy
 
@@ -11,7 +10,7 @@ from stiff.corpus_read import WordAlignment
 from stiff.utils import get_opencc
 from stiff.tagging import Tagging, Token, TagSupport
 from stiff.writers import Writer
-from typing import Dict, Set, Optional
+from typing import Dict, Set, Optional, Tuple
 
 
 def get_tok_idx(tok: Token) -> Optional[int]:
@@ -22,7 +21,7 @@ def get_tok_idx(tok: Token) -> Optional[int]:
 
 
 def apply_lemmas(
-    wn_lemmas: Set[str],
+    wn_canon_ids: Set[str],
     dest_tagging: Tagging,
     source_tagging: Tagging,
     base_support: TagSupport,
@@ -30,29 +29,25 @@ def apply_lemmas(
     preproc_rev_map=None,
 ):
     for dest_token, dest_tag in dest_tagging.iter_tags():
-        matching_synsets = set()
-        for wn, synset in dest_tag.wn_synset_names:
-            if synset in wn_lemmas:
-                matching_synsets.add(synset)
-        matching_synsets_list = list(matching_synsets)
-        assert len(matching_synsets_list) <= 1
-        if len(matching_synsets_list) == 1:
-            synset = matching_synsets_list[0]
+        dest_canon_id = dest_tag.canonical_synset_id(dest_tagging.wordnet)
+        if dest_canon_id in wn_canon_ids:
             # Trace back source synset
             support = copy(base_support)
             if preproc_rev_map:
-                source_synset = preproc_rev_map[synset]
+                source_canon_id = preproc_rev_map[dest_canon_id]
             else:
-                source_synset = synset
-            wn, source_token_idx = source_tagging.wnlemmas[source_synset]
+                source_canon_id = dest_canon_id
+            source_token_idx = source_tagging.wnsynsets[source_canon_id]
             source_token = source_tagging.tokens[source_token_idx]
             # Get source
             source_tag_id = None
             for source_tag in source_token.tags:
-                for synset_pair in source_tag.wn_synset_names:
-                    if synset_pair[1] == source_synset:
-                        source_tag_id = source_tag.id
-                        break
+                if (
+                    source_tag.canonical_synset_id(source_tagging.wordnet)
+                    == source_canon_id
+                ):
+                    source_tag_id = source_tag.id
+                    break
             assert source_tag_id is not None
             support.transfer_from = source_tag_id
             # Check if it's aligned
@@ -74,29 +69,26 @@ def no_expand(lemmas):
     return lemmas
 
 
-def expand_english_deriv(lemmas):
+def expand_english_deriv(tagging: Tagging) -> Tuple[Set[str], Dict[str, str]]:
     res = set()
     rev_map = {}
-    for lemma_key in lemmas:
-        try:
-            synset = wordnet.synset(lemma_key)
-        except WordNetError:
-            # XXX: Should try and deal with FiWN lemma keys somehow
-            continue
-        for other_lemma in synset.lemmas():
+    for wn, lemma_obj in tagging.wn_synsets():
+        for other_lemma in lemma_obj.synset().lemmas():
             for deriv in other_lemma.derivationally_related_forms():
-                deriv_synset = deriv.synset().name()
+                deriv_synset = tagging.wordnet.canonical_synset_id(wn, deriv)
                 res.add(deriv_synset)
-                rev_map[deriv_synset] = lemma_key
+                rev_map[deriv_synset] = tagging.wordnet.canonical_synset_id(
+                    wn, lemma_obj
+                )
     return res, rev_map
 
 
 def add_supports_onto(tagging1, tagging2, align_map: Dict[int, int]):
-    t1l = tagging1.lemma_set()
-    t2l = tagging2.lemma_set()
+    t1l = tagging1.canon_synset_id_set()
+    t2l = tagging2.canon_synset_id_set()
     common_lemmas = t1l & t2l
 
-    deriv, rev_map = expand_english_deriv(t2l)
+    deriv, rev_map = expand_english_deriv(tagging2)
     deriv_lemmas = t1l & deriv
 
     apply_lemmas(common_lemmas, tagging1, tagging2, TagSupport(), align_map)

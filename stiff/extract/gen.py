@@ -1,4 +1,10 @@
-from stiff.tagging import Tagging, Anchor, TaggedLemma
+from stiff.tagging import (
+    Tagging,
+    UntokenizedTagging,
+    TokenizedTagging,
+    Anchor,
+    TaggedLemma,
+)
 from ahocorasick import Automaton
 from .common import add_line_tags_single, add_line_tags_multi
 from .wordnet import ExtractableWordnet, objify_lemmas
@@ -6,8 +12,10 @@ from typing import Type
 from pygtrie import Trie
 
 
-def extract_auto(line: str, wn: Type[ExtractableWordnet], auto: Automaton, from_id: str):
-    tagging = Tagging()
+def extract_auto(
+    line: str, wn: Type[ExtractableWordnet], auto: Automaton, from_id: str
+) -> UntokenizedTagging:
+    tagging = UntokenizedTagging(wn)
     for tok_idx, (end_pos, (token, wn_to_lemma)) in enumerate(auto.iter(line)):
         groups = wn.synset_group_lemmas(objify_lemmas(wn_to_lemma))
         tags = []
@@ -26,8 +34,10 @@ def get_tokens_starts(tokens):
         start += len(token) + 1
 
 
-def extract_tokenized(line: str, wn: Type[ExtractableWordnet], trie: Trie, id: str):
-    tagging = Tagging()
+def extract_tokenized(
+    line: str, wn: Type[ExtractableWordnet], trie: Trie, id: str
+) -> TokenizedTagging:
+    tagging = TokenizedTagging(wn)
     tokens = line.split(" ")
     loc_toks = list(
         zip(

@@ -1,9 +1,0 @@
-language: python
-python:
-  - "3.6"
-install:
-  - pip install pipenv
-  - pipenv install
-script:
-  - pipenv run mypy stiff scripts
-  - pipenv run pytest tests/*.py

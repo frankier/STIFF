@@ -15,4 +15,4 @@ old = zip.open("cow/wn-data-cmn.tab")
 with open("wn-data-cmn-fixed.tab", "wb") as f_out:
     shutil.copyfileobj(old, f_out)
 
-patch("wn-data-cmn-fixed.tab", "wn-data-cmn.diff")
+patch("wn-data-cmn-fixed.tab", "data/wn-data-cmn.diff")

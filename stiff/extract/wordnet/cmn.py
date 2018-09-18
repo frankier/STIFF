@@ -1,7 +1,7 @@
 from .utils import merge_lemmas
 from nltk.corpus import wordnet
 from stiff.utils import get_opencc
-from .utils import get_rev_map, synset_group_lemmas
+from .utils import get_rev_map
 from .base import ExtractableWordnet
 from typing import Dict, List, Tuple, Iterable
 from nltk.corpus.reader import Lemma
@@ -25,11 +25,10 @@ class Wordnet(ExtractableWordnet):
 
     @classmethod
     def lemma_keys(cls, lemma: str) -> Iterable[List[Tuple[str, Lemma]]]:
-        return synset_group_lemmas(
+        return cls.synset_group_lemmas(
             {
                 "cmn": wordnet.lemmas(lemma, lang="cmn"),
                 "qcn": wordnet.lemmas(get_rev_map("qcn")(lemma), lang="qcn"),
                 "qwc": wordnet.lemmas(lemma, lang="qwc"),
-            },
-            cls,
+            }
         )

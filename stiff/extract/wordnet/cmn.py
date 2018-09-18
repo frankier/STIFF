@@ -8,6 +8,9 @@ from nltk.corpus.reader import Lemma
 
 
 class Wordnet(ExtractableWordnet):
+    def __new__(cls) -> None:
+        import stiff.fixes  # noqa
+
     @staticmethod
     def lang() -> str:
         return "cmn"

@@ -15,6 +15,9 @@ def _map_qf2(lemma_obj):
 class Wordnet(ExtractableWordnet):
     _synset_mappers = {"qf2": _map_qf2}
 
+    def __new__(cls) -> None:
+        import stiff.fixes  # noqa
+
     @staticmethod
     def lang() -> str:
         return "fin"

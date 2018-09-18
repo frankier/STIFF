@@ -37,3 +37,10 @@ def test_extract_zh_hollywood():
     assert len(matching_token.anchors) == 2
     assert len(matching_token.tags) == 2
     # XXX: Assert one is cmn, one qwc?
+
+
+def test_extract_zh_sincere_congrats_dave():
+    zh_tok = "真诚地 ， 大卫 。 恭喜 你 。"
+    zh_untok = "真诚地，大卫。 恭喜你。"
+    extract_full_cmn(zh_untok, zh_tok)
+    # XXX: Add some asserts

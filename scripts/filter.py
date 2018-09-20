@@ -110,7 +110,11 @@ def rm_empty(inf, outf, text):
     """
 
     def remove_empty(elem):
-        if len(elem.xpath("./text")) == 0 if text else len(elem.xpath("./annotations/annotation")) == 0:
+        if (
+            len(elem.xpath("./text")) == 0
+            if text
+            else len(elem.xpath("./annotations/annotation")) == 0
+        ):
             return BYPASS
 
     transform_sentences(inf, remove_empty, outf)

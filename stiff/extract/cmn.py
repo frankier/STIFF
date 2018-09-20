@@ -10,10 +10,13 @@ _cmn_trie = None
 
 def get_cmn_token_auto():
     lang = WordnetCmn.lang()
-    return get_token_auto(lang, (
-        (l, wns, [var.split(" ") for var in multiword_variants(l)])
-        for l, wns in WordnetCmn.lemma_names().items()
-    ))
+    return get_token_auto(
+        lang,
+        (
+            (l, wns, [var.split(" ") for var in multiword_variants(l)])
+            for l, wns in WordnetCmn.lemma_names().items()
+        ),
+    )
 
 
 def extract_zh_auto(line: str):

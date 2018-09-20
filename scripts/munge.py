@@ -478,7 +478,9 @@ def unified_key_to_ims_test(keyin: IO, keyout: IO):
 HEAD_REGEX = re.compile("(.*)<head>(.*)</head>(.*)")
 
 
-def transform_senseval_contexts(inf: IO, transform_tokens: Callable[[List[str]], List[str]], outf: IO) -> None:
+def transform_senseval_contexts(
+    inf: IO, transform_tokens: Callable[[List[str]], List[str]], outf: IO
+) -> None:
     def transform_context(context: etree.ElementBase) -> etree.ElementBase:
         sent: List[str] = []
         before = context.text

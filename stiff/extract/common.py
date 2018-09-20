@@ -22,7 +22,9 @@ def get_substr_auto(wordnet: Type[ExtractableWordnet]) -> ahocorasick.Automaton:
     return _substr_autos[lang]
 
 
-def get_token_auto(lang: str, words: Iterator[Tuple[str, List[str], Tuple[str]]]) -> pyahocorasick.TokenAutomaton:
+def get_token_auto(
+    lang: str, words: Iterator[Tuple[str, List[str], Tuple[str]]]
+) -> pyahocorasick.TokenAutomaton:
     if lang not in _token_autos:
         auto = pyahocorasick.TokenAutomaton()
         for l, wns, lf_token_list in words:

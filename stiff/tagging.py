@@ -1,7 +1,15 @@
 from dataclasses import dataclass, field, asdict
 from nltk.corpus.reader import Lemma
 from typing import (
-    Callable, Dict, Optional, List, Tuple, Iterator, Set, Type, TYPE_CHECKING
+    Callable,
+    Dict,
+    Optional,
+    List,
+    Tuple,
+    Iterator,
+    Set,
+    Type,
+    TYPE_CHECKING,
 )
 from urllib.parse import urlencode
 
@@ -74,7 +82,7 @@ class TaggedLemma:
     def wn_synset_names(self) -> List[Tuple[str, str]]:
         return [(wn, lemma_obj.synset().name()) for (wn, lemma_obj) in self.lemma_objs]
 
-    def canonical_synset_id(self, wordnet: Type['ExtractableWordnet']):
+    def canonical_synset_id(self, wordnet: Type["ExtractableWordnet"]):
         cur_id = None
         for wn, lemma_obj in self.lemma_objs:
             new_id = wordnet.canonical_synset_id(wn, lemma_obj)
@@ -99,10 +107,10 @@ class Token:
 class Tagging:
     tokens: List[Token]
     wnsynsets: Dict[str, int]
-    wordnet: Type['ExtractableWordnet']
+    wordnet: Type["ExtractableWordnet"]
 
     def __init__(
-        self, wordnet: Type['ExtractableWordnet'], tokens: Optional[List[Token]] = None
+        self, wordnet: Type["ExtractableWordnet"], tokens: Optional[List[Token]] = None
     ) -> None:
         self.wordnet = wordnet
         self.wnsynsets = {}

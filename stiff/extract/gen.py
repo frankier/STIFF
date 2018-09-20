@@ -1,9 +1,4 @@
-from stiff.tagging import (
-    UntokenizedTagging,
-    TokenizedTagging,
-    Anchor,
-    TaggedLemma,
-)
+from stiff.tagging import UntokenizedTagging, TokenizedTagging, Anchor, TaggedLemma
 from ahocorasick import Automaton
 from .wordnet import ExtractableWordnet, objify_lemmas
 from typing import Dict, Type, Iterator, Tuple, List, Iterable
@@ -37,7 +32,7 @@ def extract_tokenized_iter(
     wordnet: Type[ExtractableWordnet],
     surfs: Iterable[str],
     starts: List[int],
-    from_id: str
+    from_id: str,
 ):
     for end_pos, (lf_tokens, wn_to_lemma) in iter:
         start_pos = end_pos - len(lf_tokens) + 1
@@ -49,14 +44,7 @@ def extract_tokenized_iter(
             tags.append(tag_group)
         tagging.add_tags(
             " ".join(surfs),
-            [
-                Anchor(
-                    from_id,
-                    starts[start_pos],
-                    start_pos,
-                    len(lf_tokens),
-                )
-            ],
+            [Anchor(from_id, starts[start_pos], start_pos, len(lf_tokens))],
             tags,
         )
 
@@ -67,12 +55,5 @@ def extract_tokenized(
     tagging = TokenizedTagging(wn)
     tokens = line.split(" ")
     starts = list(get_tokens_starts(tokens))
-    extract_tokenized_iter(
-        tagging,
-        auto.iter(tokens),
-        wn,
-        tokens,
-        starts,
-        id
-    )
+    extract_tokenized_iter(tagging, auto.iter(tokens), wn, tokens, starts, id)
     return tagging

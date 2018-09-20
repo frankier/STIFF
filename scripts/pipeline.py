@@ -154,7 +154,7 @@ def mk_stiff(indir, outf):
 
 @pipeline.command("man-ann-eurosense")
 @click.argument("inf", type=click.Path(exists=True))
-@click.argument("outf", type=click.File('w'))
+@click.argument("outf", type=click.File("w"))
 def man_ann_eurosense(inf, outf):
     (
         python[filter_py, "lang", "fi", inf, "-"]
@@ -167,7 +167,7 @@ def man_ann_eurosense(inf, outf):
 
 @pipeline.command("man-ann-tdt")
 @click.argument("inf", type=click.Path(exists=True))
-@click.argument("outf", type=click.File('w'))
+@click.argument("outf", type=click.File("w"))
 def man_ann_tdt(inf, outf):
     (
         python[man_ann_py, "conllu-gen", inf, "-"]

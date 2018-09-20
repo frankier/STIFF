@@ -38,7 +38,16 @@ def man_ann():
 @click.argument("output", type=click.File("w"))
 def opensubs18(corpus: str, output: IO):
     with AnnWriter(output) as writer:
-        for idx, _zh_untok, _zh_tok, fi_tok, srcs, imdb_id, new_imdb_id, align in read_opensubtitles2018(corpus):
+        for (
+            idx,
+            _zh_untok,
+            _zh_tok,
+            fi_tok,
+            srcs,
+            imdb_id,
+            new_imdb_id,
+            align,
+        ) in read_opensubtitles2018(corpus):
             if idx >= DEFAULT_SAMPLE_MAX:
                 break
             if new_imdb_id:
@@ -79,12 +88,20 @@ def filter(input: IO, output: IO):
 @click.option("--source", nargs=1, default="tdt")
 def conllu_gen(input: IO, output: IO, source: str):
 
-    output.write("""<?xml version="1.0" encoding="UTF-8"?>
+    output.write(
+        """<?xml version="1.0" encoding="UTF-8"?>
 <corpus source="{}">
-""".format(source))
+""".format(
+            source
+        )
+    )
     for sent in parse_incr(input):
-        output.write('<sentence id="{}">\n'.format(sent.metadata['sent_id']))
-        output.write('<text lang="fi">{}</text>\n'.format(" ".join(token['form'] for token in sent)))
+        output.write('<sentence id="{}">\n'.format(sent.metadata["sent_id"]))
+        output.write(
+            '<text lang="fi">{}</text>\n'.format(
+                " ".join(token["form"] for token in sent)
+            )
+        )
         output.write("<annotations></annotations>\n")
         output.write("</sentence>\n")
     output.write("</corpus>\n")

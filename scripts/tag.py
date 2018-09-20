@@ -17,7 +17,16 @@ def tag(corpus, output, cutoff):
     corpus filtering with the other scripts in this repository.
     """
     with Writer(output) as writer:
-        for idx, zh_untok, zh_tok, fi_tok, srcs, imdb_id, new_imdb_id, align in read_opensubtitles2018(corpus):
+        for (
+            idx,
+            zh_untok,
+            zh_tok,
+            fi_tok,
+            srcs,
+            imdb_id,
+            new_imdb_id,
+            align,
+        ) in read_opensubtitles2018(corpus):
             if new_imdb_id:
                 if idx > 0:
                     writer.end_subtitle()

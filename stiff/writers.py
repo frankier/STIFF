@@ -15,13 +15,7 @@ def ann_common_attrs(lang: str, tok: Token, tag: TaggedLemma) -> str:
         ("wnlemma", " ".join(tag.lemma_names)),
         ("wordnets", " ".join((tag.wordnets))),
     )  # type: Tuple[Tuple[str, str], ...]
-    return (
-        " ".join(
-            "{}={}".format(k, quoteattr(v))
-            for k, v in attrs
-        )
-        + " "
-    )
+    return " ".join("{}={}".format(k, quoteattr(v)) for k, v in attrs) + " "
 
 
 def ann_text(tag: TaggedLemma) -> str:
@@ -38,6 +32,7 @@ def maybe_fi2en_ss(ss: Synset) -> Optional[Synset]:
     from finntk.wordnet.reader import get_en_fi_maps
     from finntk.wordnet.utils import ss2pre, pre2ss
     from nltk.corpus import wordnet
+
     fi2en, _en2fi = get_en_fi_maps()
     pre_fi = ss2pre(ss)
     pre_en = fi2en.get(pre_fi)
@@ -54,7 +49,7 @@ def related_lemma_list(tag: TaggedLemma) -> str:
     related_synsets = synsets.copy()
     if len(tag.lemma_objs) == 1:
         wn, lemma_obj = tag.lemma_objs[0]
-        if wn == 'qf2':
+        if wn == "qf2":
             extra_ss = maybe_fi2en_ss(lemma_obj.synset())
             if extra_ss:
                 related_synsets.add(extra_ss)
@@ -65,7 +60,7 @@ def related_lemma_list(tag: TaggedLemma) -> str:
 
 def preferred_synset(tag: TaggedLemma) -> Synset:
     d = dict(tag.lemma_objs)
-    lemma = d.get('fin') or d.get('qf2') or d.get('qwf')
+    lemma = d.get("fin") or d.get("qf2") or d.get("qwf")
     assert lemma is not None
     return lemma.synset()
 
@@ -82,7 +77,7 @@ def man_ann_ann(lang: str, tok: Token, tag: TaggedLemma) -> str:
     return (
         "<annotation "
         'type="man-ann" '
-        '{}'
+        "{}"
         'lemma-path="whole">'
         "{}</annotation>\n"
         "<!-- {}: {} ({}{}lexname: {}) -->\n"

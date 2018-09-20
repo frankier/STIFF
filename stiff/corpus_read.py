@@ -41,7 +41,9 @@ def realign(untok: IO, tok: IO, skiplimit=200) -> Iterator[Tuple[str, str]]:
             raise SkippedTooMuchException()
 
 
-def read_opensubtitles2018(dir: str) -> Iterator[Tuple[int, str, str, str, str, str, bool, 'WordAlignment']]:
+def read_opensubtitles2018(
+    dir: str
+) -> Iterator[Tuple[int, str, str, str, str, str, bool, "WordAlignment"]]:
     for zh in CHINESES:
         pair = "fi-{}".format(zh)
         pair_dir = pjoin(dir, pair)

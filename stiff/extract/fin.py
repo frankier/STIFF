@@ -30,11 +30,14 @@ def _fin_token_conf_net(l):
 
 def get_fin_token_auto():
     lang = WordnetFin.lang()
-    return get_token_auto(lang, (
-        (l, wns, _fin_token_conf_net(l))
-        for l, wns in WordnetFin.lemma_names().items()
-        if not has_abbrv(l)
-    ))
+    return get_token_auto(
+        lang,
+        (
+            (l, wns, _fin_token_conf_net(l))
+            for l, wns in WordnetFin.lemma_names().items()
+            if not has_abbrv(l)
+        ),
+    )
 
 
 def extract_full_fin(line: str):
@@ -45,9 +48,7 @@ def extract_full_fin(line: str):
     tagging = TokenizedTagging(WordnetFin)
     conf_net = (
         extract_lemmas_recurs(token) | {fp_lemma}
-        for token, (_fp_surf, fp_lemma, _fp_feats) in zip(
-            omor_toks, finnpos_analys
-        )
+        for token, (_fp_surf, fp_lemma, _fp_feats) in zip(omor_toks, finnpos_analys)
     )
     surfs = (tok["surf"] for tok in omor_toks)
     extract_tokenized_iter(
@@ -56,7 +57,7 @@ def extract_full_fin(line: str):
         WordnetFin,
         surfs,
         starts,
-        "fi-tok"
+        "fi-tok",
     )
 
     return tagging

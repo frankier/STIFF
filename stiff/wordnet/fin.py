@@ -4,6 +4,7 @@ from finntk.wordnet.utils import ss2pre
 from .utils import merge_lemmas
 from .base import ExtractableWordnet
 from typing import Dict, List
+from stiff.data.fixes import fix_all
 
 
 def _map_qf2(lemma_obj):
@@ -15,7 +16,7 @@ class Wordnet(ExtractableWordnet):
     _synset_mappers = {"qf2": _map_qf2}
 
     def __new__(cls) -> None:
-        import stiff.fixes  # noqa
+        fix_all()
 
     @staticmethod
     def lang() -> str:

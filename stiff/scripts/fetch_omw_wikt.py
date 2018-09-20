@@ -4,9 +4,11 @@ from urllib.request import urlretrieve
 import zipfile
 import shutil
 
+from stiff.data import get_data_path
+
 
 print("Fetching Wiktionary derived data")
-os.chdir(pjoin(dirname(__file__), ".."))
+os.chdir(get_data_path())
 fn, headers = urlretrieve("http://compling.hss.ntu.edu.sg/omw/wn-wikt.zip")
 assert headers["Content-Type"] == "application/zip"
 zip = zipfile.ZipFile(fn, "r")

@@ -1,7 +1,7 @@
 import click
 from typing import IO
 
-import stiff.fixes  # noqa
+from stiff.data.fixes import fix_all
 
 from stiff.data import DEFAULT_SAMPLE_LINES, DEFAULT_SAMPLE_MAX
 from stiff.writers import AnnWriter, man_ann_ann
@@ -11,6 +11,9 @@ from stiff.filter_utils import transform_blocks, in_matcher
 
 from lxml import etree
 from conllu import parse_incr
+
+
+fix_all()
 
 
 def man_ann_line(extractor: FinExtractor, writer: AnnWriter, fi_tok: str):

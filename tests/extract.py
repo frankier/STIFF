@@ -1,5 +1,8 @@
 from stiff.extract import get_extractor
-import stiff.fixes  # noqa
+from stiff.data.fixes import fix_all
+
+
+fix_all()
 
 
 def _filter_toks(tagging, needle):

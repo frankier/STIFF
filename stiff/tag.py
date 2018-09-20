@@ -1,15 +1,18 @@
 from itertools import chain
 from copy import copy
 
-import stiff.fixes  # noqa
 from finntk.wordnet.reader import fiwn_encnt
 
+from stiff.data.fixes import fix_all
 from stiff.extract import CmnExtractor, FinExtractor
 from stiff.corpus_read import WordAlignment
 from stiff.utils.opencc import get_opencc
 from stiff.tagging import Tagging, Token, TagSupport
 from stiff.writers import Writer
 from typing import Dict, Set, Optional, Tuple
+
+
+fix_all()
 
 
 def get_tok_idx(tok: Token) -> Optional[int]:

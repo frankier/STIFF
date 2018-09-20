@@ -3,11 +3,12 @@ from nltk.corpus import wordnet
 from stiff.utils.opencc import get_opencc
 from .base import ExtractableWordnet
 from typing import Dict, List
+from stiff.data.fixes import fix_all
 
 
 class Wordnet(ExtractableWordnet):
     def __new__(cls) -> None:
-        import stiff.fixes  # noqa
+        fix_all()
 
     @staticmethod
     def lang() -> str:

@@ -6,7 +6,7 @@ from finntk.wordnet.reader import fiwn_encnt
 
 from stiff.extract import extract_full_cmn, extract_full_fin
 from stiff.corpus_read import WordAlignment
-from stiff.utils import get_opencc
+from stiff.utils.opencc import get_opencc
 from stiff.tagging import Tagging, Token, TagSupport
 from stiff.writers import Writer
 from typing import Dict, Set, Optional, Tuple

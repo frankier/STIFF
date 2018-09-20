@@ -1,6 +1,6 @@
 from .utils import merge_lemmas
 from nltk.corpus import wordnet
-from stiff.utils import get_opencc
+from stiff.utils.opencc import get_opencc
 from .base import ExtractableWordnet
 from typing import Dict, List
 

@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "ab4bc6319ada7c25c4235623436a4d8e07e76d8d3054dded40cc6a26c0b821fb"
+            "sha256": "3c040147b7f27f1d8d7d17641af336bad27bbe3f8aca97214a13db88872fe12a"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -470,7 +470,8 @@
         },
         "pyahocorasick": {
             "editable": true,
-            "path": "/home/frankier/sourcestmp/pyahocorasick"
+            "git": "https://github.com/frankier/pyahocorasick.git",
+            "ref": "ca029040175eaba65719e301045dd2c9a821281e"
         },
         "pycodestyle": {
             "hashes": [

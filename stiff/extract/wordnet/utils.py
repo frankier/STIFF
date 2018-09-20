@@ -1,7 +1,7 @@
 from nltk.corpus import wordnet
 from nltk.corpus.reader.wordnet import Lemma
 from collections import defaultdict
-from stiff.utils import get_opencc
+from stiff.utils.opencc import get_opencc
 from typing import Dict, Tuple, List, Iterator, Iterable, DefaultDict, Type
 from stiff.extract.wordnet.base import ExtractableWordnet
 

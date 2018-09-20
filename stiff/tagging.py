@@ -32,7 +32,7 @@ class Anchor(DataUtilMixin):
 
     def urlencode(self):
         # Specialised for speed
-        res = ["from_id=", self.from_id, "&char={}", str(self.char)]
+        res = ["from_id=", self.from_id, "&char=", str(self.char)]
         if self.token is not None:
             res.append("&token=")
             res.append(str(self.token))

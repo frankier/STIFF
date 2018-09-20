@@ -8,6 +8,7 @@ name = "pypi"
 nltk = {editable = true, ref = "e1b3fda3768288ba96309dd92fd1ee7943cc43f9", git = "https://github.com/nltk/nltk"}
 click = {ref = "prevent-epipe-exit-120", git = "https://github.com/frankier/click.git"}
 pyahocorasick = {editable = true, path = "/home/frankier/sourcestmp/pyahocorasick"}
+black = {ref = "cb67a322423cb2b4bcfb2faa68fb769326741d6a", git = "https://github.com/ambv/black.git"}
 
 [dev-packages]
 

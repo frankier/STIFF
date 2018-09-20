@@ -17,11 +17,6 @@ class ExtractableWordnet(ABC):
     def lemma_names() -> Dict[str, List[str]]:
         pass
 
-    @staticmethod
-    @abstractmethod
-    def lemma_keys(lemma: str) -> Iterable[List[Tuple[str, Lemma]]]:
-        pass
-
     @classmethod
     def synset_group_lemmas(
         cls, wordnet_lemmas: Dict[str, List[Lemma]]

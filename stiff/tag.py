@@ -64,10 +64,6 @@ def apply_lemmas(
             dest_tag.supports.append(support)
 
 
-def no_expand(lemmas):
-    return lemmas
-
-
 def expand_english_deriv(tagging: Tagging) -> Tuple[Set[str], Dict[str, str]]:
     res = set()
     rev_map = {}

@@ -25,13 +25,3 @@ class Wordnet(ExtractableWordnet):
             ),
             ("qwc", wordnet.all_lemma_names(lang="qwc")),
         )
-
-    @classmethod
-    def lemma_keys(cls, lemma: str) -> Iterable[List[Tuple[str, Lemma]]]:
-        return cls.synset_group_lemmas(
-            {
-                "cmn": wordnet.lemmas(lemma, lang="cmn"),
-                "qcn": wordnet.lemmas(get_rev_map("qcn")(lemma), lang="qcn"),
-                "qwc": wordnet.lemmas(lemma, lang="qwc"),
-            }
-        )

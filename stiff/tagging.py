@@ -9,8 +9,6 @@ if TYPE_CHECKING:
     from stiff.extract.wordnet.base import ExtractableWordnet  # noqa: F401
 
 
-MaybeOmorToken = Dict[str, str]
-LocToks = List[Tuple[int, int, str, List[str]]]
 CrossToksMatcher = Callable[["Anchor", "Anchor"], bool]
 Matcher = Callable[["Token", "Token"], bool]
 Combiner = Callable[["Token", "Token"], None]

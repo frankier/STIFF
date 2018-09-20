@@ -14,13 +14,6 @@ from pyahocorasick import conf_net_search
 FIN_SPACE = re.compile(r" |_")
 
 
-def _fin_multiwords() -> Iterator[Tuple[str, List[str]]]:
-    for l, wns in WordnetFin.lemma_names().items():
-        if not FIN_SPACE.search(l) or has_abbrv(l):
-            continue
-        yield l, wns
-
-
 def _fin_token_conf_net(l):
     subwords = FIN_SPACE.split(l)
     old_paths = [()]

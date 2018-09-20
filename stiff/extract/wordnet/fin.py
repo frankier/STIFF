@@ -29,13 +29,3 @@ class Wordnet(ExtractableWordnet):
             ("qwf", wordnet.all_lemma_names(lang="qwf")),
             ("qf2", fiwn_encnt.all_lemma_names()),
         )
-
-    @classmethod
-    def lemma_keys(cls, lemma: str) -> Iterable[List[Tuple[str, Lemma]]]:
-        return cls.synset_group_lemmas(
-            {
-                "fin": wordnet.lemmas(lemma, lang="fin"),
-                "qf2": fiwn_encnt.lemmas(lemma),
-                "qwf": wordnet.lemmas(lemma, lang="qwf"),
-            }
-        )

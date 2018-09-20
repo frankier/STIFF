@@ -31,19 +31,6 @@ def free_elem(elem):
             del ancestor.getparent()[0]
 
 
-def fast_iter(context):
-    """
-    http://lxml.de/parsing.html#modifying-the-tree
-    Based on Liza Daly's fast_iter
-    http://www.ibm.com/developerworks/xml/library/x-hiperfparse/
-    See also http://effbot.org/zone/element-iterparse.htm
-    """
-    for event, elem in context:
-        yield elem
-        free_elem(elem)
-    del context
-
-
 def open_tag(elem):
     attrs = elem.items()
     if not len(attrs):

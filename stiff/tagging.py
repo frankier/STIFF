@@ -14,7 +14,7 @@ from typing import (
 from urllib.parse import urlencode
 
 if TYPE_CHECKING:
-    from stiff.extract.wordnet.base import ExtractableWordnet  # noqa: F401
+    from stiff.wordnet.base import ExtractableWordnet  # noqa: F401
 
 
 CrossToksMatcher = Callable[["Anchor", "Anchor"], bool]

@@ -1,6 +1,6 @@
 from stiff.tagging import UntokenizedTagging, TokenizedTagging, Anchor, TaggedLemma
+from stiff.wordnet import ExtractableWordnet, objify_lemmas
 from ahocorasick import Automaton
-from .wordnet import ExtractableWordnet, objify_lemmas
 from typing import Dict, Type, Iterator, Tuple, List, Iterable
 
 

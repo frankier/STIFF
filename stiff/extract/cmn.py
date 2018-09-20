@@ -1,9 +1,9 @@
 import re
 from .common import mk_token_auto, mk_substr_auto
 from .mw_utils import multiword_variants
-from .wordnet.cmn import Wordnet as WordnetCmn
 from .gen import extract_auto, extract_tokenized
 from stiff.tagging import Anchor, UntokenizedTagging, TokenizedTagging, Tagging
+from stiff.wordnet.cmn import Wordnet as WordnetCmn
 from pyahocorasick import TokenAutomaton
 
 

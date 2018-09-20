@@ -3,7 +3,7 @@ from nltk.corpus.reader.wordnet import Lemma
 from collections import defaultdict
 from stiff.utils.opencc import get_opencc
 from typing import Dict, Tuple, List, Iterator, Iterable, DefaultDict, Type
-from stiff.extract.wordnet.base import ExtractableWordnet
+from stiff.wordnet.base import ExtractableWordnet
 
 WORDNET_FILTERS = {"qcn": lambda x: get_opencc().convert(x)}
 _rev_maps: Dict[str, Dict[str, str]] = {}

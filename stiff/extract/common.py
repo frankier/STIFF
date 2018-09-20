@@ -2,7 +2,7 @@ import ahocorasick
 import pyahocorasick
 from typing import List, Tuple, Type, Iterator, Iterable
 
-from .wordnet import wn_lemma_map, ExtractableWordnet
+from stiff.wordnet import wn_lemma_map, ExtractableWordnet
 from .mw_utils import multiword_variants
 
 

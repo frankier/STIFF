@@ -5,7 +5,7 @@ import stiff.fixes  # noqa
 
 from stiff.data import DEFAULT_SAMPLE_LINES, DEFAULT_SAMPLE_MAX
 from stiff.writers import AnnWriter, man_ann_ann
-from stiff.extract import extract_full_fin
+from stiff.extract import FinExtractor
 from stiff.corpus_read import read_opensubtitles2018
 from stiff.filter_utils import transform_blocks, in_matcher
 
@@ -13,8 +13,8 @@ from lxml import etree
 from conllu import parse_incr
 
 
-def man_ann_line(writer: AnnWriter, fi_tok: str):
-    tagging = extract_full_fin(fi_tok)
+def man_ann_line(extractor: FinExtractor, writer: AnnWriter, fi_tok: str):
+    tagging = extractor.extract(fi_tok)
     writer.begin_sent()
     writer.write_text("fi", fi_tok)
     writer.start_anns()
@@ -37,6 +37,7 @@ def man_ann():
 @click.argument("corpus")
 @click.argument("output", type=click.File("w"))
 def opensubs18(corpus: str, output: IO):
+    extractor = FinExtractor()
     with AnnWriter(output) as writer:
         for (
             idx,
@@ -55,7 +56,7 @@ def opensubs18(corpus: str, output: IO):
                     writer.end_subtitle()
                 writer.begin_subtitle(srcs, imdb_id)
             if idx in DEFAULT_SAMPLE_LINES:
-                man_ann_line(writer, fi_tok)
+                man_ann_line(extractor, writer, fi_tok)
             writer.inc_sent()
         writer.end_subtitle()
 
@@ -64,6 +65,7 @@ def opensubs18(corpus: str, output: IO):
 @click.argument("input", type=click.File("rb"))
 @click.argument("output", type=click.File("wb"))
 def filter(input: IO, output: IO):
+    extractor = FinExtractor()
     text = None
 
     def proc(elem):
@@ -71,7 +73,7 @@ def filter(input: IO, output: IO):
         if elem.tag == "text":
             text = elem.text
         else:
-            tagging = extract_full_fin(text)
+            tagging = extractor.extract(text)
             anns = []
             for tok in tagging.tokens:
                 for tag in tok.tags:

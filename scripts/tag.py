@@ -1,5 +1,6 @@
 import click
 
+from stiff.extract import CmnExtractor, FinExtractor
 from stiff.writers import Writer
 from stiff.corpus_read import read_opensubtitles2018
 from stiff.tag import proc_line
@@ -16,6 +17,8 @@ def tag(corpus, output, cutoff):
     languages support each other. This can be made into an unambiguously tagged
     corpus filtering with the other scripts in this repository.
     """
+    cmn_extractor = CmnExtractor()
+    fin_extractor = FinExtractor()
     with Writer(output) as writer:
         for (
             idx,
@@ -31,7 +34,9 @@ def tag(corpus, output, cutoff):
                 if idx > 0:
                     writer.end_subtitle()
                 writer.begin_subtitle(srcs, imdb_id)
-            proc_line(writer, zh_untok, zh_tok, fi_tok, align)
+            proc_line(
+                cmn_extractor, fin_extractor, writer, zh_untok, zh_tok, fi_tok, align
+            )
             if cutoff is not None and idx > cutoff:
                 break
         writer.end_subtitle()

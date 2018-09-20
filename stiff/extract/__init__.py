@@ -1,4 +1,16 @@
-from .fin import extract_full_fin
-from .cmn import extract_full_cmn
+from typing import Any, Dict, Type
 
-__all__ = ["extract_full_fin", "extract_full_cmn"]
+from .cmn import CmnExtractor
+from .fin import FinExtractor
+
+__all__ = ["CmnExtractor", "FinExtractor", "get_extractor"]
+
+
+_registry: Dict[str, Type] = {}
+
+
+def get_extractor(name: str) -> Any:
+    if name not in _registry:
+        extractor_cls = globals()[name]
+        _registry[name] = extractor_cls()
+    return _registry[name]

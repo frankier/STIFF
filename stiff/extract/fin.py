@@ -1,4 +1,4 @@
-from .common import get_token_auto
+from .common import mk_token_auto
 from .gen import extract_tokenized_iter
 from .wordnet.fin import Wordnet as WordnetFin
 from finntk.wordnet import has_abbrv
@@ -27,36 +27,38 @@ def _fin_token_conf_net(l):
     return paths
 
 
-def get_fin_token_auto():
-    lang = WordnetFin.lang()
-    return get_token_auto(
-        lang,
+def mk_fin_token_auto():
+    return mk_token_auto(
         (
             (l, wns, _fin_token_conf_net(l))
             for l, wns in WordnetFin.lemma_names().items()
             if not has_abbrv(l)
-        ),
+        )
     )
 
 
-def extract_full_fin(line: str):
-    omorfi = get_omorfi()
-    omor_toks = omorfi.tokenise(line)
-    finnpos_analys = sent_finnpos([tok["surf"] for tok in omor_toks])
-    starts = get_token_positions(omor_toks, line)
-    tagging = TokenizedTagging(WordnetFin)
-    conf_net = (
-        extract_lemmas_recurs(token) | {fp_lemma}
-        for token, (_fp_surf, fp_lemma, _fp_feats) in zip(omor_toks, finnpos_analys)
-    )
-    surfs = (tok["surf"] for tok in omor_toks)
-    extract_tokenized_iter(
-        tagging,
-        conf_net_search(get_fin_token_auto(), conf_net, lambda x: x[0]),
-        WordnetFin,
-        surfs,
-        starts,
-        "fi-tok",
-    )
+class FinExtractor:
+    def __init__(self) -> None:
+        self.tok_auto = mk_fin_token_auto()
 
-    return tagging
+    def extract(self, line: str) -> TokenizedTagging:
+        omorfi = get_omorfi()
+        omor_toks = omorfi.tokenise(line)
+        finnpos_analys = sent_finnpos([tok["surf"] for tok in omor_toks])
+        starts = get_token_positions(omor_toks, line)
+        tagging = TokenizedTagging(WordnetFin)
+        conf_net = (
+            extract_lemmas_recurs(token) | {fp_lemma}
+            for token, (_fp_surf, fp_lemma, _fp_feats) in zip(omor_toks, finnpos_analys)
+        )
+        surfs = (tok["surf"] for tok in omor_toks)
+        extract_tokenized_iter(
+            tagging,
+            conf_net_search(self.tok_auto, conf_net, lambda x: x[0]),
+            WordnetFin,
+            surfs,
+            starts,
+            "fi-tok",
+        )
+
+        return tagging

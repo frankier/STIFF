@@ -4,7 +4,7 @@ from copy import copy
 import stiff.fixes  # noqa
 from finntk.wordnet.reader import fiwn_encnt
 
-from stiff.extract import extract_full_cmn, extract_full_fin
+from stiff.extract import CmnExtractor, FinExtractor
 from stiff.corpus_read import WordAlignment
 from stiff.utils.opencc import get_opencc
 from stiff.tagging import Tagging, Token, TagSupport
@@ -130,7 +130,15 @@ def write_anns(writer: Writer, lang: str, tagging: Tagging):
             writer.write_ann(lang, tok, tag)
 
 
-def proc_line(writer, zh_untok: str, zh_tok: str, fi_tok: str, align: WordAlignment):
+def proc_line(
+    cmn_extractor: CmnExtractor,
+    fin_extractor: FinExtractor,
+    writer: Writer,
+    zh_untok: str,
+    zh_tok: str,
+    fi_tok: str,
+    align: WordAlignment,
+):
     # XXX: It's pretty sloppy always converting chracter-by-character: will
     # definitely try to convert simple => simpler sometimes
     # print("#####")
@@ -141,8 +149,8 @@ def proc_line(writer, zh_untok: str, zh_tok: str, fi_tok: str, align: WordAlignm
     opencc = get_opencc()
     zh_untok = opencc.convert(zh_untok)
     zh_tok = opencc.convert(zh_tok)
-    fi_tagging = extract_full_fin(fi_tok)
-    zh_tagging = extract_full_cmn(zh_untok, zh_tok)
+    fi_tagging = fin_extractor.extract(fi_tok)
+    zh_tagging = cmn_extractor.extract(zh_untok, zh_tok)
     for id, (_token, tag) in enumerate(
         chain(fi_tagging.iter_tags(), zh_tagging.iter_tags())
     ):

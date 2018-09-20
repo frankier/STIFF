@@ -1,6 +1,6 @@
 from xml.sax.saxutils import quoteattr
 from nltk.corpus.reader.wordnet import Synset, WordNetError
-from stiff.tagging import Token, TaggedLemma
+from stiff.models import Token, TaggedLemma
 from typing import Tuple  # noqa: F401
 from typing import Optional, List
 

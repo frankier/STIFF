@@ -7,7 +7,7 @@ from stiff.data.fixes import fix_all
 from stiff.extract import CmnExtractor, FinExtractor
 from stiff.corpus_read import WordAlignment
 from stiff.utils.opencc import get_opencc
-from stiff.tagging import Tagging, Token, TagSupport
+from stiff.models import Tagging, Token, TagSupport
 from stiff.writers import Writer
 from typing import Dict, Set, Optional, Tuple
 

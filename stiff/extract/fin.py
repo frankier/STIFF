@@ -4,7 +4,7 @@ from finntk.wordnet import has_abbrv
 from finntk.omor.extract import extract_lemmas_span
 from finntk import get_omorfi, get_token_positions, extract_lemmas_recurs
 from finntk.finnpos import sent_finnpos
-from stiff.tagging import TokenizedTagging
+from stiff.models import TokenizedTagging
 from stiff.utils.automata import conf_net_search
 from stiff.wordnet.fin import Wordnet as WordnetFin
 import re

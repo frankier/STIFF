@@ -13,7 +13,7 @@ from stiff.utils.xml import (
 from xml.sax.saxutils import escape
 from urllib.parse import parse_qsl
 import pygtrie
-from stiff.data import WN_UNI_POS_MAP, UNI_POS_WN_MAP
+from stiff.data.constants import WN_UNI_POS_MAP, UNI_POS_WN_MAP
 from finntk.wordnet.reader import fiwn, get_en_fi_maps
 from finntk.wordnet.utils import post_id_to_pre, pre2ss
 from finntk.omor.extract import lemma_intersect

@@ -3,7 +3,7 @@ from typing import IO
 
 from stiff.data.fixes import fix_all
 
-from stiff.data import DEFAULT_SAMPLE_LINES, DEFAULT_SAMPLE_MAX
+from stiff.data.constants import DEFAULT_SAMPLE_LINES, DEFAULT_SAMPLE_MAX
 from stiff.writers import AnnWriter, man_ann_ann
 from stiff.extract import FinExtractor
 from stiff.corpus_read import read_opensubtitles2018

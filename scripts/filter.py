@@ -9,7 +9,7 @@ from stiff.utils.xml import (
     free_elem,
     close_all,
 )
-from stiff.data import DEFAULT_SAMPLE_LINES, DEFAULT_SAMPLE_MAX
+from stiff.data.constants import DEFAULT_SAMPLE_LINES, DEFAULT_SAMPLE_MAX
 from urllib.parse import parse_qs, urlencode
 
 

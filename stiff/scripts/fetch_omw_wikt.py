@@ -1,5 +1,4 @@
 import os
-from os.path import dirname, join as pjoin
 from urllib.request import urlretrieve
 import zipfile
 import shutil

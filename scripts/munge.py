@@ -2,7 +2,7 @@ import re
 from lxml import etree
 import sys
 import click
-from stiff.filter_utils import (
+from stiff.utils.xml import (
     eq_matcher,
     iter_sentences,
     transform_sentences,

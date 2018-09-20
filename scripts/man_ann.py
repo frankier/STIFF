@@ -7,7 +7,7 @@ from stiff.data import DEFAULT_SAMPLE_LINES, DEFAULT_SAMPLE_MAX
 from stiff.writers import AnnWriter, man_ann_ann
 from stiff.extract import FinExtractor
 from stiff.corpus_read import read_opensubtitles2018
-from stiff.filter_utils import transform_blocks, in_matcher
+from stiff.utils.xml import transform_blocks, in_matcher
 
 from lxml import etree
 from conllu import parse_incr

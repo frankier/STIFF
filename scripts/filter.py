@@ -1,6 +1,6 @@
 from lxml import etree
 import click
-from stiff.filter_utils import (
+from stiff.utils.xml import (
     fixup_missing_text,
     transform_sentences,
     write_event,

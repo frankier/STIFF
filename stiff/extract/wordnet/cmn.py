@@ -1,10 +1,8 @@
 from .utils import merge_lemmas
 from nltk.corpus import wordnet
 from stiff.utils import get_opencc
-from .utils import get_rev_map
 from .base import ExtractableWordnet
-from typing import Dict, List, Tuple, Iterable
-from nltk.corpus.reader import Lemma
+from typing import Dict, List
 
 
 class Wordnet(ExtractableWordnet):

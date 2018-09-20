@@ -3,8 +3,7 @@ from finntk.wordnet.reader import get_en_fi_maps, fiwn_encnt
 from finntk.wordnet.utils import ss2pre
 from .utils import merge_lemmas
 from .base import ExtractableWordnet
-from typing import Dict, List, Tuple, Iterable
-from nltk.corpus.reader import Lemma
+from typing import Dict, List
 
 
 def _map_qf2(lemma_obj):

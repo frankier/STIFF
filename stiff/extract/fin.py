@@ -7,7 +7,6 @@ from finntk import get_omorfi, get_token_positions, extract_lemmas_recurs
 from finntk.finnpos import sent_finnpos
 from stiff.tagging import TokenizedTagging
 import re
-from typing import Iterator, Tuple, List
 from pyahocorasick import conf_net_search
 
 

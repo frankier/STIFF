@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "3c040147b7f27f1d8d7d17641af336bad27bbe3f8aca97214a13db88872fe12a"
+            "sha256": "df9a30507c4910f44169b93d452913343e1807a6de5151d0de63ae20ec7b120c"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -158,8 +158,8 @@
             "version": "==3.0.4"
         },
         "click": {
-            "git": "https://github.com/frankier/click.git",
-            "ref": "a257a5d4724585c5dca237339447f30da7b4d57f"
+            "git": "https://github.com/pallets/click.git",
+            "ref": "065653e7996a82e219cf2d0ce90fec7b0574ba36"
         },
         "conllu": {
             "hashes": [

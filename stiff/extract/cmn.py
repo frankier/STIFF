@@ -1,6 +1,5 @@
 import re
-from pygtrie import Trie
-from .common import get_substr_auto, wn_lemma_map
+from .common import get_token_auto, get_substr_auto
 from .mw_utils import multiword_variants
 from .wordnet.cmn import Wordnet as WordnetCmn
 from .gen import extract_auto, extract_tokenized
@@ -9,18 +8,12 @@ from stiff.tagging import Anchor
 _cmn_trie = None
 
 
-def get_cmn_trie() -> Trie:
-    global _cmn_trie
-    if _cmn_trie is not None:
-        return _cmn_trie
-    _cmn_trie = Trie()
-    for l, wns in WordnetCmn.lemma_names().items():
-        vars = multiword_variants(l)
-        if len(vars) == 1:
-            continue
-        for var in vars:
-            _cmn_trie[var.split(" ")] = wn_lemma_map(l, wns)
-    return _cmn_trie
+def get_cmn_token_auto():
+    lang = WordnetCmn.lang()
+    return get_token_auto(lang, (
+        (l, wns, [var.split(" ") for var in multiword_variants(l)])
+        for l, wns in WordnetCmn.lemma_names().items()
+    ))
 
 
 def extract_zh_auto(line: str):
@@ -28,7 +21,7 @@ def extract_zh_auto(line: str):
 
 
 def extract_zh_tok(line: str):
-    return extract_tokenized(line, WordnetCmn, get_cmn_trie(), "zh-tok")
+    return extract_tokenized(line, WordnetCmn, get_cmn_token_auto(), "zh-tok")
 
 
 WHITESPACE_RE = re.compile(r"\s")

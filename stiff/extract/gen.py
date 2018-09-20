@@ -5,10 +5,8 @@ from stiff.tagging import (
     TaggedLemma,
 )
 from ahocorasick import Automaton
-from .common import add_line_tags_single, add_line_tags_multi
 from .wordnet import ExtractableWordnet, objify_lemmas
-from typing import Type
-from pygtrie import Trie
+from typing import Dict, Type, Iterator, Tuple, List, Iterable
 
 
 def extract_auto(
@@ -33,19 +31,48 @@ def get_tokens_starts(tokens):
         start += len(token) + 1
 
 
+def extract_tokenized_iter(
+    tagging: TokenizedTagging,
+    iter: Iterator[Tuple[int, Tuple[List[str], Dict[str, str]]]],
+    wordnet: Type[ExtractableWordnet],
+    surfs: Iterable[str],
+    starts: List[int],
+    from_id: str
+):
+    for end_pos, (lf_tokens, wn_to_lemma) in iter:
+        start_pos = end_pos - len(lf_tokens) + 1
+        groups = wordnet.synset_group_lemmas(objify_lemmas(wn_to_lemma))
+        tags = []
+        for group in groups:
+            tag_group = TaggedLemma(" ".join(lf_tokens))
+            tag_group.lemma_objs = group
+            tags.append(tag_group)
+        tagging.add_tags(
+            " ".join(surfs),
+            [
+                Anchor(
+                    from_id,
+                    starts[start_pos],
+                    start_pos,
+                    len(lf_tokens),
+                )
+            ],
+            tags,
+        )
+
+
 def extract_tokenized(
-    line: str, wn: Type[ExtractableWordnet], trie: Trie, id: str
+    line: str, wn: Type[ExtractableWordnet], auto: Automaton, id: str
 ) -> TokenizedTagging:
     tagging = TokenizedTagging(wn)
     tokens = line.split(" ")
-    loc_toks = list(
-        zip(
-            range(0, len(tokens)),
-            get_tokens_starts(tokens),
-            tokens,
-            [[token] for token in tokens],
-        )
+    starts = list(get_tokens_starts(tokens))
+    extract_tokenized_iter(
+        tagging,
+        auto.iter(tokens),
+        wn,
+        tokens,
+        starts,
+        id
     )
-    add_line_tags_single(tagging, loc_toks, id, wn)
-    add_line_tags_multi(tagging, trie, loc_toks, id, wn)
     return tagging

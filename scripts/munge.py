@@ -499,9 +499,9 @@ def transform_senseval_contexts(
         new_head = new_sent[len(before_tok) : len(before_tok) + len(head_tok)]
         new_after = new_sent[len(before_tok) + len(head_tok) :]
 
-        context.text = "".join(tok + " " for tok in new_before)
+        context.text = "\n" + "".join(tok + " " for tok in new_before)
         head_tag.text = " ".join(tok for tok in new_head)
-        head_tag.tail = "".join(" " + tok for tok in new_after)
+        head_tag.tail = "".join(" " + tok for tok in new_after) + "\n"
         return context
 
     transform_blocks(eq_matcher("context"), inf, transform_context, outf)

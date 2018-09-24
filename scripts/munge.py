@@ -456,6 +456,8 @@ def senseval_gather(indir: str, outf: IO, keyout: IO):
                 stream = etree.iterparse(train_f, events=("start", "end"))
 
                 def cb(lexelt):
+                    if not len(lexelt):
+                        return
                     outf.write(etree.tostring(lexelt, encoding="unicode"))
 
                 chunk_cb(stream, eq_matcher("lexelt"), cb)

@@ -17,11 +17,10 @@ from stiff.data.constants import WN_UNI_POS_MAP, UNI_POS_WN_MAP
 from finntk.wordnet.reader import fiwn, get_en_fi_maps
 from finntk.wordnet.utils import post_id_to_pre, pre2ss
 from finntk.omor.extract import lemma_intersect
-from finntk.finnpos import sent_finnpos
 from os.path import join as pjoin
 from os import makedirs, listdir
 from contextlib import contextmanager
-from typing import Callable, Dict, Set, IO, List
+from typing import Dict, Set, IO
 
 
 @click.group("munge")
@@ -480,70 +479,22 @@ def unified_key_to_ims_test(keyin: IO, keyout: IO):
 HEAD_REGEX = re.compile("(.*)<head>(.*)</head>(.*)")
 
 
-def transform_senseval_contexts(
-    inf: IO, transform_tokens: Callable[[List[str]], List[str]], outf: IO
-) -> None:
-    def transform_context(context: etree.ElementBase) -> etree.ElementBase:
-        sent: List[str] = []
-        before = context.text
-        head_tag = context[0]
-        head = head_tag.text
-        after = head_tag.tail
-
-        before_tok = before.strip().split(" ")
-        head_tok = head.split(" ")
-        after_tok = after.strip().split(" ")
-
-        sent = before_tok + head_tok + after_tok
-        new_sent = transform_tokens(sent)
-
-        new_before = new_sent[: len(before_tok)]
-        new_head = new_sent[len(before_tok) : len(before_tok) + len(head_tok)]
-        new_after = new_sent[len(before_tok) + len(head_tok) :]
-
-        context.text = "\n" + "".join(tok + " " for tok in new_before)
-        head_tag.text = " ".join(tok for tok in new_head)
-        head_tag.tail = "".join(" " + tok for tok in new_after) + "\n"
-        return context
-
-    transform_blocks(eq_matcher("context"), inf, transform_context, outf)
-
-
 @munge.command("finnpos-senseval")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
 def finnpos_senseval(inf: IO, outf: IO):
-    def fmt_analy(analy) -> str:
-        surf, lemma, tags = analy
-        return "{}/{}/{}".format(surf, lemma, tags["pos"])
+    from stiff.munge.pos import finnpos_senseval
 
-    def tag_tokens(sent: List[str]) -> List[str]:
-        analysed = sent_finnpos(sent)
-        return [fmt_analy(ana) for ana in analysed]
-
-    transform_senseval_contexts(inf, tag_tokens, outf)
+    return finnpos_senseval(inf, outf)
 
 
 @munge.command("omorfi-segment-senseval")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
 def omorfi_segment_senseval(inf: IO, outf: IO):
-    # XXX: we should move any segments after the last of the lemma segment
-    # outside of the <head> tag -- might mean transform_senseval_contexts needs
-    # to be reworked
+    from stiff.munge.seg import omorfi_segment_senseval
 
-    def seg_token(token: str) -> str:
-        from finntk.omor.inst import get_omorfi
-        from omorfi.token import get_segments
-
-        omorfi = get_omorfi()
-        segments = omorfi.segment(token)
-        return "→ ←".join(get_segments(segments[0], True, True, True, False, False))
-
-    def seg_tokens(sent: List[str]) -> List[str]:
-        return [seg_token(tok) for tok in sent]
-
-    transform_senseval_contexts(inf, seg_tokens, outf)
+    return omorfi_segment_senseval(inf, outf)
 
 
 if __name__ == "__main__":

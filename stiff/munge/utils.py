@@ -3,6 +3,14 @@ from typing import Callable, IO, List
 from stiff.utils.xml import eq_matcher, transform_blocks
 
 
+def space_tokenize(str):
+    str = str.strip()
+    if str:
+        return str.split(" ")
+    else:
+        return []
+
+
 def transform_senseval_contexts(
     inf: IO, transform_tokens: Callable[[List[str]], List[str]], outf: IO
 ) -> None:
@@ -13,9 +21,9 @@ def transform_senseval_contexts(
         head = head_tag.text
         after = head_tag.tail
 
-        before_tok = before.strip().split(" ")
-        head_tok = head.split(" ")
-        after_tok = after.strip().split(" ")
+        before_tok = space_tokenize(before)
+        head_tok = space_tokenize(head)
+        after_tok = space_tokenize(after)
 
         sent = before_tok + head_tok + after_tok
         new_sent = transform_tokens(sent)

@@ -345,8 +345,8 @@ def lexical_sample(outf):
     lexical_sample_foot(outf)
 
 
-def lexelt_head(lemma_str, outf):
-    outf.write("""<lexelt item="{}">\n""".format(lemma_str))
+def lexelt_head(lemma_str, pos_chr, outf):
+    outf.write("""<lexelt item="{}" pos="{}">\n""".format(lemma_str, pos_chr))
 
 
 def lexelt_foot(outf):
@@ -354,8 +354,8 @@ def lexelt_foot(outf):
 
 
 @contextmanager
-def lexelt(lemma_str, outf):
-    lexelt_head(lemma_str, outf)
+def lexelt(lemma_str, pos_chr, outf):
+    lexelt_head(lemma_str, pos_chr, outf)
     yield
     lexelt_foot(outf)
 
@@ -398,7 +398,8 @@ def unified_to_senseval(inf: IO, keyin: IO, outdir: str):
         for inst in sent_elem.xpath("instance"):
             lemma_str = inst.attrib["lemma"].lower()
             pos_str = inst.attrib["pos"]
-            lemma_pos = "{}.{}".format(lemma_str, UNI_POS_WN_MAP[pos_str])
+            pos_chr = UNI_POS_WN_MAP[pos_str]
+            lemma_pos = "{}.{}".format(lemma_str, pos_chr)
 
             # Write XML
             out_dir = pjoin(outdir, lemma_pos)
@@ -407,7 +408,7 @@ def unified_to_senseval(inf: IO, keyin: IO, outdir: str):
                 out_fn = pjoin(out_dir, "train.xml")
                 out_f = open(out_fn, "w")
                 lexical_sample_head(out_f)
-                lexelt_head(lemma_pos, out_f)
+                lexelt_head(lemma_str, pos_chr, out_f)
             else:
                 out_fn = out_files[lemma_pos]
                 out_f = open(out_fn, "a")

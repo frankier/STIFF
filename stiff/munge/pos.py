@@ -7,7 +7,7 @@ from .utils import transform_senseval_contexts
 def finnpos_senseval(inf: IO, outf: IO):
     def fmt_analy(analy) -> str:
         surf, lemma, tags = analy
-        return "{}/{}/{}".format(surf, lemma, tags["pos"])
+        return "{}|LEM|{}|POS|{}".format(surf, lemma, tags["pos"])
 
     def tag_tokens(sent: List[str]) -> List[str]:
         analysed = sent_finnpos(sent)

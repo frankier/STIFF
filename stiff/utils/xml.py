@@ -139,12 +139,22 @@ def cb_to_iter(f):
     return iter
 
 
-def cb_sentences(inf, cb):
-    stream = etree.iterparse(inf, events=("start", "end"))
-    chunk_cb(stream, eq_matcher("sentence"), cb)
+def cb_blocks(block):
+    def inner(inf, cb):
+        stream = etree.iterparse(inf, events=("start", "end"))
+        chunk_cb(stream, eq_matcher(block), cb)
+
+    return inner
 
 
-iter_sentences = cb_to_iter(cb_sentences)
+cb_sentences = cb_blocks("sentence")
+
+
+def iter_blocks(block):
+    return cb_to_iter(cb_blocks(block))
+
+
+iter_sentences = iter_blocks("sentence")
 
 
 def chunk_stream_cb(stream, matcher: Matcher, outside_cb, inside_cb, always_cb=None):

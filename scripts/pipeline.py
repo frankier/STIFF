@@ -2,7 +2,7 @@ import tempfile
 import os
 import sys
 import click
-from plumbum.cmd import cat
+from plumbum.cmd import cat, tee
 from plumbum import local
 
 python = local[sys.executable]
@@ -91,8 +91,9 @@ def proc_stiff(method, inf, outf, head):
 @click.argument("inf", type=click.Path(exists=True))
 @click.argument("keyin", type=click.Path(exists=True))
 @click.argument("outf", type=click.Path())
+@click.argument("key3out", type=click.Path())
 @click.argument("keyout", type=click.Path())
-def unified_to_sup(inf, keyin, outf, keyout):
+def unified_to_sup(inf, keyin, outf, key3out, keyout):
     """
     Make the unified format into the senseval format used by the supervised
     systems (at least It Makes Sense) for both training and test data.
@@ -101,6 +102,7 @@ def unified_to_sup(inf, keyin, outf, keyout):
     python(munge_py, "unified-to-senseval", inf, keyin, tempdir)
     (
         python[munge_py, "senseval-gather", tempdir, outf, "-"]
+        | tee[key3out]
         | python[munge_py, "unified-key-to-ims-test", "-", keyout]
     )()
 
@@ -131,7 +133,11 @@ def unified_to_eval(inf, keyin, dirout):
     )
     for pdict in ps.values():
         unified_to_sup.callback(
-            pdict["unified"], pdict["unikey"], pdict["sup"], pdict["supkey"]
+            pdict["unified"],
+            pdict["unikey"],
+            pdict["sup"],
+            pdict["sup3key"],
+            pdict["supkey"],
         )
         python(munge_py, "finnpos-senseval", pdict["sup"], pdict["suptag"])
         python(munge_py, "omorfi-segment-senseval", pdict["sup"], pdict["supseg"])

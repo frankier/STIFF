@@ -10,7 +10,8 @@ from stiff.tag import proc_line
 @click.argument("corpus")
 @click.argument("output", type=click.File("w"))
 @click.option("--cutoff", default=None, type=int)
-def tag(corpus, output, cutoff):
+@click.option("--skip-until")
+def tag(corpus, output, cutoff, skip_until):
     """
     Tag Finnish and Chinese parts of OpenSubtitles2018 by writing all possible
     taggings for each token, and adding ways in which tagging from the two
@@ -19,6 +20,7 @@ def tag(corpus, output, cutoff):
     """
     cmn_extractor = CmnExtractor()
     fin_extractor = FinExtractor()
+    skipping = True
     with Writer(output) as writer:
         for (
             idx,
@@ -30,6 +32,11 @@ def tag(corpus, output, cutoff):
             new_imdb_id,
             align,
         ) in read_opensubtitles2018(corpus):
+            if skip_until and skipping:
+                if skip_until == imdb_id:
+                    skipping = False
+                else:
+                    continue
             if new_imdb_id:
                 if idx > 0:
                     writer.end_subtitle()

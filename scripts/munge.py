@@ -484,18 +484,18 @@ HEAD_REGEX = re.compile("(.*)<head>(.*)</head>(.*)")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
 def finnpos_senseval(inf: IO, outf: IO):
-    from stiff.munge.pos import finnpos_senseval
+    from stiff.munge.pos import finnpos_senseval as finnpos_senseval_impl
 
-    return finnpos_senseval(inf, outf)
+    return finnpos_senseval_impl(inf, outf)
 
 
 @munge.command("omorfi-segment-senseval")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
 def omorfi_segment_senseval(inf: IO, outf: IO):
-    from stiff.munge.seg import omorfi_segment_senseval
+    from stiff.munge.seg import omorfi_segment_senseval as omorfi_segment_senseval_impl
 
-    return omorfi_segment_senseval(inf, outf)
+    return omorfi_segment_senseval_impl(inf, outf)
 
 
 if __name__ == "__main__":

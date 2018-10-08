@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import find_packages, setup
 
 setup(
     name="stiff",
@@ -8,7 +8,7 @@ setup(
     author="Frankie Robertson",
     author_email="frankie@robertson.name",
     license="Apache v2",
-    packages=["stiff"],
+    packages=find_packages(exclude=("tests", "scripts")),
     install_requires=[
         "click>=6.7",
         "plumbum>=1.6.6",

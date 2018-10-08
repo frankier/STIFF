@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="stiff",
-    version="0.0.1",
+    version="0.0.2",
     description="Sense Tagged Instances For Finnish",
     url="https://github.com/frankier/stiff/",
     author="Frankie Robertson",

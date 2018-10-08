@@ -16,13 +16,11 @@ setup(
         "pygtrie>=2.2",
         "opencc>=0.2",
         "opus-api>=0.6.2",
-        "finntk>=0.0.23",
+        "finntk>=0.0.24",
         "streamz>=0.3.0",
         "lxml>=4.2.3",
         "conllu>=1.1",
     ],
-    extras_require={
-        "dev": ["flake8>=3.5.0", "pre-commit>=1.10.2", "pytest", "mypy"]
-    },
+    extras_require={"dev": ["flake8>=3.5.0", "pre-commit>=1.10.2", "pytest", "mypy"]},
     zip_safe=False,
 )

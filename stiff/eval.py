@@ -13,5 +13,4 @@ def get_eval_paths(evaldir):
             "suptag": pjoin(evaldir, partition + ".sup.tag.xml"),
             "supseg": pjoin(evaldir, partition + ".sup.seg.xml"),
         }
-    ps["eval"] = evaldir
-    return ps
+    return evaldir, ps

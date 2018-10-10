@@ -120,7 +120,7 @@ def unified_to_eval(inf, keyin, dirout):
 
     if not os.path.exists(dirout):
         os.makedirs(dirout, exist_ok=True)
-    ps = get_eval_paths(dirout)
+    root, ps = get_eval_paths(dirout)
     python(
         filter_py,
         "split",

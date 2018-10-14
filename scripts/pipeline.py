@@ -124,6 +124,8 @@ def unified_to_eval(inf, keyin, dirout):
     python(
         filter_py,
         "split",
+        "--sentences",
+        "1000",
         inf,
         ps["test"]["unified"],
         ps["train"]["unified"],

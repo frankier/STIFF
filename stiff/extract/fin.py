@@ -8,6 +8,7 @@ from stiff.models import TokenizedTagging
 from stiff.utils.automata import conf_net_search
 from stiff.wordnet.fin import Wordnet as WordnetFin
 import re
+from typing import List
 
 
 FIN_SPACE = re.compile(r" |_")
@@ -44,14 +45,16 @@ class FinExtractor:
     def extract(self, line: str) -> TokenizedTagging:
         omorfi = get_omorfi()
         omor_toks = omorfi.tokenise(line)
-        finnpos_analys = sent_finnpos([tok["surf"] for tok in omor_toks])
         starts = get_token_positions(omor_toks, line)
+        return self.extract_toks([tok["surf"] for tok in omor_toks], starts)
+
+    def extract_toks(self, surfs: List[str], starts: List[int]):
+        finnpos_analys = sent_finnpos(surfs)
         tagging = TokenizedTagging(WordnetFin)
         conf_net = (
             extract_lemmas_recurs(token) | {fp_lemma}
-            for token, (_fp_surf, fp_lemma, _fp_feats) in zip(omor_toks, finnpos_analys)
+            for token, (_fp_surf, fp_lemma, _fp_feats) in zip(surfs, finnpos_analys)
         )
-        surfs = (tok["surf"] for tok in omor_toks)
         extract_tokenized_iter(
             tagging,
             conf_net_search(self.tok_auto, conf_net, lambda x: x[0]),

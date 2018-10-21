@@ -6,6 +6,8 @@ from .base import ExtractableWordnet
 from typing import Dict, List
 from stiff.data.fixes import fix_all
 
+fix_all()
+
 
 def _map_qf2(lemma_obj):
     fi2en, en2fi = get_en_fi_maps()
@@ -14,9 +16,6 @@ def _map_qf2(lemma_obj):
 
 class Wordnet(ExtractableWordnet):
     _synset_mappers = {"qf2": _map_qf2}
-
-    def __new__(cls) -> None:
-        fix_all()
 
     @staticmethod
     def lang() -> str:

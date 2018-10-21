@@ -5,11 +5,10 @@ from .base import ExtractableWordnet
 from typing import Dict, List
 from stiff.data.fixes import fix_all
 
+fix_all()
+
 
 class Wordnet(ExtractableWordnet):
-    def __new__(cls) -> None:
-        fix_all()
-
     @staticmethod
     def lang() -> str:
         return "cmn"

@@ -3,9 +3,7 @@ from stiff.data import get_data_path
 
 
 def fix_cmn():
-    wordnet.custom_lemmas(
-        open(get_data_path("wn-data-cmn-fixed.tab")), lang="cmn"
-    )
+    wordnet.custom_lemmas(open(get_data_path("wn-data-cmn-fixed.tab")), lang="cmn")
 
 
 def add_omw_wikt():

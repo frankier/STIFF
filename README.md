@@ -18,26 +18,52 @@ You can then run
 
     $ ./install.sh
 
-## Example conversions
+## Example processing & conversion pipelines
 
-### Sampling EuroSense and convert to unified
+Both the following pipelines first create a corpus tagged in the unified
+format, which consists of an `xml` and `key` file, and then create a directory
+consisting of the files needed by
+[finn-wsd-eval](https://github.com/frankier/finn-wsd-eval).
+
+### STIFF Pipeline (WIP)
+
+e.g.
+
+    pipenv run python scripts/fetch_opensubtitles2018.py cmn-fin
+    pipenv run python scripts/pipeline.py mk-stiff cmn-fin stiff.raw.xml.zstd
+    pipenv run python scripts/pipeline.py proc-stiff simple stiff.raw.xml.zstd stiff.simplefiltered.sample.xml.zstd
+    ./stiff2unified.sh stiff.simplefiltered.sample.xml.zstd stiff.unified.sample.xml stiff.unified.sample.key
+
+### EuroSense Pipeline
+
+#### EuroSense ➡️ Unified
 
 You will need to set the environment variable BABEL2WN_MAP as the path to a TSV
-mapping from BabelNet synsets to WordNet synsets. This file can be obtained
-from a BabelNet dump + following the instructions at
-https://github.com/frankier/babelnet-lookup
+mapping from BabelNet synsets to WordNet synsets. You can either:
 
-    pipenv run python scripts/pipeline.py eurosense2unified --head 1000 \
+1. Obtain the BabelNet indices by following [these
+   instructions](https://babelnet.org/guide#access) and dump out the TSV by
+   following the instructions at https://github.com/frankier/babelnet-lookup
+2. If you are affiliated with a research institution, I have permission to send
+   you the TSV file, but you must send me a direct communication from your
+   institutional email address. (Please shortly state your position/affiliation
+   and non-commercial research use in the email so there is a record.)
+3. Alternatively (subject to the same conditions) if you prefer, I can just
+   send you eurosense.unified.sample.xml eurosense.unified.sample.key
+
+Then run:
+
+    pipenv run python scripts/pipeline.py eurosense2unified \
       /path/to/eurosense.v1.0.high-precision.xml eurosense.unified.sample.xml \
       eurosense.unified.sample.key
 
-### Making STIFF, sampling/filtering and converting to unified
+#### Unified ➡️ Eval
 
-    pipenv run python scripts/fetch_opensubtitles2018.py cmn-fin
-    pipenv run python scripts/pipeline.py mk-stiff cmn-fin stiff.raw.xml.zstd 
-    pipenv run python scripts/pipeline.py proc-stiff simple --head 1000 stiff.raw.xml.zstd stiff.simplefiltered.sample.xml.zstd
-    ./stiff2unified.sh stiff.simplefiltered.sample.xml.zstd stiff.unified.sample.xml stiff.unified.sample.key
+Run:
 
+    pipenv run python scripts/pipeline.py unified-to-eval \
+      /path/to/eurosense.unified.xml /path/to/eurosense.unified.key \
+      eurosense.eval/
 
 ## Organisation & usage
 

@@ -72,7 +72,6 @@ def proc_stiff(method, inf, outf, head):
             pipeline
             | python[filter_py, "no-support", "-", "-"]
             | python[filter_py, "lang", "fi", "-", "-"]
-            | python[filter_py, "rm-empty", "-", "-"]
         )
     elif method == "complex":
         pipeline = (

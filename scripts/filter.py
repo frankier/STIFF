@@ -32,7 +32,7 @@ def filter_support(inf, outf):
 
     def remove_no_support(elem):
         for ann in elem.xpath("./annotations/annotation"):
-            if ann.attrib["support"]:
+            if "support" in ann.attrib and ann.attrib["support"]:
                 continue
             ann.getparent().remove(ann)
 

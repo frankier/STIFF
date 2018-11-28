@@ -9,6 +9,8 @@ from stiff.utils.xml import (
     transform_blocks,
     BYPASS,
     chunk_cb,
+    write_event,
+    fixup_missing_text,
 )
 from xml.sax.saxutils import escape
 from urllib.parse import parse_qsl
@@ -496,6 +498,27 @@ def omorfi_segment_senseval(inf: IO, outf: IO):
     from stiff.munge.seg import omorfi_segment_senseval as omorfi_segment_senseval_impl
 
     return omorfi_segment_senseval_impl(inf, outf)
+
+
+@munge.command("man-ann-select")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+@click.option("--source", default=None)
+def man_ann_select(inf: IO, outf: IO, source):
+    stream = etree.iterparse(inf, events=("start", "end"))
+    inside = False
+    matches = False
+    missing_text = False
+    for event, elem in stream:
+        if event == "start" and elem.tag == "corpus":
+            inside = True
+            matches = source is None or elem.attrib["source"] == source
+        elif event == "end" and elem.tag == "corpus":
+            inside = False
+        elif not inside or inside and matches:
+            if missing_text and elem.getparent():
+                fixup_missing_text(event, elem, outf)
+            missing_text = write_event(event, elem, outf)
 
 
 if __name__ == "__main__":

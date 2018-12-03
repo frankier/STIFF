@@ -84,7 +84,7 @@ def fold_support(lang, inf, outf):
                 from_wordnets = from_elem.attrib["wordnets"]
                 for position in from_elem.attrib["anchor-positions"].split(" "):
                     from_anchor = parse_qs(position)
-                    from_source = from_anchor["from"]
+                    from_source = from_anchor["from-id"]
                 from_lemma_path = from_elem.attrib["lemma-path"]
                 del supp["transfer-from"]
                 supp.update(

@@ -504,21 +504,37 @@ def omorfi_segment_senseval(inf: IO, outf: IO):
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
 @click.option("--source", default=None)
-def man_ann_select(inf: IO, outf: IO, source):
+@click.option("--end", default=None)
+def man_ann_select(inf: IO, outf: IO, source, end):
     stream = etree.iterparse(inf, events=("start", "end"))
     inside = False
     matches = False
     missing_text = False
+    stopped = False
     for event, elem in stream:
         if event == "start" and elem.tag == "corpus":
             inside = True
             matches = source is None or elem.attrib["source"] == source
-        elif event == "end" and elem.tag == "corpus":
-            inside = False
-        elif not inside or inside and matches:
-            if missing_text and elem.getparent():
+
+        if (
+            (not inside)
+            or (inside and matches and not stopped)
+            or (stopped and elem.tag == "corpus")
+        ):
+            if missing_text and elem.getparent() is not None:
                 fixup_missing_text(event, elem, outf)
             missing_text = write_event(event, elem, outf)
+
+        if event == "end" and elem.tag == "corpus":
+            inside = False
+            stopped = False
+        if (
+            event == "end"
+            and elem.tag == "sentence"
+            and end is not None
+            and elem.attrib["id"] == end
+        ):
+            stopped = True
 
 
 if __name__ == "__main__":

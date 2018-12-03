@@ -141,7 +141,10 @@ def cb_to_iter(f):
 
 def cb_blocks(block):
     def inner(inf, cb):
-        stream = etree.iterparse(inf, events=("start", "end"))
+        if isinstance(inf, etree.iterparse):
+            stream = inf
+        else:
+            stream = etree.iterparse(inf, events=("start", "end"))
         chunk_cb(stream, eq_matcher(block), cb)
 
     return inner

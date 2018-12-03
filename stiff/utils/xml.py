@@ -162,7 +162,14 @@ iter_sentences = iter_blocks("sentence")
 
 def chunk_stream_cb(stream, matcher: Matcher, outside_cb, inside_cb, always_cb=None):
     inside = False
+    depth = 0
     for event, elem in stream:
+        if event == "start":
+            depth += 1
+        if event == "end":
+            depth -= 1
+        if depth < 0:
+            return
         if event == "start" and matcher(elem.tag):
             inside = True
         if always_cb is not None:

@@ -12,7 +12,7 @@ from stiff.models import TokenizedTagging
 from stiff.utils.automata import conf_net_search
 from stiff.wordnet.fin import Wordnet as WordnetFin
 import re
-from typing import List
+from typing import Dict, List, Set
 
 
 FIN_SPACE = re.compile(r" |_")
@@ -61,8 +61,8 @@ class FinExtractor:
         for token, (_fp_surf, fp_lemma, fp_feats) in zip(surfs, self.finnpos_analys):
             omor = extract_lemmas(token)
             recurs = extract_lemmas_recurs(token)
-            tok_sources = {}
-            tok_choices = set()
+            tok_sources: Dict[str, List[str]] = {}
+            tok_choices: Set[str] = set()
 
             def add(lemmas, source):
                 for lemma in lemmas:

@@ -1,7 +1,7 @@
 from stiff.models import UntokenizedTagging, TokenizedTagging, Anchor, TaggedLemma
 from stiff.wordnet import ExtractableWordnet, objify_lemmas
 from ahocorasick import Automaton
-from typing import Dict, Type, Iterator, Tuple, List, Iterable
+from typing import Dict, Type, Iterator, Tuple, List
 
 
 def extract_auto(
@@ -30,7 +30,7 @@ def extract_tokenized_iter(
     tagging: TokenizedTagging,
     iter: Iterator[Tuple[int, Tuple[List[str], Dict[str, str]]]],
     wordnet: Type[ExtractableWordnet],
-    surfs: Iterable[str],
+    surfs: List[str],
     starts: List[int],
     from_id: str,
     sources=None,

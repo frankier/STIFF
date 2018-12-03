@@ -70,6 +70,7 @@ class TaggedLemma:
     supports: List[TagSupport] = field(default_factory=list)
     rank: Optional[Tuple[int, int]] = None
     lemma_path: str = "whole"
+    finnpos_feats: List[Dict[str, str]] = field(default_factory=list)
 
     @property
     def wordnets(self) -> List[str]:

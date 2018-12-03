@@ -67,7 +67,13 @@ def proc_stiff(method, inf, outf, head):
     from plumbum.cmd import zstdcat, zstdmt
 
     pipeline = add_head(zstdcat["-D", "zstd-compression-dictionary", inf], head)
-    if method == "simple":
+    if method == "none":
+        pipeline = (
+            pipeline
+            | python[filter_py, "fold-support", "fi", "-", "-"]
+            | python[filter_py, "lang", "fi", "-", "-"]
+        )
+    elif method == "simple":
         pipeline = (
             pipeline
             | python[filter_py, "no-support", "-", "-"]

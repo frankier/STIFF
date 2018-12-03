@@ -22,10 +22,14 @@ Matcher = Callable[["Token", "Token"], bool]
 Combiner = Callable[["Token", "Token"], None]
 
 
+def dash_dict(kvs):
+    return {k.replace("_", "-"): v for k, v in kvs}
+
+
 class DataUtilMixin:
     def urlencode(self):
-        d = asdict(self)
-        for k in list(d.keys()):
+        d = asdict(self, dict_factory=dash_dict)
+        for k in d.keys():
             if d[k] is None or d[k] == "":
                 del d[k]
         return urlencode(d)
@@ -40,7 +44,7 @@ class Anchor(DataUtilMixin):
 
     def urlencode(self):
         # Specialised for speed
-        res = ["from_id=", self.from_id, "&char=", str(self.char)]
+        res = ["from-id=", self.from_id, "&char=", str(self.char)]
         if self.token is not None:
             res.append("&token=")
             res.append(str(self.token))

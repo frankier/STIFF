@@ -33,6 +33,8 @@ def extract_tokenized_iter(
     surfs: Iterable[str],
     starts: List[int],
     from_id: str,
+    sources=None,
+    feats=None,
 ):
     for end_pos, (lf_tokens, wn_to_lemma) in iter:
         start_pos = end_pos - len(lf_tokens) + 1
@@ -41,9 +43,17 @@ def extract_tokenized_iter(
         for group in groups:
             tag_group = TaggedLemma(" ".join(lf_tokens))
             tag_group.lemma_objs = group
+            if sources and feats:
+                tag_group.lemma_path = " ".join(
+                    ",".join(sources[tok_idx][lemma])
+                    for tok_idx, lemma in zip(range(start_pos, end_pos + 1), lf_tokens)
+                )
+                tag_group.finnpos_feats = feats[start_pos : end_pos + 1]
+            else:
+                tag_group.lemma_path = "whole"
             tags.append(tag_group)
         tagging.add_tags(
-            " ".join(surfs),
+            " ".join(surfs[start_pos : end_pos + 1]),
             [Anchor(from_id, starts[start_pos], start_pos, len(lf_tokens))],
             tags,
         )

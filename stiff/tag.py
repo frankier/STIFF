@@ -1,5 +1,6 @@
 from itertools import chain
 from copy import copy
+from json import dumps
 
 from finntk.wordnet.reader import fiwn_encnt
 
@@ -174,7 +175,17 @@ def proc_line(
     writer.begin_sent()
     writer.write_text("zh", zh_tok)
     writer.write_text("zh", zh_untok, is_tokenised=False)
-    writer.write_text("fi", fi_tok)
+    fi_id = writer.write_text("fi", fi_tok)
+    writer.write_gram(
+        fi_id,
+        "finnpos",
+        dumps(
+            [
+                (fp_lemma, fp_feats)
+                for _, fp_lemma, fp_feats in fin_extractor.finnpos_analys
+            ]
+        ),
+    )
     writer.start_anns()
     write_anns(writer, "fi", fi_tagging)
     write_anns(writer, "zh", zh_tagging)

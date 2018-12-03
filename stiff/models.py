@@ -69,6 +69,7 @@ class TaggedLemma:
     id: Optional[int] = None
     supports: List[TagSupport] = field(default_factory=list)
     rank: Optional[Tuple[int, int]] = None
+    lemma_path: str = "whole"
 
     @property
     def wordnets(self) -> List[str]:

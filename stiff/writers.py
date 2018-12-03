@@ -14,8 +14,9 @@ def ann_common_attrs(lang: str, tok: Token, tag: TaggedLemma) -> str:
         ("lemma", tag.lemma),
         ("wnlemma", " ".join(tag.lemma_names)),
         ("wordnets", " ".join((tag.wordnets))),
+        ("lemma-path", tag.lemma_path),
     )  # type: Tuple[Tuple[str, str], ...]
-    return " ".join("{}={}".format(k, quoteattr(v)) for k, v in attrs) + " "
+    return " ".join("{}={}".format(k, quoteattr(v)) for k, v in attrs if v)
 
 
 def ann_text(tag: TaggedLemma) -> str:
@@ -77,8 +78,7 @@ def man_ann_ann(lang: str, tok: Token, tag: TaggedLemma) -> str:
     return (
         "<annotation "
         'type="man-ann" '
-        "{}"
-        'lemma-path="whole">'
+        "{}>"
         "{}</annotation>\n"
         "<!-- {}: {} ({}{}lexname: {}) -->\n"
     ).format(
@@ -133,6 +133,14 @@ class Writer:
                 id, lang, self._tok_extra(is_tokenised), text
             )
         )
+        return id
+
+    def write_gram(self, for_id, gram_type, gram):
+        self.outf.write(
+            '<gram type="{}" for="{}"><![CDATA[{}]]></gram>\n'.format(
+                gram_type, for_id, gram
+            )
+        )
 
     def write_ann(self, lang: str, tok: Token, tag: TaggedLemma):
         supports = [support.urlencode() for support in tag.supports]
@@ -151,12 +159,7 @@ class Writer:
 
         self.outf.write(
             (
-                "<annotation "
-                'id="{}" '
-                'type="stiff" '
-                "{}{}{}"
-                'lemma-path="whole">'
-                "{}</annotation>\n"
+                "<annotation " 'id="{}" ' 'type="stiff" ' "{}{}{}>" "{}</annotation>\n"
             ).format(
                 tag.id,
                 support_attr,

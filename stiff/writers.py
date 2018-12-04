@@ -180,6 +180,7 @@ class AnnWriter(Writer):
     def begin_subtitle(self, srcs, imdb):
         self.srcs = srcs
         self.imdb = imdb
+        self.sent_idx = 0
 
     def end_subtitle(self):
         pass

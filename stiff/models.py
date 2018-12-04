@@ -49,7 +49,7 @@ class Anchor(DataUtilMixin):
             res.append("&token=")
             res.append(str(self.token))
         if self.token_length is not None:
-            res.append("&token_length=")
+            res.append("&token-length=")
             res.append(str(self.token_length))
         return "".join(res)
 

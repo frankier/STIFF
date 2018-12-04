@@ -1,10 +1,12 @@
 from lxml import etree
 import click
-from stiff.utils.anns import get_ann_pos
+from stiff.utils.anns import get_ann_pos, get_ann_pos_dict
 from stiff.utils.xml import cb_to_iter, chunk_cb, eq_matcher, iter_sentences
 import pandas as pd
 from streamz import Stream
 from streamz.dataframe import DataFrame
+from os import listdir
+from os.path import join as pjoin
 
 
 @click.group("eval")
@@ -21,7 +23,10 @@ class SampleGoldIterationException(Exception):
 
 def align_with_gold(gold_sents, guess_sents, max_slack=1000):
     while 1:
-        gold_id, gold_sent = next(gold_sents)
+        try:
+            gold_id, gold_sent = next(gold_sents)
+        except StopIteration:
+            return
         skipped = 0
         while 1:
             try:
@@ -77,11 +82,10 @@ def iter_sentence_id_pairs(fp):
 
 
 def anns_to_set(anns):
-    return {(ann.attrib["anchor-positions"], ann.text) for ann in anns}
+    return {(int(get_ann_pos_dict(ann)["token"]), ann.text) for ann in anns}
 
 
 def calc_pr(tp, fp, fn):
-    print(tp, fp, fn)
     if tp == 0:
         return 0, 0, 0
     p = tp / (tp + fp)
@@ -89,42 +93,82 @@ def calc_pr(tp, fp, fn):
     return (p, r, 2 * p * r / (p + r))
 
 
+def pr_one(gold_etree, guess_fp, trace_individual=False):
+    total_tp = 0
+    total_fp = 0
+    total_fn = 0
+    gold_sents = list(iter_sent_to_pairs(iter(gold_etree.xpath("//sentence"))))
+    guess_sents = iter_sentence_id_pairs(guess_fp)
+    for idx, (gold_sent, guess_sent) in enumerate(
+        align_with_gold(iter(gold_sents), guess_sents)
+    ):
+        gold_anns = gold_sent.xpath(".//annotation")
+        guess_anns = guess_sent.xpath(".//annotation")
+        gold_ann_set = anns_to_set(gold_anns)
+        guess_ann_set = anns_to_set(guess_anns)
+        tp = len(gold_ann_set & guess_ann_set)
+        fp = len(guess_ann_set - gold_ann_set)
+        fn = len(gold_ann_set - guess_ann_set)
+        if trace_individual:
+            print("#{} P: {}, R: {} F_1: {}".format(idx, *calc_pr(tp, fp, fn)))
+        total_tp += tp
+        total_fp += fp
+        total_fn += fn
+    return calc_pr(total_tp, total_fp, total_fn)
+
+
 @eval.command("pr")
 @click.argument("gold", type=click.File("rb"), nargs=1)
 @click.argument("guess", type=click.File("rb"), nargs=-1)
 @click.option("--trace-individual/--no-trace-individual", default=False)
-def pr(gold, guess, source, trace_individual):
+def pr(gold, guess, trace_individual):
     gold_etree = etree.parse(gold)
+    for guess_fp in guess:
+        print(guess_fp)
+        print(pr_one(gold_etree, guess_fp, trace_individual))
+
+
+@eval.command("pr-eval")
+@click.argument("gold", type=click.File("rb"))
+@click.argument("eval", type=click.Path())
+@click.option("--plot/--no-plot")
+def pr_eval(gold, eval, plot):
+    names = []
     prs = []
-    try:
-        for guess_fp in guess:
-            total_tp = 0
-            total_fp = 0
-            total_fn = 0
-            gold_sents = iter_sent_to_pairs(iter(gold_etree.xpath("//sentence")))
-            guess_sents = iter_sentence_id_pairs(guess_fp)
-            for idx, (gold_sent, guess_sent) in enumerate(
-                align_with_gold(gold_sents, guess_sents)
-            ):
-                gold_anns = gold_sent.xpath(".//annotation")
-                guess_anns = guess_sent.xpath(".//annotation")
-                gold_ann_set = anns_to_set(gold_anns)
-                guess_ann_set = anns_to_set(guess_anns)
-                print("gold_ann_set", gold_ann_set)
-                print("guess_ann_set", guess_ann_set)
-                tp = len(gold_ann_set & guess_ann_set)
-                fp = len(guess_ann_set - gold_ann_set)
-                fn = len(gold_ann_set - guess_ann_set)
-                if trace_individual:
-                    print("#{} P: {}, R: {} F_1: {}".format(idx, *calc_pr(tp, fp, fn)))
-                total_tp += tp
-                total_fp += fp
-                total_fn += fn
-            prs.append(calc_pr(total_tp, total_fp, total_fn))
-        print("PRs", prs)
-    except SampleGoldIterationException as e:
-        print(e.args[0])
-        print(calc_pr(total_tp, total_fp, total_fn))
+    gold_etree = etree.parse(gold)
+    for entry in listdir(eval):
+        names.append(entry.rsplit(".", 1)[0])
+        prs.append(pr_one(gold_etree, open(pjoin(eval, entry), "rb")))
+    if plot:
+        import matplotlib.pyplot as plt
+        from adjustText import adjust_text
+        import pareto
+
+        nondominated = pareto.eps_sort(prs, [0, 1], maximize_all=True, attribution=True)
+        nondominated_idxs = [nd[-1] for nd in nondominated]
+        plt.xlabel("Precision")
+        plt.ylabel("Recall")
+        nondom_ps = []
+        nondom_rs = []
+        dom_ps = []
+        dom_rs = []
+        for idx, pr in enumerate(prs):
+            if idx in nondominated_idxs:
+                nondom_ps.append(pr[0])
+                nondom_rs.append(pr[1])
+            else:
+                dom_ps.append(pr[0])
+                dom_rs.append(pr[1])
+        plt.scatter(dom_ps, dom_rs, marker="o", c="k")
+        plt.scatter(nondom_ps, nondom_rs, marker="D", c="b")
+        texts = []
+        for name, (p, r, _f1) in zip(names, prs):
+            texts.append(plt.text(p, r, name, ha="center", va="center"))
+        adjust_text(texts, arrowprops=dict(arrowstyle="->", color="red"))
+        plt.show()
+    else:
+        for name, pr in zip(names, prs):
+            print(name, pr[0], pr[1], pr[2])
 
 
 @eval.command("cov")

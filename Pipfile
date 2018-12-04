@@ -9,6 +9,8 @@ nltk = {editable = true, ref = "e1b3fda3768288ba96309dd92fd1ee7943cc43f9", git =
 black = {ref = "cb67a322423cb2b4bcfb2faa68fb769326741d6a", git = "https://github.com/ambv/black.git"}
 pyahocorasick = {editable = true, ref = "stiff-2018-09-20-3", git = "https://github.com/frankier/pyahocorasick.git"}
 click = {ref = "065653e7996a82e219cf2d0ce90fec7b0574ba36", git = "https://github.com/pallets/click.git"}
+adjusttext = "*"
+pareto = "*"
 
 [dev-packages]
 

@@ -123,10 +123,37 @@ def rm_empty(inf, outf, text):
     transform_sentences(inf, remove_empty, outf)
 
 
+@filter.command("rm-ambg")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+def rm_ambg(inf, outf):
+    """
+    Remove ambiguous annotations of the same span.
+    """
+
+    def sent_rm_ambg(sent):
+        anns = sent.xpath("./annotations/annotation")
+        new_anns = anns.copy()
+        span_counts = {}
+        for ann in anns:
+            span = get_ann_pos(ann)
+            if span not in span_counts:
+                span_counts[span] = 0
+            span_counts[span] += 1
+        for ann in anns:
+            span = get_ann_pos(ann)
+            if span_counts[span] >= 2:
+                new_anns.remove(ann)
+        trim_anns(anns, new_anns)
+
+    transform_sentences(inf, sent_rm_ambg, outf)
+
+
 @filter.command("align-dom")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
-def filter_align_dom(inf, outf):
+@click.option("--proc", type=click.Choice(["dom", "rm"]))
+def filter_align_dom(inf, outf, proc):
     """
     Dominance filter:
 
@@ -135,18 +162,24 @@ def filter_align_dom(inf, outf):
     """
 
     def remove_dom_transfer(sent):
-        anns = sent.xpath(
-            './annotations/annotation[starts-with(@support, "aligned-transfer:")]]'
-        )
+        anns = sent.xpath("./annotations/annotation")
+        have_aligned = []
+        if proc == "dom":
+            for ann in anns:
+                span = get_ann_pos(ann)
+                if "support" not in ann.attrib:
+                    continue
+                support = parse_qs(ann.attrib["support"])
+                if support["transfer-type"] == "aligned":
+                    have_aligned.append(span)
         for ann in anns:
-            dominated = sent.xpath(
-                (
-                    './annotations/annotation[starts-with(@support, "transfer:")]'
-                    '[@anchor-positions="{}"]'
-                ).format(ann["anchor-positions"])
-            )
-            for dom in dominated:
-                dom.getparent().remove(dom)
+            if "support" not in ann.attrib:
+                continue
+            support = parse_qs(ann.attrib["support"])
+            if support["transfer-type"] == "unaligned":
+                span = get_ann_pos(ann)
+                if proc == "rm" or span in have_aligned:
+                    anns.remove(ann)
 
     transform_sentences(inf, remove_dom_transfer, outf)
 
@@ -286,12 +319,17 @@ def join(infs, outf):
 @filter.command("freq-dom")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
-def freq_dom(inf, outf):
+@click.option("--break-ties/--no-break-ties")
+def freq_dom(inf, outf, break_ties):
     """
     Dominance filter:
 
     When there are multiple annotations of the exact same anchor, (position +
-    content) keep only the one with the highest count, breaking ties with alphabetical-ness.
+    content) keep only the one with the highest count, breaking ties with
+    alphabetical-ness.
+
+    TODO: Could use some other measure of frequency -- or lemma numbering/graph
+    centrality measures
     """
 
     def sent_freq_dom(sent):
@@ -301,16 +339,21 @@ def freq_dom(inf, outf):
             tok, tok_len = get_ann_pos(ann)
             anchor = ann.attrib["anchor"]
             ann_index.setdefault((anchor, tok, tok_len), []).append(ann)
+        if break_ties:
+
+            def ranking_key(ann):
+                return (int(ann.attrib["rank"]), ann.text)
+
+        else:
+
+            def ranking_key(ann):
+                return int(ann.attrib["rank"])
+
         for cand_anns in ann_index.values():
-            ranked_anns = sorted(
-                (
-                    (int(cand_ann.attrib["rank"]), cand_ann.text, cand_ann)
-                    for cand_ann in cand_anns
-                )
-            )
+            ranked_anns = sorted(cand_anns, key=ranking_key)
             best_ann = ranked_anns[0]
             for cand_ann in cand_anns:
-                if cand_ann != best_ann:
+                if ranking_key(cand_ann) != ranking_key(best_ann):
                     cand_ann.getparent().remove(cand_ann)
 
     transform_sentences(inf, sent_freq_dom, outf)
@@ -319,7 +362,7 @@ def freq_dom(inf, outf):
 def greedy_max_span(positions):
     max_pos = 0
     for pos in positions:
-        positions[pos].sort(reverse=True)
+        positions[pos].sort(reverse=True, key=lambda pair: pair[0])
         if pos > max_pos:
             max_pos = pos
     anns = []
@@ -327,8 +370,16 @@ def greedy_max_span(positions):
     while cur_pos <= max_pos:
         while cur_pos not in positions:
             cur_pos += 1
+            if cur_pos > max_pos:
+                break
+        if cur_pos > max_pos:
+            break
         cur_len, ann = positions[cur_pos][0]
         anns.append(ann)
+        for other_len, ann in positions[cur_pos][1:]:
+            if other_len != cur_len:
+                break
+            anns.append(ann)
         cur_pos += cur_len
     return anns
 
@@ -382,14 +433,26 @@ def char_span_dom(inf, outf):
             tok, tok_len = get_ann_pos(ann)
             if tok_len == 1:
                 tokens.setdefault(tok, []).append(ann)
-        for tok, anns in tokens.items():
-            char_positions = {}
-            for ann in anns:
-                anchor_pos = get_ann_pos_dict(ann)
-                anchor = ann.attrib["anchor"]
-                char_positions.setdefault(anchor_pos["char"], []).append(
-                    (len(anchor), ann)
-                )
+        starts = []
+        for ann in anns:
+            anchor_pos = get_ann_pos_dict(ann)
+            anchor = ann.attrib["anchor"]
+            starts.append(int(anchor_pos["char"]))
+        starts.sort()
+        char_positions = {}
+        for ann in anns:
+            anchor_pos = get_ann_pos_dict(ann)
+            anchor = ann.attrib["anchor"]
+            cur_start = int(anchor_pos["char"])
+            cur_start_idx = starts.index(cur_start)
+            anchor_len = len(anchor)
+            span = 0
+            while (
+                cur_start_idx + span < len(starts)
+                and starts[cur_start_idx + span] <= cur_start + anchor_len
+            ):
+                span += 1
+            char_positions.setdefault(cur_start, []).append((span, ann))
         new_anns = greedy_max_span(char_positions)
         trim_anns(anns, new_anns)
 
@@ -398,7 +461,7 @@ def char_span_dom(inf, outf):
 
 def get_wn_pos(ann):
     wn_ids = ann.text.split(" ")
-    poses = [wn_id.split(".")[1] for wn_id in wn_ids]
+    poses = [wn_id.rsplit(".", 2)[-2] for wn_id in wn_ids]
     assert reduce(lambda a, b: a == b, poses)
     return "a" if poses[0] == "s" else poses[0]
 
@@ -432,6 +495,12 @@ def lemmatized_pos_match(wn_pos, finnpos_feats):
         return -1
 
 
+def get_finnpos_analys(sent):
+    gram = sent.xpath("gram[@type='finnpos']")
+    assert len(gram) == 1
+    return json.loads(gram[0].text)
+
+
 @filter.command("finnpos-naive-lemma-dom")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
@@ -446,9 +515,7 @@ def finnpos_naive_lemma_dom(inf, outf, proc):
     """
 
     def sent_naive_lemma_dom(sent):
-        gram = sent.xpath("gram[type=finnpos]")
-        finnpos_analys = json.loads(gram.text)
-        assert len(gram) == 1
+        finnpos_analys = get_finnpos_analys(sent)
         anns = sent.xpath("./annotations/annotation")
         new_anns = anns.copy()
         best_anns = {}
@@ -465,7 +532,7 @@ def finnpos_naive_lemma_dom(inf, outf, proc):
         if proc == "dom":
             for ann in anns:
                 tok, tok_len = get_ann_pos(ann)
-                if ann not in best_anns[(tok, tok_len)]:
+                if (tok, tok_len) in best_anns and ann not in best_anns[(tok, tok_len)]:
                     new_anns.remove(ann)
         trim_anns(anns, new_anns)
 
@@ -481,8 +548,8 @@ def finnpos_naive_pos_dom(inf, outf, proc):
     FinnPOS Dominance filter: Use FinnPOS annotations to support certain
     annotations over others, in terms of POS or lemma.
 
-    Heuristic POS removal: Remove specific POSs altogether. Most commonly
-    PRONOUN, since this POS never exists in WordNet.
+    Naive POS filter: Based on matching exactly the POS. Either as requirement
+    or dominance filter.
     """
     if proc == "dom":
         rm_ranks = []
@@ -498,9 +565,7 @@ def finnpos_naive_pos_dom(inf, outf, proc):
         do_dom = False
 
     def sent_naive_pos_dom(sent):
-        gram = sent.xpath("gram[type=finnpos]")
-        finnpos_analys = json.loads(gram.text)
-        assert len(gram) == 1
+        finnpos_analys = get_finnpos_analys(sent)
         anns = sent.xpath("./annotations/annotation")
         new_anns = anns.copy()
         best_ranks = {}
@@ -515,7 +580,9 @@ def finnpos_naive_pos_dom(inf, outf, proc):
             if rank in rm_ranks:
                 new_anns.remove(ann)
             elif do_dom:
-                if rank > best_ranks[(tok, tok_len)]:
+                if (tok, tok_len) not in best_ranks or rank > best_ranks[
+                    (tok, tok_len)
+                ]:
                     best_ranks[(tok, tok_len)] = rank
         if do_dom:
             for ann in anns:
@@ -526,6 +593,37 @@ def finnpos_naive_pos_dom(inf, outf, proc):
         trim_anns(anns, new_anns)
 
     transform_sentences(inf, sent_naive_pos_dom, outf)
+
+
+@filter.command("finnpos-rm-pos")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+@click.option("--level", type=click.Choice(["soft", "normal", "agg"]))
+def finnpos_rm_pos(inf, outf, level):
+    """
+    Heuristic POS removal: Remove specific POSs altogether. Most commonly
+    PRONOUN, since this POS never exists in WordNet.
+    """
+
+    to_remove = ["PRONOUN"]
+    if level in ("normal", "agg"):
+        to_remove.extend(("NUMERAL", "INTERJECTION", "CONJUNCTION"))
+    if level == "agg":
+        to_remove.append("ADPOSITION")
+
+    def sent_rm_pos(sent):
+        finnpos_analys = get_finnpos_analys(sent)
+        anns = sent.xpath("./annotations/annotation")
+        new_anns = anns.copy()
+        for ann in anns:
+            tok, tok_len = get_ann_pos(ann)
+            if tok_len != 1:
+                continue
+            if finnpos_analys[tok][1]["pos"] in to_remove:
+                new_anns.remove(ann)
+        trim_anns(anns, new_anns)
+
+    transform_sentences(inf, sent_rm_pos, outf)
 
 
 if __name__ == "__main__":

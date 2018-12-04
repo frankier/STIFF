@@ -14,6 +14,11 @@ tag_py = os.path.join(dir, "tag.py")
 man_ann_py = os.path.join(dir, "man_ann.py")
 
 
+def ensure_dir(dirout):
+    if not os.path.exists(dirout):
+        os.makedirs(dirout, exist_ok=True)
+
+
 @click.group()
 def pipeline():
     """
@@ -59,7 +64,8 @@ def eurosense2unified(inf, outf, keyout, head, babel2wn_map):
 @click.argument("inf", type=click.Path(exists=True))
 @click.argument("outf", type=click.Path())
 @click.option("--head", default=None)
-def proc_stiff(method, inf, outf, head):
+@click.option("--no-zstd-out/--zstd-out")
+def proc_stiff(method, inf, outf, head, no_zstd_out):
     """
     Do one of several standard STIFF processing pipelines -- producing usable
     corpora at the end.
@@ -73,23 +79,105 @@ def proc_stiff(method, inf, outf, head):
             | python[filter_py, "fold-support", "fi", "-", "-"]
             | python[filter_py, "lang", "fi", "-", "-"]
         )
-    elif method == "simple":
-        pipeline = (
-            pipeline
-            | python[filter_py, "no-support", "-", "-"]
-            | python[filter_py, "lang", "fi", "-", "-"]
-        )
-    elif method == "complex":
+    elif method == "mono-1st-break":
         pipeline = (
             pipeline
             | python[filter_py, "fold-support", "fi", "-", "-"]
             | python[filter_py, "lang", "fi", "-", "-"]
-            | python[filter_py, "align-dom", "-", "-"]
+            | python[filter_py, "freq-dom", "--break-ties", "-", "-"]
+        )
+    elif method == "mono-1st":
+        pipeline = (
+            pipeline
+            | python[filter_py, "fold-support", "fi", "-", "-"]
+            | python[filter_py, "lang", "fi", "-", "-"]
+            | python[filter_py, "freq-dom", "-", "-"]
+            | python[filter_py, "rm-ambg", "-", "-"]
+        )
+    elif method == "mono-unambg":
+        pipeline = (
+            pipeline
+            | python[filter_py, "fold-support", "fi", "-", "-"]
+            | python[filter_py, "lang", "fi", "-", "-"]
+            | python[filter_py, "rm-ambg", "-", "-"]
+        )
+    elif method == "simple-precision":
+        pipeline = (
+            pipeline
+            | python[filter_py, "fold-support", "fi", "-", "-"]
+            | python[filter_py, "lang", "fi", "-", "-"]
+            | python[filter_py, "no-support", "-", "-"]
+            | python[filter_py, "rm-ambg", "-", "-"]
+        )
+    elif method == "simple-recall":
+        pipeline = (
+            pipeline
+            | python[filter_py, "fold-support", "fi", "-", "-"]
+            | python[filter_py, "lang", "fi", "-", "-"]
+            | python[filter_py, "no-support", "-", "-"]
+            | python[filter_py, "freq-dom", "-", "-"]
+            | python[filter_py, "rm-ambg", "-", "-"]
+        )
+    elif method == "simple-x-recall":
+        pipeline = (
+            pipeline
+            | python[filter_py, "fold-support", "fi", "-", "-"]
+            | python[filter_py, "lang", "fi", "-", "-"]
+            | python[filter_py, "no-support", "-", "-"]
+            | python[filter_py, "freq-dom", "--break-ties", "-", "-"]
+        )
+    elif method == "high-precision":
+        pipeline = (
+            pipeline
+            | python[filter_py, "fold-support", "fi", "-", "-"]
+            | python[filter_py, "lang", "fi", "-", "-"]
+            | python[filter_py, "align-dom", "--proc=rm", "-", "-"]
+            | python[filter_py, "char-span-dom", "-", "-"]
+            | python[filter_py, "tok-span-dom", "-", "-"]
+            | python[filter_py, "finnpos-rm-pos", "--level=agg", "-", "-"]
+            | python[filter_py, "finnpos-naive-lemma-dom", "--proc=rm", "-", "-"]
+            | python[filter_py, "finnpos-naive-pos-dom", "--proc=rm", "-", "-"]
+            | python[filter_py, "rm-ambg", "-", "-"]
+        )
+    elif method == "high-recall":
+        pipeline = (
+            pipeline
+            | python[filter_py, "fold-support", "fi", "-", "-"]
+            | python[filter_py, "lang", "fi", "-", "-"]
+            | python[filter_py, "align-dom", "--proc=dom", "-", "-"]
+            | python[filter_py, "finnpos-naive-pos-dom", "--proc=dom", "-", "-"]
+            | python[filter_py, "finnpos-naive-lemma-dom", "--proc=dom", "-", "-"]
+            | python[filter_py, "freq-dom", "-", "-"]
         )
     else:
         assert False, "Unknown method"
-    pipeline = pipeline | zstdmt["-D", "zstd-compression-dictionary", "-", "-o", outf]
+    if not no_zstd_out:
+        pipeline = (
+            pipeline | zstdmt["-D", "zstd-compression-dictionary", "-", "-o", outf]
+        )
+    else:
+        pipeline = pipeline > outf
     pipeline(retcode=[-13, 0])
+
+
+@pipeline.command("proc-stiff-to-eval")
+@click.argument("inf", type=click.Path(exists=True))
+@click.argument("dirout", type=click.Path())
+def proc_stiff_to_eval(inf, dirout):
+    ensure_dir(dirout)
+    for method in (
+        "mono-1st-break",
+        "mono-1st",
+        "mono-unambg",
+        "simple-precision",
+        "simple-recall",
+        "simple-x-recall",
+        "high-precision",
+        "high-recall",
+    ):
+        proc_stiff.callback(
+            method, inf, os.path.join(dirout, f"{method}.xml"), "1000", True
+        )
 
 
 @pipeline.command("unified-to-sup")
@@ -123,8 +211,7 @@ def unified_to_eval(inf, keyin, dirout):
     """
     from stiff.eval import get_eval_paths
 
-    if not os.path.exists(dirout):
-        os.makedirs(dirout, exist_ok=True)
+    ensure_dir(dirout)
     root, ps = get_eval_paths(dirout)
     python(
         filter_py,

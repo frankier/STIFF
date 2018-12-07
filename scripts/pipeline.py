@@ -72,6 +72,8 @@ def proc_stiff(method, inf, outf, head, no_zstd_out):
     """
     from plumbum.cmd import zstdcat, zstdmt
 
+    if os.environ.get("TRACE_PIPELINE"):
+        print(method)
     pipeline = add_head(zstdcat["-D", "zstd-compression-dictionary", inf], head)
     if method == "none":
         pipeline = (
@@ -157,6 +159,8 @@ def proc_stiff(method, inf, outf, head, no_zstd_out):
         )
     else:
         pipeline = pipeline > outf
+    if os.environ.get("TRACE_PIPELINE"):
+        print(pipeline)
     pipeline(retcode=[-13, 0])
 
 

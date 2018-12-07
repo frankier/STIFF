@@ -64,6 +64,11 @@ class TagSupport(DataUtilMixin):
 
 @dataclass
 class TaggedLemma:
+    """
+    Represents a certain lemma + exactly one synset, potentially modulo
+    equivalence across multiple WordNets
+    """
+
     lemma: str
     lemma_objs: List[Tuple[str, Lemma]] = field(default_factory=list)
     id: Optional[int] = None

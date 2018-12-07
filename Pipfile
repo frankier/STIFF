@@ -11,6 +11,7 @@ pyahocorasick = {editable = true, ref = "stiff-2018-09-20-3", git = "https://git
 click = {ref = "065653e7996a82e219cf2d0ce90fec7b0574ba36", git = "https://github.com/pallets/click.git"}
 adjusttext = "*"
 pareto = "*"
+"2a4114c" = {file = "https://github.com/scikit-learn/scikit-learn/archive/0.20.1.tar.gz"}
 
 [dev-packages]
 

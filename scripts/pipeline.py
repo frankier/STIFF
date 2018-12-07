@@ -65,7 +65,7 @@ def eurosense2unified(inf, outf, keyout, head, babel2wn_map):
 @click.argument("outf", type=click.Path())
 @click.option("--head", default=None)
 @click.option("--no-zstd-out/--zstd-out")
-def proc_stiff(method, inf, outf, head, no_zstd_out):
+def proc_stiff(method, inf, outf, head=None, no_zstd_out=False):
     """
     Do one of several standard STIFF processing pipelines -- producing usable
     corpora at the end.
@@ -146,10 +146,35 @@ def proc_stiff(method, inf, outf, head, no_zstd_out):
             pipeline
             | python[filter_py, "fold-support", "fi", "-", "-"]
             | python[filter_py, "lang", "fi", "-", "-"]
-            | python[filter_py, "align-dom", "--proc=dom", "-", "-"]
             | python[filter_py, "finnpos-naive-pos-dom", "--proc=dom", "-", "-"]
             | python[filter_py, "finnpos-naive-lemma-dom", "--proc=dom", "-", "-"]
+            | python[filter_py, "align-dom", "--proc=dom", "-", "-"]
             | python[filter_py, "freq-dom", "-", "-"]
+        )
+    elif method == "balanced-recall":
+        pipeline = (
+            pipeline
+            | python[filter_py, "fold-support", "fi", "-", "-"]
+            | python[filter_py, "lang", "fi", "-", "-"]
+            | python[filter_py, "finnpos-rm-pos", "--level=soft", "-", "-"]
+            | python[filter_py, "finnpos-naive-pos-dom", "--proc=dom", "-", "-"]
+            | python[filter_py, "finnpos-naive-lemma-dom", "--proc=dom", "-", "-"]
+            | python[filter_py, "align-dom", "--proc=dom", "-", "-"]
+            | python[filter_py, "freq-dom", "-", "-"]
+            | python[filter_py, "rm-ambg", "-", "-"]
+        )
+    elif method == "balanced-precision":
+        pipeline = (
+            pipeline
+            | python[filter_py, "fold-support", "fi", "-", "-"]
+            | python[filter_py, "lang", "fi", "-", "-"]
+            | python[filter_py, "align-dom", "--proc=dom", "-", "-"]
+            | python[filter_py, "char-span-dom", "-", "-"]
+            | python[filter_py, "tok-span-dom", "-", "-"]
+            | python[filter_py, "finnpos-rm-pos", "--level=normal", "-", "-"]
+            | python[filter_py, "finnpos-naive-pos-dom", "--proc=dom", "-", "-"]
+            | python[filter_py, "finnpos-naive-lemma-dom", "--proc=dom", "-", "-"]
+            | python[filter_py, "rm-ambg", "-", "-"]
         )
     else:
         assert False, "Unknown method"
@@ -178,6 +203,8 @@ def proc_stiff_to_eval(inf, dirout):
         "simple-x-recall",
         "high-precision",
         "high-recall",
+        "balanced-precision",
+        "balanced-recall",
     ):
         proc_stiff.callback(
             method, inf, os.path.join(dirout, f"{method}.xml"), "1000", True

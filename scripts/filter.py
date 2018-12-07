@@ -605,11 +605,24 @@ def finnpos_rm_pos(inf, outf, level):
     PRONOUN, since this POS never exists in WordNet.
     """
 
-    to_remove = ["PRONOUN"]
+    def m(feat, val):
+        def inner(feats):
+            return feat in feats and feats[feat] == val
+
+        return inner
+
+    to_remove = [m("pos", "PRONOUN")]
     if level in ("normal", "agg"):
-        to_remove.extend(("NUMERAL", "INTERJECTION", "CONJUNCTION"))
+        to_remove.extend(
+            (
+                m("pos", "NUMERAL"),
+                m("pos", "INTERJECTION"),
+                m("pos", "CONJUNCTION"),
+                m("proper", "PROPER"),
+            )
+        )
     if level == "agg":
-        to_remove.append("ADPOSITION")
+        to_remove.append(m("pos", "ADPOSITION"))
 
     def sent_rm_pos(sent):
         finnpos_analys = get_finnpos_analys(sent)
@@ -619,7 +632,8 @@ def finnpos_rm_pos(inf, outf, level):
             tok, tok_len = get_ann_pos(ann)
             if tok_len != 1:
                 continue
-            if finnpos_analys[tok][1]["pos"] in to_remove:
+            props = finnpos_analys[tok][1]
+            if any((match(props) for match in to_remove)):
                 new_anns.remove(ann)
         trim_anns(anns, new_anns)
 

@@ -13,10 +13,12 @@ def wn_lemma_keys(wn: str, lemma_name: str) -> List[Lemma]:
         return wordnet.lemmas(lemma_name, lang=wn)
 
 
-def objify_lemmas(wn_to_lemma: Dict[str, str]) -> Dict[str, List[Lemma]]:
+def objify_lemmas(wn_to_lemma: Dict[str, List[str]]) -> Dict[str, List[Lemma]]:
     return {
-        wn: [lemma_obj for lemma_obj in wn_lemma_keys(wn, lemma)]
-        for wn, lemma in wn_to_lemma.items()
+        wn: [
+            lemma_obj for lemma in lemma_list for lemma_obj in wn_lemma_keys(wn, lemma)
+        ]
+        for wn, lemma_list in wn_to_lemma.items()
     }
 
 

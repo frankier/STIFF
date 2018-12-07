@@ -13,7 +13,7 @@ WHITESPACE_RE = re.compile(r"\s")
 def mk_cmn_token_auto() -> TokenAutomaton:
     return mk_token_auto(
         (
-            (l, wns, [var.split(" ") for var in multiword_variants(l)])
+            (l, wns, (tuple(var.split(" ")) for var in multiword_variants(l)))
             for l, wns in WordnetCmn.lemma_names().items()
         )
     )

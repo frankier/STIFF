@@ -32,4 +32,4 @@ def test_multiple_best_lemmas():
         else:
             unsupported += 1
     assert supported == 2
-    assert unsupported == 1
+    assert unsupported == 3

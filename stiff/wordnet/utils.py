@@ -10,7 +10,7 @@ _rev_maps: Dict[str, Dict[str, str]] = {}
 
 
 def wn_lemma_map(l, wns):
-    return {wn: get_rev_map(wn)(l) for wn in wns}
+    return {wn: [get_rev_map(wn)(l)] for wn in wns}
 
 
 def merge_lemmas(*wn_lemmas_pairs: Tuple[str, Iterator[str]]) -> Dict[str, List[str]]:
@@ -18,6 +18,17 @@ def merge_lemmas(*wn_lemmas_pairs: Tuple[str, Iterator[str]]) -> Dict[str, List[
     for (wn, lemmas) in wn_lemmas_pairs:
         for lemma in lemmas:
             result.setdefault(lemma, []).append(wn)
+    return result
+
+
+def merge_lemma_maps(*lemma_maps: Dict[str, List[str]]) -> Dict[str, List[str]]:
+    result: Dict[str, List[str]] = {}
+    for lemma_map in lemma_maps:
+        for wn, lemmas in lemma_map.items():
+            if wn in result:
+                result[wn].extend(lemmas)
+            else:
+                result[wn] = lemmas
     return result
 
 

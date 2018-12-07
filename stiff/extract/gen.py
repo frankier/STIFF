@@ -28,7 +28,7 @@ def get_tokens_starts(tokens):
 
 def extract_tokenized_iter(
     tagging: TokenizedTagging,
-    iter: Iterator[Tuple[int, Tuple[List[str], Dict[str, str]]]],
+    iter: Iterator[Tuple[int, Tuple[List[str], Dict[str, List[str]]]]],
     wordnet: Type[ExtractableWordnet],
     surfs: List[str],
     starts: List[int],

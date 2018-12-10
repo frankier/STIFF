@@ -1,11 +1,11 @@
-from urllib.parse import parse_qsl
+from stiff.utils import parse_qs_single
 
 
 def get_ann_pos_dict(ann):
     anchor_poses = ann.attrib["anchor-positions"].split()
     assert len(anchor_poses) == 1
     anchor_pos_str = anchor_poses[0]
-    return dict(parse_qsl(anchor_pos_str))
+    return parse_qs_single(anchor_pos_str)
 
 
 def get_ann_pos(ann):

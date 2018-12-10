@@ -2,6 +2,7 @@ import re
 from lxml import etree
 import sys
 import click
+from stiff.utils import parse_qs_single
 from stiff.utils.xml import (
     eq_matcher,
     iter_sentences,
@@ -13,7 +14,6 @@ from stiff.utils.xml import (
     fixup_missing_text,
 )
 from xml.sax.saxutils import escape
-from urllib.parse import parse_qsl
 import pygtrie
 from stiff.data.constants import WN_UNI_POS_MAP, UNI_POS_WN_MAP
 from finntk.wordnet.reader import fiwn, get_en_fi_maps
@@ -56,7 +56,7 @@ def stiff_to_unified(stiff: IO, unified: IO):
         for ann in sent_elem.xpath(".//annotation"):
             our_pos = None
             for pos_enc in ann.attrib["anchor-positions"].split(" "):
-                pos = dict(parse_qsl(pos_enc))
+                pos = parse_qs_single(pos_enc)
                 if pos["from"] == text_id:
                     our_pos = pos
             assert our_pos is not None, "Didn't find a usable anchor position"

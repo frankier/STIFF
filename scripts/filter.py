@@ -510,6 +510,8 @@ def finnpos_rm_pos(inf, outf, level):
                 m("pos", "NUMERAL"),
                 m("pos", "INTERJECTION"),
                 m("pos", "CONJUNCTION"),
+                m("pos", "PARTICLE"),
+                m("pos", "PUNCTUATION"),
                 m("proper", "PROPER"),
             )
         )

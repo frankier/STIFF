@@ -1,5 +1,6 @@
 from lxml import etree
 import click
+from stiff.utils import parse_qs_single
 from stiff.utils.xml import (
     fixup_missing_text,
     transform_sentences,
@@ -21,7 +22,7 @@ from stiff.filter import (
     LemmaPathTournament,
 )
 from stiff.utils.anns import get_ann_pos, get_ann_pos_dict
-from urllib.parse import parse_qs, urlencode
+from urllib.parse import urlencode
 
 
 @click.group()
@@ -82,14 +83,14 @@ def fold_support(lang, inf, outf):
                 continue
             new_support = []
             for supp in support.split(" "):
-                supp = parse_qs(supp)
-                trans_from = supp["transfer-from"][0]
+                supp = parse_qs_single(supp)
+                trans_from = supp["transfer-from"]
                 from_elem = elem.xpath(
                     "./annotations/annotation[@id='{}']".format(trans_from)
                 )[0]
                 from_wordnets = from_elem.attrib["wordnets"]
                 for position in from_elem.attrib["anchor-positions"].split(" "):
-                    from_anchor = parse_qs(position)
+                    from_anchor = parse_qs_single(position)
                     from_source = from_anchor["from-id"]
                 from_lemma_path = from_elem.attrib["lemma-path"]
                 del supp["transfer-from"]

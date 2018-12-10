@@ -112,11 +112,9 @@ def pr_one(gold_etree, guess_fp, trace_individual=False):
         if trace_individual:
             print("#{:02d} {}".format(idx, sent_id))
             print(
-                "P: {}, R: {}, F_1: {}, tp: {}, fp: {}, fn: {}",
-                *calc_pr(tp, fp, fn),
-                tp,
-                fp,
-                fn,
+                "P: {}, R: {}, F_1: {}, tp: {}, fp: {}, fn: {}".format(
+                    *calc_pr(tp, fp, fn), tp, fp, fn
+                )
             )
         total_tp += tp
         total_fp += fp

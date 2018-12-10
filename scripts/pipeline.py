@@ -103,12 +103,71 @@ def proc_stiff(method, inf, outf, head=None, no_zstd_out=False):
             | python[filter_py, "lang", "fi", "-", "-"]
             | python[filter_py, "rm-ambg", "-", "-"]
         )
+    elif method == "mono-unambg-finnpos-soft":
+        pipeline = (
+            pipeline
+            | python[filter_py, "fold-support", "fi", "-", "-"]
+            | python[filter_py, "lang", "fi", "-", "-"]
+            | python[filter_py, "non-recurs-dom", "--proc=rm", "-", "-"]
+            | python[filter_py, "finnpos-rm-pos", "--level=normal", "-", "-"]
+            | python[filter_py, "finnpos-naive-pos-dom", "--proc=dom", "-", "-"]
+            | python[filter_py, "finnpos-naive-lemma-dom", "--proc=dom", "-", "-"]
+            | python[filter_py, "rm-ambg", "-", "-"]
+        )
+    elif method == "mono-unambg-finnpos-hard":
+        pipeline = (
+            pipeline
+            | python[filter_py, "fold-support", "fi", "-", "-"]
+            | python[filter_py, "lang", "fi", "-", "-"]
+            | python[filter_py, "non-recurs-dom", "--proc=rm", "-", "-"]
+            | python[filter_py, "finnpos-rm-pos", "--level=agg", "-", "-"]
+            | python[filter_py, "finnpos-naive-pos-dom", "--proc=rm", "-", "-"]
+            | python[filter_py, "finnpos-naive-lemma-dom", "--proc=dom", "-", "-"]
+            | python[filter_py, "rm-ambg", "-", "-"]
+        )
+    elif method == "mono-unambg-finnpos-x-hard":
+        pipeline = (
+            pipeline
+            | python[filter_py, "fold-support", "fi", "-", "-"]
+            | python[filter_py, "lang", "fi", "-", "-"]
+            | python[filter_py, "non-recurs-dom", "--proc=rm", "-", "-"]
+            | python[filter_py, "finnpos-rm-pos", "--level=agg", "-", "-"]
+            | python[filter_py, "finnpos-naive-pos-dom", "--proc=rm-agg", "-", "-"]
+            | python[filter_py, "finnpos-naive-lemma-dom", "--proc=rm", "-", "-"]
+            | python[filter_py, "rm-ambg", "-", "-"]
+        )
+    elif method == "finnpos-first-precision":
+        pipeline = (
+            pipeline
+            | python[filter_py, "fold-support", "fi", "-", "-"]
+            | python[filter_py, "lang", "fi", "-", "-"]
+            | python[filter_py, "non-recurs-dom", "--proc=rm", "-", "-"]
+            | python[filter_py, "finnpos-rm-pos", "--level=agg", "-", "-"]
+            | python[filter_py, "finnpos-naive-pos-dom", "--proc=rm-agg", "-", "-"]
+            | python[filter_py, "finnpos-naive-lemma-dom", "--proc=rm", "-", "-"]
+            | python[filter_py, "has-support-dom", "--proc=dom", "-", "-"]
+            | python[filter_py, "align-dom", "--proc=dom", "-", "-"]
+            | python[filter_py, "rm-ambg", "-", "-"]
+        )
+    elif method == "finnpos-first-recall":
+        pipeline = (
+            pipeline
+            | python[filter_py, "fold-support", "fi", "-", "-"]
+            | python[filter_py, "lang", "fi", "-", "-"]
+            | python[filter_py, "non-recurs-dom", "--proc=rm", "-", "-"]
+            | python[filter_py, "finnpos-rm-pos", "--level=agg", "-", "-"]
+            | python[filter_py, "finnpos-naive-pos-dom", "--proc=rm-agg", "-", "-"]
+            | python[filter_py, "finnpos-naive-lemma-dom", "--proc=rm", "-", "-"]
+            | python[filter_py, "has-support-dom", "--proc=dom", "-", "-"]
+            | python[filter_py, "align-dom", "--proc=dom", "-", "-"]
+            | python[filter_py, "freq-dom", "-", "-"]
+        )
     elif method == "simple-precision":
         pipeline = (
             pipeline
             | python[filter_py, "fold-support", "fi", "-", "-"]
             | python[filter_py, "lang", "fi", "-", "-"]
-            | python[filter_py, "no-support", "-", "-"]
+            | python[filter_py, "has-support-dom", "--proc=rm", "-", "-"]
             | python[filter_py, "rm-ambg", "-", "-"]
         )
     elif method == "simple-recall":
@@ -116,7 +175,7 @@ def proc_stiff(method, inf, outf, head=None, no_zstd_out=False):
             pipeline
             | python[filter_py, "fold-support", "fi", "-", "-"]
             | python[filter_py, "lang", "fi", "-", "-"]
-            | python[filter_py, "no-support", "-", "-"]
+            | python[filter_py, "has-support-dom", "--proc=rm", "-", "-"]
             | python[filter_py, "freq-dom", "-", "-"]
             | python[filter_py, "rm-ambg", "-", "-"]
         )
@@ -125,7 +184,7 @@ def proc_stiff(method, inf, outf, head=None, no_zstd_out=False):
             pipeline
             | python[filter_py, "fold-support", "fi", "-", "-"]
             | python[filter_py, "lang", "fi", "-", "-"]
-            | python[filter_py, "no-support", "-", "-"]
+            | python[filter_py, "has-support-dom", "--proc=rm", "-", "-"]
             | python[filter_py, "freq-dom", "--break-ties", "-", "-"]
         )
     elif method == "high-precision":
@@ -133,9 +192,8 @@ def proc_stiff(method, inf, outf, head=None, no_zstd_out=False):
             pipeline
             | python[filter_py, "fold-support", "fi", "-", "-"]
             | python[filter_py, "lang", "fi", "-", "-"]
+            | python[filter_py, "has-support-dom", "--proc=rm", "-", "-"]
             | python[filter_py, "align-dom", "--proc=rm", "-", "-"]
-            | python[filter_py, "char-span-dom", "-", "-"]
-            | python[filter_py, "tok-span-dom", "-", "-"]
             | python[filter_py, "finnpos-rm-pos", "--level=agg", "-", "-"]
             | python[filter_py, "finnpos-naive-lemma-dom", "--proc=rm", "-", "-"]
             | python[filter_py, "finnpos-naive-pos-dom", "--proc=rm", "-", "-"]
@@ -146,9 +204,10 @@ def proc_stiff(method, inf, outf, head=None, no_zstd_out=False):
             pipeline
             | python[filter_py, "fold-support", "fi", "-", "-"]
             | python[filter_py, "lang", "fi", "-", "-"]
+            | python[filter_py, "has-support-dom", "--proc=dom", "-", "-"]
+            | python[filter_py, "align-dom", "--proc=dom", "-", "-"]
             | python[filter_py, "finnpos-naive-pos-dom", "--proc=dom", "-", "-"]
             | python[filter_py, "finnpos-naive-lemma-dom", "--proc=dom", "-", "-"]
-            | python[filter_py, "align-dom", "--proc=dom", "-", "-"]
             | python[filter_py, "freq-dom", "-", "-"]
         )
     elif method == "balanced-recall":
@@ -156,10 +215,24 @@ def proc_stiff(method, inf, outf, head=None, no_zstd_out=False):
             pipeline
             | python[filter_py, "fold-support", "fi", "-", "-"]
             | python[filter_py, "lang", "fi", "-", "-"]
+            | python[filter_py, "has-support-dom", "--proc=dom", "-", "-"]
+            | python[filter_py, "align-dom", "--proc=dom", "-", "-"]
             | python[filter_py, "finnpos-rm-pos", "--level=soft", "-", "-"]
             | python[filter_py, "finnpos-naive-pos-dom", "--proc=dom", "-", "-"]
             | python[filter_py, "finnpos-naive-lemma-dom", "--proc=dom", "-", "-"]
+            | python[filter_py, "freq-dom", "-", "-"]
+            | python[filter_py, "rm-ambg", "-", "-"]
+        )
+    elif method == "balanced":
+        pipeline = (
+            pipeline
+            | python[filter_py, "fold-support", "fi", "-", "-"]
+            | python[filter_py, "lang", "fi", "-", "-"]
+            | python[filter_py, "has-support-dom", "--proc=dom", "-", "-"]
             | python[filter_py, "align-dom", "--proc=dom", "-", "-"]
+            | python[filter_py, "finnpos-rm-pos", "--level=normal", "-", "-"]
+            | python[filter_py, "finnpos-naive-pos-dom", "--proc=dom", "-", "-"]
+            | python[filter_py, "finnpos-naive-lemma-dom", "--proc=dom", "-", "-"]
             | python[filter_py, "freq-dom", "-", "-"]
             | python[filter_py, "rm-ambg", "-", "-"]
         )
@@ -168,9 +241,8 @@ def proc_stiff(method, inf, outf, head=None, no_zstd_out=False):
             pipeline
             | python[filter_py, "fold-support", "fi", "-", "-"]
             | python[filter_py, "lang", "fi", "-", "-"]
+            | python[filter_py, "has-support-dom", "--proc=dom", "-", "-"]
             | python[filter_py, "align-dom", "--proc=dom", "-", "-"]
-            | python[filter_py, "char-span-dom", "-", "-"]
-            | python[filter_py, "tok-span-dom", "-", "-"]
             | python[filter_py, "finnpos-rm-pos", "--level=normal", "-", "-"]
             | python[filter_py, "finnpos-naive-pos-dom", "--proc=dom", "-", "-"]
             | python[filter_py, "finnpos-naive-lemma-dom", "--proc=dom", "-", "-"]
@@ -198,6 +270,11 @@ def proc_stiff_to_eval(inf, dirout):
         "mono-1st-break",
         "mono-1st",
         "mono-unambg",
+        "mono-unambg-finnpos-soft",
+        "mono-unambg-finnpos-hard",
+        "mono-unambg-finnpos-x-hard",
+        "finnpos-first-precision",
+        "finnpos-first-recall",
         "simple-precision",
         "simple-recall",
         "simple-x-recall",
@@ -205,6 +282,7 @@ def proc_stiff_to_eval(inf, dirout):
         "high-recall",
         "balanced-precision",
         "balanced-recall",
+        "balanced",
     ):
         proc_stiff.callback(
             method, inf, os.path.join(dirout, f"{method}.xml"), "1000", True

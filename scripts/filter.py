@@ -10,10 +10,18 @@ from stiff.utils.xml import (
     close_all,
 )
 from stiff.data.constants import DEFAULT_SAMPLE_LINES, DEFAULT_SAMPLE_MAX
+from stiff.filter import (
+    decode_dom_arg,
+    get_finnpos_analys,
+    trim_anns,
+    HasSupportTournament,
+    AlignTournament,
+    NaiveLemmaTournament,
+    NaivePosTournament,
+    LemmaPathTournament,
+)
 from stiff.utils.anns import get_ann_pos, get_ann_pos_dict
 from urllib.parse import parse_qs, urlencode
-from functools import reduce
-import json
 
 
 @click.group()
@@ -25,21 +33,16 @@ def filter():
     pass
 
 
-@filter.command("no-support")
+@filter.command("has-support-dom")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
-def filter_support(inf, outf):
+@click.option("--proc", type=click.Choice(["dom", "rm"]))
+def filter_support(inf, outf, proc):
     """
     Remove annotations without any support at all.
     """
 
-    def remove_no_support(elem):
-        for ann in elem.xpath("./annotations/annotation"):
-            if "support" in ann.attrib and ann.attrib["support"]:
-                continue
-            ann.getparent().remove(ann)
-
-    transform_sentences(inf, remove_no_support, outf)
+    return HasSupportTournament(*decode_dom_arg(proc)).proc_stream(inf, outf)
 
 
 @filter.command("lang")
@@ -161,27 +164,7 @@ def filter_align_dom(inf, outf, proc):
     annotation based on aligned transfers of the same token.
     """
 
-    def remove_dom_transfer(sent):
-        anns = sent.xpath("./annotations/annotation")
-        have_aligned = []
-        if proc == "dom":
-            for ann in anns:
-                span = get_ann_pos(ann)
-                if "support" not in ann.attrib:
-                    continue
-                support = parse_qs(ann.attrib["support"])
-                if support["transfer-type"] == "aligned":
-                    have_aligned.append(span)
-        for ann in anns:
-            if "support" not in ann.attrib:
-                continue
-            support = parse_qs(ann.attrib["support"])
-            if support["transfer-type"] == "unaligned":
-                span = get_ann_pos(ann)
-                if proc == "rm" or span in have_aligned:
-                    anns.remove(ann)
-
-    transform_sentences(inf, remove_dom_transfer, outf)
+    return AlignTournament(*decode_dom_arg(proc)).proc_stream(inf, outf)
 
 
 @filter.command("head")
@@ -384,12 +367,6 @@ def greedy_max_span(positions):
     return anns
 
 
-def trim_anns(anns, new_anns):
-    for ann in anns:
-        if ann not in new_anns:
-            ann.getparent().remove(ann)
-
-
 @filter.command("tok-span-dom")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
@@ -428,11 +405,6 @@ def char_span_dom(inf, outf):
 
     def sent_span_dom(sent):
         anns = sent.xpath("./annotations/annotation")
-        tokens = {}
-        for ann in anns:
-            tok, tok_len = get_ann_pos(ann)
-            if tok_len == 1:
-                tokens.setdefault(tok, []).append(ann)
         starts = []
         for ann in anns:
             anchor_pos = get_ann_pos_dict(ann)
@@ -459,46 +431,16 @@ def char_span_dom(inf, outf):
     transform_sentences(inf, sent_span_dom, outf)
 
 
-def get_wn_pos(ann):
-    wn_ids = ann.text.split(" ")
-    poses = [wn_id.rsplit(".", 2)[-2] for wn_id in wn_ids]
-    assert reduce(lambda a, b: a == b, poses)
-    return "a" if poses[0] == "s" else poses[0]
-
-
-def get_headword_offset(ann):
+@filter.command("non-recurs-dom")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+@click.option("--proc", type=click.Choice(["dom", "rm"]))
+def finnpos_non_recurs_dom(inf, outf, proc):
     """
-    How to deal with multiwords? Could consider only the headword. Usually the
-    last word is the headword? Or maybe last is headword for noun first for
-    verb?
+    Remove annotations with one part of their lemma supported by only a recurs.
     """
-    pos = get_wn_pos(ann)
-    if pos == "v":
-        return 0
-    else:
-        # "n" "r" "a"
-        tok, tok_len = get_ann_pos(ann)
-        return tok_len - 1
 
-
-FINNPOS_WN_POS_MAP = {"VERB": "v", "NOUN": "n", "ADVERB": "r", "ADJECTIVE": "a"}
-
-
-def lemmatized_pos_match(wn_pos, finnpos_feats):
-    finnpos_pos = finnpos_feats["pos"]
-    finnpos_wn_pos = FINNPOS_WN_POS_MAP.get(finnpos_pos)
-    if finnpos_wn_pos is None:
-        return 0
-    elif finnpos_wn_pos == wn_pos:
-        return 1
-    else:
-        return -1
-
-
-def get_finnpos_analys(sent):
-    gram = sent.xpath("gram[@type='finnpos']")
-    assert len(gram) == 1
-    return json.loads(gram[0].text)
+    return LemmaPathTournament(*decode_dom_arg(proc)).proc_stream(inf, outf)
 
 
 @filter.command("finnpos-naive-lemma-dom")
@@ -514,29 +456,7 @@ def finnpos_naive_lemma_dom(inf, outf, proc):
     requirement or dominance filter.
     """
 
-    def sent_naive_lemma_dom(sent):
-        finnpos_analys = get_finnpos_analys(sent)
-        anns = sent.xpath("./annotations/annotation")
-        new_anns = anns.copy()
-        best_anns = {}
-        for ann in anns:
-            tok, tok_len = get_ann_pos(ann)
-            head_off = get_headword_offset(ann)
-            lemma, feats = finnpos_analys[tok + head_off]
-            wn_lemma = ann.attrib["wnlemma"].split("_")[head_off]
-            if lemma == wn_lemma:
-                if proc == "dom":
-                    best_anns.setdefault((tok, tok_len), []).append(ann)
-            elif proc == "rm":
-                new_anns.remove(ann)
-        if proc == "dom":
-            for ann in anns:
-                tok, tok_len = get_ann_pos(ann)
-                if (tok, tok_len) in best_anns and ann not in best_anns[(tok, tok_len)]:
-                    new_anns.remove(ann)
-        trim_anns(anns, new_anns)
-
-    transform_sentences(inf, sent_naive_lemma_dom, outf)
+    return NaiveLemmaTournament(*decode_dom_arg(proc)).proc_stream(inf, outf)
 
 
 @filter.command("finnpos-naive-pos-dom")
@@ -564,35 +484,7 @@ def finnpos_naive_pos_dom(inf, outf, proc):
         rm_ranks = [-1, 0]
         do_dom = False
 
-    def sent_naive_pos_dom(sent):
-        finnpos_analys = get_finnpos_analys(sent)
-        anns = sent.xpath("./annotations/annotation")
-        new_anns = anns.copy()
-        best_ranks = {}
-        ranks = {}
-        for ann in anns:
-            tok, tok_len = get_ann_pos(ann)
-            wn_pos = get_wn_pos(ann)
-            head_off = get_headword_offset(ann)
-            lemma, feats = finnpos_analys[tok + head_off]
-            rank = lemmatized_pos_match(wn_pos, feats)
-            ranks[ann] = rank
-            if rank in rm_ranks:
-                new_anns.remove(ann)
-            elif do_dom:
-                if (tok, tok_len) not in best_ranks or rank > best_ranks[
-                    (tok, tok_len)
-                ]:
-                    best_ranks[(tok, tok_len)] = rank
-        if do_dom:
-            for ann in anns:
-                tok, tok_len = get_ann_pos(ann)
-                best_rank = best_ranks[(tok, tok_len)]
-                if best_rank > ranks[ann]:
-                    new_anns.remove(ann)
-        trim_anns(anns, new_anns)
-
-    transform_sentences(inf, sent_naive_pos_dom, outf)
+    return NaivePosTournament(do_dom, rm_ranks).proc_stream(inf, outf)
 
 
 @filter.command("finnpos-rm-pos")

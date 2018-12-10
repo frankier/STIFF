@@ -155,6 +155,9 @@ def pr_eval(gold, eval, plot, trace_individual):
         from adjustText import adjust_text
         import pareto
 
+        f = plt.gcf()
+        f.set_size_inches(11.69, 8.27)
+
         nondominated = pareto.eps_sort(prs, [0, 1], maximize_all=True, attribution=True)
         nondominated_idxs = [nd[-1] for nd in nondominated]
         plt.xlabel("Precision")

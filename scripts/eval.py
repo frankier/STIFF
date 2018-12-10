@@ -43,7 +43,7 @@ def align_with_gold(gold_sents, guess_sents, max_slack=1000):
                     f"Skipped more than {max_slack} sentences in GUESS "
                     + f"trying to find {gold_id}"
                 )
-        yield gold_sent, guess_sent
+        yield gold_id, gold_sent, guess_sent
 
 
 def iter_sent_to_pairs(sent_iter):
@@ -99,7 +99,7 @@ def pr_one(gold_etree, guess_fp, trace_individual=False):
     total_fn = 0
     gold_sents = list(iter_sent_to_pairs(iter(gold_etree.xpath("//sentence"))))
     guess_sents = iter_sentence_id_pairs(guess_fp)
-    for idx, (gold_sent, guess_sent) in enumerate(
+    for idx, (sent_id, gold_sent, guess_sent) in enumerate(
         align_with_gold(iter(gold_sents), guess_sents)
     ):
         gold_anns = gold_sent.xpath(".//annotation")
@@ -110,7 +110,14 @@ def pr_one(gold_etree, guess_fp, trace_individual=False):
         fp = len(guess_ann_set - gold_ann_set)
         fn = len(gold_ann_set - guess_ann_set)
         if trace_individual:
-            print("#{} P: {}, R: {} F_1: {}".format(idx, *calc_pr(tp, fp, fn)))
+            print("#{:02d} {}".format(idx, sent_id))
+            print(
+                "P: {}, R: {}, F_1: {}, tp: {}, fp: {}, fn: {}",
+                *calc_pr(tp, fp, fn),
+                tp,
+                fp,
+                fn,
+            )
         total_tp += tp
         total_fp += fp
         total_fn += fn
@@ -132,13 +139,17 @@ def pr(gold, guess, trace_individual):
 @click.argument("gold", type=click.File("rb"))
 @click.argument("eval", type=click.Path())
 @click.option("--plot/--no-plot")
-def pr_eval(gold, eval, plot):
+@click.option("--trace-individual/--no-trace-individual", default=False)
+def pr_eval(gold, eval, plot, trace_individual):
     names = []
     prs = []
     gold_etree = etree.parse(gold)
     for entry in listdir(eval):
-        names.append(entry.rsplit(".", 1)[0])
-        prs.append(pr_one(gold_etree, open(pjoin(eval, entry), "rb")))
+        name = entry.rsplit(".", 1)[0]
+        if trace_individual:
+            print(name)
+        names.append(name)
+        prs.append(pr_one(gold_etree, open(pjoin(eval, entry), "rb"), trace_individual))
     if plot:
         import matplotlib.pyplot as plt
         from adjustText import adjust_text

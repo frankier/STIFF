@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from functools import reduce
-from urllib.parse import parse_qs
 import json
 
+from stiff.utils import parse_qs_single
 from stiff.utils.anns import get_ann_pos
 from stiff.utils.xml import transform_sentences
 
@@ -121,9 +121,8 @@ class AlignTournament(SpanKeyMixin, Tournament):
             return 0
         have_aligned = False
         for support_qs in ann.attrib["support"].split(" "):
-            support = parse_qs(support_qs)
-            assert len(support["transfer-type"]) == 1
-            if support["transfer-type"][0] == "aligned":
+            support = parse_qs_single(support_qs)
+            if support["transfer-type"] == "aligned":
                 have_aligned = True
         return 1 if have_aligned else 0
 

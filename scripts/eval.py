@@ -33,7 +33,8 @@ def align_with_gold(gold_sents, guess_sents, max_slack=1000):
                 guess_id, guess_sent = next(guess_sents)
             except StopIteration:
                 raise SampleGoldIterationException(
-                    "GUESS ended before all GOLD sentences were found"
+                    "GUESS ended before all GOLD sentences were found "
+                    + f"trying to find {gold_id}"
                 )
             if guess_id == gold_id:
                 break
@@ -78,7 +79,8 @@ def iter_sentence_id_pairs(fp):
                     full_id = "{}; {}; {}".format(sources, imdb, sent.attrib["id"])
                     yield full_id, sent
     else:
-        return iter_sent_to_pairs(iter_sentences(fp))
+        for pair in iter_sent_to_pairs(iter_sentences(stream)):
+            yield pair
 
 
 def anns_to_set(anns):

@@ -34,6 +34,32 @@ def add_head(pipeline, head):
     return pipeline
 
 
+def mk_eurosense2stifflike_pipeline(pipeline, babel2wn_map):
+    return (
+        pipeline
+        | python[filter_py, "lang", "fi", "-", "-"]
+        | python[munge_py, "babelnet-lookup", "-", babel2wn_map, "-"]
+        | python[munge_py, "eurosense-reanchor", "-", "-"]
+        | python[munge_py, "eurosense-lemma-fix", "--drop-unknown", "-", "-"]
+        | python[filter_py, "rm-empty", "-", "-"]
+    )
+
+
+@pipeline.command("eurosense2stifflike")
+@click.argument("inf", type=click.Path(exists=True))
+@click.argument("outf", type=click.Path())
+@click.option("--head", default=None)
+@click.option("--babel2wn-map", envvar="BABEL2WN_MAP", required=True)
+def eurosense2stifflike(inf, outf, head, babel2wn_map):
+    pipeline = add_head(cat[inf], head)
+    pipeline = (
+        mk_eurosense2stifflike_pipeline(pipeline, babel2wn_map)
+        | python[munge_py, "eurosense-add-anchor-positions", "-", outf]
+    )
+    print(pipeline)
+    pipeline(retcode=[-13, 0], stderr=sys.stderr)
+
+
 @pipeline.command("eurosense2unified")
 @click.argument("inf", type=click.Path(exists=True))
 @click.argument("outf", type=click.Path())
@@ -47,12 +73,7 @@ def eurosense2unified(inf, outf, keyout, head, babel2wn_map):
     """
     pipeline = add_head(cat[inf], head)
     pipeline = (
-        pipeline
-        | python[filter_py, "lang", "fi", "-", "-"]
-        | python[munge_py, "babelnet-lookup", "-", babel2wn_map, "-"]
-        | python[munge_py, "eurosense-reanchor", "-", "-"]
-        | python[munge_py, "eurosense-lemma-fix", "--drop-unknown", "-", "-"]
-        | python[filter_py, "rm-empty", "-", "-"]
+        mk_eurosense2stifflike_pipeline(pipeline, babel2wn_map)
         | python[munge_py, "eurosense-to-unified", "-", "-"]
         | python[munge_py, "unified-split", "-", outf, keyout]
     )

@@ -138,51 +138,83 @@ def pr(gold, guess, trace_individual):
 @eval.command("pr-eval")
 @click.argument("gold", type=click.File("rb"))
 @click.argument("eval", type=click.Path())
-@click.option("--plot/--no-plot")
+@click.argument("csv_out", type=click.Path())
 @click.option("--trace-individual/--no-trace-individual", default=False)
-def pr_eval(gold, eval, plot, trace_individual):
-    names = []
-    prs = []
+def pr_eval(gold, eval, csv_out, trace_individual):
     gold_etree = etree.parse(gold)
+    data = []
     for entry in listdir(eval):
         name = entry.rsplit(".", 1)[0]
         if trace_individual:
             print(name)
-        names.append(name)
-        prs.append(pr_one(gold_etree, open(pjoin(eval, entry), "rb"), trace_individual))
-    if plot:
-        import matplotlib.pyplot as plt
-        from adjustText import adjust_text
-        import pareto
+        precision, recall, f_1 = pr_one(
+            gold_etree, open(pjoin(eval, entry), "rb"), trace_individual
+        )
+        data.append(
+            {"name": name, "precision": precision, "recall": recall, "f_1": f_1}
+        )
+    df = pd.DataFrame(data)
+    print(df)
+    df.to_csv(csv_out)
 
-        f = plt.gcf()
-        f.set_size_inches(11.69, 8.27)
 
-        nondominated = pareto.eps_sort(prs, [0, 1], maximize_all=True, attribution=True)
-        nondominated_idxs = [nd[-1] for nd in nondominated]
-        plt.xlabel("Precision")
-        plt.ylabel("Recall")
-        nondom_ps = []
-        nondom_rs = []
-        dom_ps = []
-        dom_rs = []
-        for idx, pr in enumerate(prs):
-            if idx in nondominated_idxs:
-                nondom_ps.append(pr[0])
-                nondom_rs.append(pr[1])
-            else:
-                dom_ps.append(pr[0])
-                dom_rs.append(pr[1])
-        plt.scatter(dom_ps, dom_rs, marker="o", c="k")
-        plt.scatter(nondom_ps, nondom_rs, marker="D", c="b")
-        texts = []
-        for name, (p, r, _f1) in zip(names, prs):
-            texts.append(plt.text(p, r, name, ha="center", va="center"))
-        adjust_text(texts, arrowprops=dict(arrowstyle="->", color="red"))
-        plt.show()
+@eval.command("pr-plot")
+@click.argument("opensubs18_csv", type=click.Path())
+@click.argument("eurosense_csv", type=click.Path(), required=False)
+def pr_plot(opensubs18_csv, eurosense_csv=None):
+    import matplotlib.pyplot as plt
+    from adjustText import adjust_text
+    import pareto
+
+    opensubs18_df = pd.read_csv(opensubs18_csv)
+
+    nondominated = pareto.eps_sort(
+        opensubs18_df[["precision", "recall"]],
+        [0, 1],
+        maximize_all=True,
+        attribution=True,
+    )
+    nondominated_idxs = [nd[-1] for nd in nondominated]
+
+    opensubs18_df["type"] = pd.Series(
+        [
+            "stiff-nondom" if idx in nondominated_idxs else "stiff"
+            for idx in opensubs18_df.index
+        ]
+    )
+
+    type_markers = {"stiff": ("o", "k"), "stiff-nondom": ("D", "b")}
+
+    if eurosense_csv is not None:
+        type_markers["eurosense"] = ("s", "y")
+        eurosense_df = pd.read_csv(eurosense_csv)
+        eurosense_df["type"] = "eurosense"
+        eurosense_df["name"] = eurosense_df["name"].str.replace("high", "eurosense")
+        df = pd.concat([opensubs18_df, eurosense_df], ignore_index=True)
     else:
-        for name, pr in zip(names, prs):
-            print(name, pr[0], pr[1], pr[2])
+        df = opensubs18_df
+
+    print(df)
+
+    fig = plt.gcf()
+    fig.set_size_inches(11.69, 8.27)
+
+    plt.xlabel("Precision")
+    plt.ylabel("Recall")
+
+    for type, (marker, c) in type_markers.items():
+        df[df.type == type].plot.scatter(
+            x="precision", y="recall", marker=marker, c=c, ax=fig.axes[0]
+        )
+    texts = []
+    for idx, row in df.iterrows():
+        texts.append(
+            plt.text(
+                row["precision"], row["recall"], row["name"], ha="center", va="center"
+            )
+        )
+    adjust_text(texts, arrowprops=dict(arrowstyle="->", color="red"))
+    plt.show()
 
 
 @eval.command("cov")

@@ -9,9 +9,9 @@ from stiff.data.fixes import fix_all
 fix_all()
 
 
-def _map_qf2(lemma_obj):
+def _map_qf2(synset_obj):
     fi2en, en2fi = get_en_fi_maps()
-    return fi2en[ss2pre(lemma_obj.synset())]
+    return fi2en[ss2pre(synset_obj)]
 
 
 class Wordnet(ExtractableWordnet):
@@ -28,3 +28,10 @@ class Wordnet(ExtractableWordnet):
             ("qwf", wordnet.all_lemma_names(lang="qwf")),
             ("qf2", fiwn_encnt.all_lemma_names()),
         )
+
+    @staticmethod
+    def synset(wn, synset_str):
+        if wn == "qf2":
+            return fiwn_encnt.synset(synset_str)
+        else:
+            return wordnet.synset(synset_str)

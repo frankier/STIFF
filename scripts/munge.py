@@ -16,8 +16,9 @@ from stiff.utils.xml import (
 from xml.sax.saxutils import escape
 import pygtrie
 from stiff.data.constants import WN_UNI_POS_MAP, UNI_POS_WN_MAP
+from stiff.wordnet.fin import Wordnet as WordnetFin
 from finntk.wordnet.reader import fiwn, get_en_fi_maps
-from finntk.wordnet.utils import post_id_to_pre, pre2ss
+from finntk.wordnet.utils import pre_id_to_post, post_id_to_pre, pre2ss
 from finntk.omor.extract import lemma_intersect
 from os.path import join as pjoin
 from os import makedirs, listdir
@@ -130,6 +131,52 @@ def unified_split(inf: IO, outf: IO, keyout: IO):
     transform_sentences(inf, sent_split_key, outf)
 
 
+def iter_anchored_anns(sent_elem, once_only=True):
+    anns = list(sent_elem.xpath(".//annotation"))
+    sent = sent_elem.xpath("text")[0].text
+    prev_anns_count = len(anns) + 1
+    # The annotations are almost always in order, but very occasionally we need
+    # to go back to the beginning of the sentence for more.
+    while 0 < len(anns) < prev_anns_count:
+        prev_anns_count = len(anns)
+        cursor = 0
+        tok_cursor = 0
+        while anns:
+            # print((anns[0].attrib["anchor"], sent[cursor:]) if anns else ("X", sent[cursor:]))
+            match_pos = sent.find(anns[0].attrib["anchor"], cursor)
+            if match_pos == -1:
+                break
+            tok_cursor += sent.count(" ", cursor, match_pos)
+            ann = anns.pop(0)
+            anchor = ann.attrib["anchor"]
+            yield tok_cursor, match_pos, anchor, ann
+            cursor = match_pos
+        if once_only:
+            break
+    if once_only:
+        if len(anns):
+            sys.stderr.write(
+                "Sentence {} has {} additional unused annotation\n".format(
+                    sent_elem.attrib["id"], len(anns)
+                )
+            )
+    else:
+        assert len(anns) == 0
+
+
+@munge.command("eurosense-add-anchor-positions")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+def eurosense_add_anchor_positions(inf: IO, outf: IO):
+    def add_anchor_positions(sent_elem):
+        for tok_cursor, cursor, _match_anchor, ann in iter_anchored_anns(sent_elem):
+            if ann is None:
+                continue
+            ann.attrib["anchor-positions"] = f"token={tok_cursor}&char={cursor}"
+
+    transform_sentences(inf, add_anchor_positions, outf)
+
+
 @munge.command("eurosense-to-unified")
 @click.argument("eurosense", type=click.File("rb", lazy=True))
 @click.argument("unified", type=click.File("w"))
@@ -173,6 +220,37 @@ def eurosense_to_unified(eurosense: IO, unified: IO):
         unified.write("</sentence>\n")
     unified.write("</text>\n")
     unified.write("</corpus>\n")
+
+
+@munge.command("lemma-to-synset")
+@click.argument("inf", type=click.File("rb", lazy=True))
+@click.argument("outf", type=click.File("wb"))
+def lemma_to_synset(inf: IO, outf: IO):
+    def l2ss(ann):
+        wordnets = set(ann.attrib["wordnets"].split())
+        has_english = "fin" in wordnets or "qwf" in wordnets
+        has_finnish = "qf2" in wordnets
+        synset_str = ann.text
+        chosen_wn = None
+        if has_english:
+            if has_finnish:
+                bits = synset_str.split(" ")
+                assert len(bits) in (1, 2)
+                synset_str = bits[0]
+            if "fin" in wordnets:
+                chosen_wn = "fin"
+            else:
+                assert "qwf" in wordnets
+                chosen_wn = "qwf"
+        else:
+            assert has_finnish
+            chosen_wn = "qf2"
+        assert synset_str.count(" ") == 0
+        synset = WordnetFin.synset(chosen_wn, synset_str)
+        synset_id = WordnetFin.canonical_synset_id_of_synset(chosen_wn, synset)
+        ann.text = pre_id_to_post(synset_id)
+
+    transform_blocks(eq_matcher("annotation"), inf, l2ss, outf)
 
 
 def iter_synsets(synset_list):
@@ -291,8 +369,9 @@ def eurosense_reanchor(inf: IO, outf: IO):
         lem_begin, lem_rest = ann.attrib["lemma"].split(" ", 1)
         if lem_begin not in EXTRA_BITS:
             return
+        anchor_begin = ann.attrib["anchor"].split(" ", 1)[0]
         for lemma_name in all_lemma_names:
-            if lemma_name.split("_", 1)[0] == lem_begin:
+            if lemma_name.split("_", 1)[0] in (anchor_begin, lem_begin):
                 return
         ann.attrib["lemma"] = lem_rest
         ann.attrib["anchor"] = ann.attrib["anchor"].split(" ", 1)[1]

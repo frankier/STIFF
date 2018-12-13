@@ -1,7 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List, Tuple, Callable, Iterable
-from nltk.corpus.reader import Lemma
+from nltk.corpus.reader import Lemma, Synset
 from finntk.wordnet.utils import ss2pre
+
+
+def default_mapper(synset_obj: Synset) -> str:
+    return ss2pre(synset_obj)
 
 
 class ExtractableWordnet(ABC):
@@ -27,7 +31,8 @@ class ExtractableWordnet(ABC):
 
     @classmethod
     def canonical_synset_id(cls, wn: str, lemma_obj: Lemma) -> str:
-        def default_mapper(lemma_obj: Lemma) -> str:
-            return ss2pre(lemma_obj.synset())
+        return cls.canonical_synset_id_of_synset(wn, lemma_obj.synset())
 
-        return cls._synset_mappers.get(wn, default_mapper)(lemma_obj)
+    @classmethod
+    def canonical_synset_id_of_synset(cls, wn: str, synset_obj: Synset) -> str:
+        return cls._synset_mappers.get(wn, default_mapper)(synset_obj)

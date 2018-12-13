@@ -87,6 +87,41 @@ def anns_to_set(anns):
     return {(int(get_ann_pos_dict(ann)["token"]), ann.text) for ann in anns}
 
 
+def get_cov_map(toks, anns):
+    cov_map = [set() for _ in range(toks)]
+    for ann in anns:
+        tok, tok_len = get_ann_pos(ann)
+        for idx in range(tok, tok + tok_len):
+            cov_map[idx].add(ann.text)
+    return cov_map
+
+
+def score_anns_tokwise(gold_anns, guess_anns, toks):
+    gold_cov = get_cov_map(toks, gold_anns)
+    guess_cov = get_cov_map(toks, guess_anns)
+    tp = 0
+    fp = 0
+    fn = 0
+    for gold, guess in zip(gold_cov, guess_cov):
+        if gold & guess:
+            tp += 1
+        else:
+            if gold:
+                fn += 1
+            if guess:
+                fp += 1
+    return tp, fp, fn
+
+
+def score_anns_annwise(gold_anns, guess_anns, _toks):
+    gold_ann_set = anns_to_set(gold_anns)
+    guess_ann_set = anns_to_set(guess_anns)
+    tp = len(gold_ann_set & guess_ann_set)
+    fp = len(guess_ann_set - gold_ann_set)
+    fn = len(gold_ann_set - guess_ann_set)
+    return tp, fp, fn
+
+
 def calc_pr(tp, fp, fn):
     if tp == 0:
         return 0, 0, 0
@@ -95,7 +130,17 @@ def calc_pr(tp, fp, fn):
     return (p, r, 2 * p * r / (p + r))
 
 
-def pr_one(gold_etree, guess_fp, trace_individual=False):
+def get_num_tokens(gold_sent, guess_sent):
+    gold_texts = gold_sent.xpath(".//text")
+    assert len(gold_texts) == 1
+    guess_texts = guess_sent.xpath(".//text")
+    assert len(guess_texts) == 1
+    sent_text = gold_texts[0].text
+    assert sent_text == guess_texts[0].text
+    return sent_text.count(" ") + 1 if sent_text else 0
+
+
+def pr_one(gold_etree, guess_fp, score_func, trace_individual=False):
     total_tp = 0
     total_fp = 0
     total_fn = 0
@@ -104,13 +149,11 @@ def pr_one(gold_etree, guess_fp, trace_individual=False):
     for idx, (sent_id, gold_sent, guess_sent) in enumerate(
         align_with_gold(iter(gold_sents), guess_sents)
     ):
+
         gold_anns = gold_sent.xpath(".//annotation")
         guess_anns = guess_sent.xpath(".//annotation")
-        gold_ann_set = anns_to_set(gold_anns)
-        guess_ann_set = anns_to_set(guess_anns)
-        tp = len(gold_ann_set & guess_ann_set)
-        fp = len(guess_ann_set - gold_ann_set)
-        fn = len(gold_ann_set - guess_ann_set)
+        num_tokens = get_num_tokens(gold_sent, guess_sent)
+        tp, fp, fn = score_func(gold_anns, guess_anns, num_tokens)
         if trace_individual:
             print("#{:02d} {}".format(idx, sent_id))
             print(
@@ -124,15 +167,25 @@ def pr_one(gold_etree, guess_fp, trace_individual=False):
     return calc_pr(total_tp, total_fp, total_fn)
 
 
+def get_score_func(score):
+    if score == "ann":
+        return score_anns_annwise
+    else:
+        assert score == "tok"
+        return score_anns_tokwise
+
+
 @eval.command("pr")
 @click.argument("gold", type=click.File("rb"), nargs=1)
 @click.argument("guess", type=click.File("rb"), nargs=-1)
 @click.option("--trace-individual/--no-trace-individual", default=False)
-def pr(gold, guess, trace_individual):
+@click.option("--score", type=click.Choice(["ann", "tok"]))
+def pr(gold, guess, trace_individual, score):
+    score_func = get_score_func(score)
     gold_etree = etree.parse(gold)
     for guess_fp in guess:
         print(guess_fp)
-        print(pr_one(gold_etree, guess_fp, trace_individual))
+        print(pr_one(gold_etree, guess_fp, score_func, trace_individual))
 
 
 @eval.command("pr-eval")
@@ -140,7 +193,9 @@ def pr(gold, guess, trace_individual):
 @click.argument("eval", type=click.Path())
 @click.argument("csv_out", type=click.Path())
 @click.option("--trace-individual/--no-trace-individual", default=False)
-def pr_eval(gold, eval, csv_out, trace_individual):
+@click.option("--score", type=click.Choice(["ann", "tok"]))
+def pr_eval(gold, eval, csv_out, trace_individual, score):
+    score_func = get_score_func(score)
     gold_etree = etree.parse(gold)
     data = []
     for entry in listdir(eval):
@@ -148,7 +203,7 @@ def pr_eval(gold, eval, csv_out, trace_individual):
         if trace_individual:
             print(name)
         precision, recall, f_1 = pr_one(
-            gold_etree, open(pjoin(eval, entry), "rb"), trace_individual
+            gold_etree, open(pjoin(eval, entry), "rb"), score_func, trace_individual
         )
         data.append(
             {"name": name, "precision": precision, "recall": recall, "f_1": f_1}
@@ -264,17 +319,11 @@ def cov(inf, subtotal=None):
             num_anns = len(anns)
             ann_index = {}
             cov_map = [0] * toks
-            ann_poses = []
-            ann_pos_idx = set()
             for ann in anns:
                 tok, tok_len = get_ann_pos(ann)
                 ann_index.setdefault(tok, []).append(ann)
-                ann_pos_idx.add((tok, tok_len))
-                idxes = []
                 for idx in range(tok, tok + tok_len):
                     cov_map[idx] += 1
-                    idxes.append(idx)
-                ann_poses.append(idxes)
             unambg_anns = 0
             uniq_anns = 0
             for ann_list in ann_index.values():

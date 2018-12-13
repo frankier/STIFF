@@ -40,11 +40,26 @@ def test_extract_zh_hollywood():
     matching_token = None
     for tok in zh_tagging.tokens:
         if tok.token == "好莱坞":
+            assert matching_token is None
             matching_token = tok
     assert matching_token is not None
     assert len(matching_token.anchors) == 2
     assert len(matching_token.tags) == 2
     # XXX: Assert one is cmn, one qwc?
+
+
+def test_extract_zh_friend():
+    zh_tok = "朋友"
+    zh_untok = "朋友"
+    zh_tagging = get_extractor("CmnExtractor").extract(zh_untok, zh_tok)
+    matching_token = None
+    for tok in zh_tagging.tokens:
+        if tok.token == "朋友":
+            assert matching_token is None
+            matching_token = tok
+    assert matching_token is not None
+    assert len(matching_token.anchors) == 2
+    assert len(matching_token.tags) == 4
 
 
 def sincere_asserts(tagging):

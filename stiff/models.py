@@ -117,7 +117,7 @@ class Token:
 
 class Tagging:
     tokens: List[Token]
-    wnsynsets: Dict[str, int]
+    wnsynsets: Dict[str, List[int]]
     wordnet: Type["ExtractableWordnet"]
 
     def __init__(
@@ -134,7 +134,9 @@ class Tagging:
 
     def _index_tags(self, tok_idx: int, tags: List[TaggedLemma]):
         for tag in tags:
-            self.wnsynsets[tag.canonical_synset_id(self.wordnet)] = tok_idx
+            self.wnsynsets.setdefault(tag.canonical_synset_id(self.wordnet), []).append(
+                tok_idx
+            )
 
     def canon_synset_id_set(self):
         return set(self.wnsynsets.keys())

@@ -1,6 +1,6 @@
 import re
 from os.path import join as pjoin
-from typing import Dict, IO, Iterator, Tuple
+from typing import Dict, IO, Iterator, List, Tuple
 
 
 CHINESES = ["zh_cn", "zh_tw"]
@@ -78,8 +78,8 @@ def get_src(line_id: str):
 
 
 class WordAlignment:
-    s2t: Dict[int, int]
-    t2s: Dict[int, int]
+    s2t: Dict[int, List[int]]
+    t2s: Dict[int, List[int]]
 
     def __init__(self, alignment: str) -> None:
         self.s2t = {}
@@ -88,5 +88,5 @@ class WordAlignment:
             return
         for align in alignment.split(" "):
             s, t = [int(n) for n in align.split("-")]
-            self.s2t[s] = t
-            self.t2s[t] = s
+            self.s2t.setdefault(s, []).append(t)
+            self.t2s.setdefault(t, []).append(s)

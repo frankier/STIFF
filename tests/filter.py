@@ -1,10 +1,17 @@
 from lxml import etree
 from string import Template
 
-from stiff.filter import AlignTournament, HasSupportTournament, decode_dom_arg
+from stiff.filter import (
+    AlignTournament,
+    NonDerivDom,
+    HasSupportTournament,
+    decode_dom_arg,
+)
 
-ALIGNED_SUPPORT = "transfer-type=aligned&amp;transfer-from=3&amp;transform-chain=%5B%5D"
-UNALIGNED_SUPPORT = (
+ALIGNED_NODERIV_SUPPORT = (
+    "transfer-type=aligned&amp;transfer-from=3&amp;transform-chain=%5B%5D"
+)
+UNALIGNED_DERIV_SUPPORT = (
     "transfer-type=unaligned&amp;transfer-from=10&amp;transform-chain=%5B%27deriv%27%5D"
 )
 
@@ -35,47 +42,39 @@ ANNOTATION_MURHA_1 = Template(
 )
 
 ANNOTATION_MURHA_0_BOTH = ANNOTATION_MURHA_0.substitute(
-    {"support": f' support="{ALIGNED_SUPPORT} {UNALIGNED_SUPPORT}"'}
+    {"support": f' support="{ALIGNED_NODERIV_SUPPORT} {UNALIGNED_DERIV_SUPPORT}"'}
 )
 
 ANNOTATION_MURHA_1_ALIGNED = ANNOTATION_MURHA_1.substitute(
-    {"support": f' support="{ALIGNED_SUPPORT}"'}
+    {"support": f' support="{ALIGNED_NODERIV_SUPPORT}"'}
 )
 
 ANNOTATION_MURHA_1_UNALIGNED = ANNOTATION_MURHA_1.substitute(
-    {"support": f' support="{UNALIGNED_SUPPORT}"'}
+    {"support": f' support="{UNALIGNED_DERIV_SUPPORT}"'}
 )
 
 ANNOTATION_MURHA_1_NO_SUPPORT = ANNOTATION_MURHA_1.substitute({"support": ""})
+
+FILTER_ALIGN_DOM_TEST_CORPUS_BOTH_ALIGNED = FILTER_ALIGN_DOM_TEST_CORPUS.substitute(
+    {"annotations": "".join([ANNOTATION_MURHA_0_BOTH, ANNOTATION_MURHA_1_ALIGNED])}
+)
+
+FILTER_ALIGN_DOM_TEST_CORPUS_BOTH_UNALIGNED = FILTER_ALIGN_DOM_TEST_CORPUS.substitute(
+    {"annotations": "".join([ANNOTATION_MURHA_0_BOTH, ANNOTATION_MURHA_1_UNALIGNED])}
+)
 
 
 def test_filter_align_dom():
     tournament = AlignTournament(*decode_dom_arg("dom"))
     # If we have two annotations, one with aligned/unaligned and one with
     # aligned, neither should dominate
-    sent1 = etree.fromstring(
-        FILTER_ALIGN_DOM_TEST_CORPUS.substitute(
-            {
-                "annotations": "".join(
-                    [ANNOTATION_MURHA_0_BOTH, ANNOTATION_MURHA_1_ALIGNED]
-                )
-            }
-        )
-    )
+    sent1 = etree.fromstring(FILTER_ALIGN_DOM_TEST_CORPUS_BOTH_ALIGNED)
     tournament.proc_sent(sent1)
     assert len(sent1.xpath("//annotation")) == 2
 
     # If we have two annotations, one with aligned/unaligned and one with
     # unaligned, the first should dominate
-    sent2 = etree.fromstring(
-        FILTER_ALIGN_DOM_TEST_CORPUS.substitute(
-            {
-                "annotations": "".join(
-                    [ANNOTATION_MURHA_0_BOTH, ANNOTATION_MURHA_1_UNALIGNED]
-                )
-            }
-        )
-    )
+    sent2 = etree.fromstring(FILTER_ALIGN_DOM_TEST_CORPUS_BOTH_UNALIGNED)
     tournament.proc_sent(sent2)
     assert len(sent2.xpath("//annotation")) == 1
     assert len(sent2.xpath("//annotation[@id='0']")) == 1
@@ -110,3 +109,18 @@ def test_filter_has_support():
     )
     tournament.proc_sent(sent2)
     assert len(sent2.xpath("//annotation")) == 2
+
+
+def test_filter_deriv_dom():
+    tournament = NonDerivDom(*decode_dom_arg("dom"))
+    # If we have two annotations, one with deriv/non-deriv and one with
+    # only non-deriv, neither should dominate
+    sent1 = etree.fromstring(FILTER_ALIGN_DOM_TEST_CORPUS_BOTH_ALIGNED)
+    tournament.proc_sent(sent1)
+    assert len(sent1.xpath("//annotation")) == 2
+    # If we have two annotations, one with deriv/non-deriv and one with
+    # only deriv, the first should dominate
+    sent2 = etree.fromstring(FILTER_ALIGN_DOM_TEST_CORPUS_BOTH_UNALIGNED)
+    tournament.proc_sent(sent2)
+    assert len(sent2.xpath("//annotation")) == 1
+    assert len(sent2.xpath("//annotation[@id='0']")) == 1

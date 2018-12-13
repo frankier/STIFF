@@ -1,3 +1,4 @@
+import ast
 from abc import ABC, abstractmethod
 from functools import reduce
 import json
@@ -163,3 +164,19 @@ class LemmaPathTournament(SpanKeyMixin, Tournament):
             )
             else 0
         )
+
+
+class NonDerivDom(SpanKeyMixin, Tournament):
+    def rank(self, ann):
+        if "support" not in ann.attrib:
+            return 0
+        has_non_deriv = False
+        for support_qs in ann.attrib["support"].split(" "):
+            support = parse_qs_single(support_qs)
+            if "transform-chain" not in support:
+                return 0
+            # XXX: Should be json
+            transform_chain = ast.literal_eval(support["transform-chain"])
+            if "deriv" not in transform_chain:
+                has_non_deriv = True
+        return 1 if has_non_deriv else 0

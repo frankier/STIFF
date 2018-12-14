@@ -256,6 +256,8 @@ def pr_plot(opensubs18_csv, eurosense_csv=None):
 
     plt.xlabel("Precision")
     plt.ylabel("Recall")
+    plt.xlim(0, 1)
+    plt.ylim(0, 1)
 
     for type, (marker, c) in type_markers.items():
         df[df.type == type].plot.scatter(

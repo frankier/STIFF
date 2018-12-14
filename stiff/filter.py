@@ -1,6 +1,6 @@
 import ast
 from abc import ABC, abstractmethod
-from functools import reduce
+from functools import reduce, total_ordering
 import json
 
 from stiff.utils import parse_qs_single
@@ -68,23 +68,29 @@ class Tournament(ABC):
         self.do_dom = do_dom
         self.rm_ranks = rm_ranks
 
+    @staticmethod
     @abstractmethod
-    def key(self, ann):
+    def key(ann):
         pass
 
+    @staticmethod
     @abstractmethod
-    def rank(self, ann):
+    def rank(ann):
         pass
 
     def proc_stream(self, inf, outf):
         return transform_sentences(inf, self.proc_sent, outf)
 
-    def prepare_sent(self, sent):
+    @staticmethod
+    def prepare_sent(sent):
         return ()
+
+    def get_anns(self, sent, *extra):
+        return sent.xpath("./annotations/annotation")
 
     def proc_sent(self, sent):
         extra = self.prepare_sent(sent)
-        anns = sent.xpath("./annotations/annotation")
+        anns = self.get_anns(sent, *extra)
         new_anns = anns.copy()
         best_ranks = {}
         ranks = {}
@@ -106,18 +112,26 @@ class Tournament(ABC):
         trim_anns(anns, new_anns)
 
 
+class DomOnlyTournament(Tournament):
+    def __init__(self):
+        return super().__init__()
+
+
 class SpanKeyMixin:
-    def key(self, ann):
+    @staticmethod
+    def key(ann):
         return get_ann_pos(ann)
 
 
 class HasSupportTournament(SpanKeyMixin, Tournament):
-    def rank(self, ann):
+    @staticmethod
+    def rank(ann):
         return 1 if "support" in ann.attrib and ann.attrib["support"] else 0
 
 
 class AlignTournament(SpanKeyMixin, Tournament):
-    def rank(self, ann):
+    @staticmethod
+    def rank(ann):
         if "support" not in ann.attrib:
             return 0
         have_aligned = False
@@ -129,12 +143,14 @@ class AlignTournament(SpanKeyMixin, Tournament):
 
 
 class FinnPOSMixin:
-    def prepare_sent(self, sent):
+    @staticmethod
+    def prepare_sent(sent):
         return (get_finnpos_analys(sent),)
 
 
 class NaiveLemmaTournament(FinnPOSMixin, SpanKeyMixin, Tournament):
-    def rank(self, ann, finnpos_analys):
+    @staticmethod
+    def rank(ann, finnpos_analys):
         tok, tok_len = get_ann_pos(ann)
         head_off = get_headword_offset(ann)
         finnpos_head, feats = finnpos_analys[tok + head_off]
@@ -147,7 +163,8 @@ class NaiveLemmaTournament(FinnPOSMixin, SpanKeyMixin, Tournament):
 
 
 class NaivePosTournament(FinnPOSMixin, SpanKeyMixin, Tournament):
-    def rank(self, ann, finnpos_analys):
+    @staticmethod
+    def rank(ann, finnpos_analys):
         tok, tok_len = get_ann_pos(ann)
         wn_pos = get_wn_pos(ann)
         head_off = get_headword_offset(ann)
@@ -156,7 +173,8 @@ class NaivePosTournament(FinnPOSMixin, SpanKeyMixin, Tournament):
 
 
 class LemmaPathTournament(SpanKeyMixin, Tournament):
-    def rank(self, ann):
+    @staticmethod
+    def rank(ann):
         return (
             1
             if all(
@@ -166,8 +184,21 @@ class LemmaPathTournament(SpanKeyMixin, Tournament):
         )
 
 
-class NonDerivDom(SpanKeyMixin, Tournament):
-    def rank(self, ann):
+@total_ordering
+class ReverseOrder:
+    def __init__(self, wrapped):
+        self.wrapped = wrapped
+
+    def __eq__(self, other):
+        return self.wrapped == other.wrapped
+
+    def __lt__(self, other):
+        return self.wrapped > other.wrapped
+
+
+class NonDerivTournament(SpanKeyMixin, Tournament):
+    @staticmethod
+    def rank(ann):
         if "support" not in ann.attrib:
             return 0
         has_non_deriv = False
@@ -180,3 +211,48 @@ class NonDerivDom(SpanKeyMixin, Tournament):
             if "deriv" not in transform_chain:
                 has_non_deriv = True
         return 1 if has_non_deriv else 0
+
+
+class FreqRankDom(SpanKeyMixin, DomOnlyTournament):
+    @staticmethod
+    def rank(ann):
+        return -int(ann.attrib["rank"])
+
+
+class AlphabeticDom(SpanKeyMixin, DomOnlyTournament):
+    @staticmethod
+    def rank(ann):
+        return ReverseOrder(ann.text)
+
+
+def mk_conditional_tournament(apply_tour, filter_tour, filter_vals):
+    class ConditionalTournament(Tournament):
+        @staticmethod
+        def prepare_sent(sent):
+            return apply_tour.prepare_sent(sent), filter_tour.prepare_sent(sent)
+
+        @staticmethod
+        def key(ann):
+            apply_key = apply_tour.key(ann)
+            filter_key = filter_tour.key(ann)
+            assert apply_key == filter_key
+            return apply_key
+
+        def get_anns(self, sent, apply_extra, filter_extra):
+            anns = super().get_anns(sent)
+            return [
+                ann
+                for ann in anns
+                if filter_tour.rank(ann, *filter_extra) in filter_vals
+            ]
+
+        @staticmethod
+        def rank(ann, apply_extra, filter_extra):
+            return apply_tour.rank(ann, *apply_extra)
+
+    return ConditionalTournament
+
+
+SupportedOnlyFreqRank = mk_conditional_tournament(
+    FreqRankDom, HasSupportTournament, filter_vals=(1,)
+)

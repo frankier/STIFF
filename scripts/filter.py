@@ -20,6 +20,10 @@ from stiff.filter import (
     NaiveLemmaTournament,
     NaivePosTournament,
     LemmaPathTournament,
+    NonDerivTournament,
+    FreqRankDom,
+    AlphabeticDom,
+    SupportedOnlyFreqRank,
 )
 from stiff.utils.anns import get_ann_pos, get_ann_pos_dict
 from urllib.parse import urlencode
@@ -168,6 +172,21 @@ def filter_align_dom(inf, outf, proc):
     return AlignTournament(*decode_dom_arg(proc)).proc_stream(inf, outf)
 
 
+@filter.command("non-deriv-dom")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+@click.option("--proc", type=click.Choice(["dom", "rm"]))
+def non_deriv_dom(inf, outf, proc):
+    """
+    Dominance filter:
+
+    Remove annotations which are based on derived transfers when there is an
+    annotation based on a non-derived transfer of the same token.
+    """
+
+    return NonDerivTournament(*decode_dom_arg(proc)).proc_stream(inf, outf)
+
+
 @filter.command("head")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
@@ -303,8 +322,7 @@ def join(infs, outf):
 @filter.command("freq-dom")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
-@click.option("--break-ties/--no-break-ties")
-def freq_dom(inf, outf, break_ties):
+def freq_dom(inf, outf):
     """
     Dominance filter:
 
@@ -316,31 +334,21 @@ def freq_dom(inf, outf, break_ties):
     centrality measures
     """
 
-    def sent_freq_dom(sent):
-        anns = sent.xpath("./annotations/annotation")
-        ann_index = {}
-        for ann in anns:
-            tok, tok_len = get_ann_pos(ann)
-            anchor = ann.attrib["anchor"]
-            ann_index.setdefault((anchor, tok, tok_len), []).append(ann)
-        if break_ties:
+    return FreqRankDom().proc_stream(inf, outf)
 
-            def ranking_key(ann):
-                return (int(ann.attrib["rank"]), ann.text)
 
-        else:
+@filter.command("break-ties")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+def break_ties(inf, outf):
+    return AlphabeticDom().proc_stream(inf, outf)
 
-            def ranking_key(ann):
-                return int(ann.attrib["rank"])
 
-        for cand_anns in ann_index.values():
-            ranked_anns = sorted(cand_anns, key=ranking_key)
-            best_ann = ranked_anns[0]
-            for cand_ann in cand_anns:
-                if ranking_key(cand_ann) != ranking_key(best_ann):
-                    cand_ann.getparent().remove(cand_ann)
-
-    transform_sentences(inf, sent_freq_dom, outf)
+@filter.command("supported-freq-dom")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+def supported_freq_dom(inf, outf):
+    return SupportedOnlyFreqRank().proc_stream(inf, outf)
 
 
 def greedy_max_span(positions):

@@ -1,0 +1,85 @@
+import os
+import sys
+import click
+from stiff.methods import METHOD_CODES, METHODS, TREE, get_dot
+from stiff.utils.pipeline import add_head, ensure_dir
+from plumbum import local
+
+python = local[sys.executable]
+
+dir = os.path.dirname(os.path.realpath(__file__))
+filter_py = os.path.join(dir, "filter.py")
+
+
+@click.group()
+def variants():
+    """
+    These variants filter STIFF in different ways.
+    """
+    pass
+
+
+@variants.command("proc")
+@click.argument("method")
+@click.argument("inf", type=click.Path(exists=True))
+@click.argument("outf", type=click.Path())
+@click.option("--head", default=None)
+@click.option("--no-zstd-out/--zstd-out")
+def proc(method, inf, outf, head=None, no_zstd_out=False):
+    from plumbum.cmd import zstdcat, zstdmt
+
+    if os.environ.get("TRACE_PIPELINE"):
+        print(method)
+    pipeline = add_head(
+        filter_py, zstdcat["-D", "zstd-compression-dictionary", inf], head
+    )
+
+    pipeline = (
+        pipeline
+        | python[filter_py, "fold-support", "fi", "-", "-"]
+        | python[filter_py, "lang", "fi", "-", "-"]
+    )
+
+    method_stages = METHODS[method]
+    for stage in method_stages:
+        args = [filter_py] + stage + ["-", "-"]
+        pipeline = pipeline | python[args]
+
+    if not no_zstd_out:
+        pipeline = (
+            pipeline | zstdmt["-D", "zstd-compression-dictionary", "-", "-o", outf]
+        )
+    else:
+        pipeline = pipeline > outf
+    if os.environ.get("TRACE_PIPELINE"):
+        print(pipeline)
+    pipeline(retcode=[-13, 0])
+
+
+@variants.command("eval")
+@click.argument("inf", type=click.Path(exists=True))
+@click.argument("dirout", type=click.Path())
+def eval(inf, dirout):
+    ensure_dir(dirout)
+    for long_code in METHODS:
+        short_code = METHOD_CODES[long_code]
+        proc.callback(
+            long_code, inf, os.path.join(dirout, f"{short_code}.xml"), "1000", True
+        )
+
+
+@variants.command("draw-tree")
+def draw_tree():
+    print(get_dot(TREE))
+
+
+@variants.command("mk-correspondance-table")
+def mk_correspondance_table():
+    print("\\begin{tabular}{ l | l }")
+    for long_name, short_name in METHOD_CODES.items():
+        print(f"{short_name} & {long_name} \\\\")
+    print("\\end{tabular}")
+
+
+if __name__ == "__main__":
+    variants()

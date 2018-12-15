@@ -4,6 +4,7 @@ import sys
 import click
 from plumbum.cmd import cat, tee
 from plumbum import local
+from stiff.utils.pipeline import add_head, ensure_dir
 
 python = local[sys.executable]
 
@@ -14,11 +15,6 @@ tag_py = os.path.join(dir, "tag.py")
 man_ann_py = os.path.join(dir, "man_ann.py")
 
 
-def ensure_dir(dirout):
-    if not os.path.exists(dirout):
-        os.makedirs(dirout, exist_ok=True)
-
-
 @click.group()
 def pipeline():
     """
@@ -26,12 +22,6 @@ def pipeline():
     formats and filter STIFF.
     """
     pass
-
-
-def add_head(pipeline, head):
-    if head is not None:
-        pipeline = pipeline | python[filter_py, "head", "--sentences", head, "-", "-"]
-    return pipeline
 
 
 def mk_eurosense2stifflike_pipeline(pipeline, babel2wn_map):
@@ -51,7 +41,7 @@ def mk_eurosense2stifflike_pipeline(pipeline, babel2wn_map):
 @click.option("--head", default=None)
 @click.option("--babel2wn-map", envvar="BABEL2WN_MAP", required=True)
 def eurosense2stifflike(inf, outf, head, babel2wn_map):
-    pipeline = add_head(cat[inf], head)
+    pipeline = add_head(filter_py, cat[inf], head)
     pipeline = (
         mk_eurosense2stifflike_pipeline(pipeline, babel2wn_map)
         | python[munge_py, "eurosense-add-anchor-positions", "-", outf]
@@ -71,7 +61,7 @@ def eurosense2unified(inf, outf, keyout, head, babel2wn_map):
     Convert from the Eurosense format to the Unified format so that Eurosense
     tagged data can be compared with STIFF.
     """
-    pipeline = add_head(cat[inf], head)
+    pipeline = add_head(filter_py, cat[inf], head)
     pipeline = (
         mk_eurosense2stifflike_pipeline(pipeline, babel2wn_map)
         | python[munge_py, "eurosense-to-unified", "-", "-"]
@@ -95,7 +85,9 @@ def proc_stiff(method, inf, outf, head=None, no_zstd_out=False):
 
     if os.environ.get("TRACE_PIPELINE"):
         print(method)
-    pipeline = add_head(zstdcat["-D", "zstd-compression-dictionary", inf], head)
+    pipeline = add_head(
+        filter_py, zstdcat["-D", "zstd-compression-dictionary", inf], head
+    )
     if method == "mono-1st":
         pipeline = (
             pipeline

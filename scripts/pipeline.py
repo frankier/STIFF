@@ -96,21 +96,7 @@ def proc_stiff(method, inf, outf, head=None, no_zstd_out=False):
     if os.environ.get("TRACE_PIPELINE"):
         print(method)
     pipeline = add_head(zstdcat["-D", "zstd-compression-dictionary", inf], head)
-    if method == "none":
-        pipeline = (
-            pipeline
-            | python[filter_py, "fold-support", "fi", "-", "-"]
-            | python[filter_py, "lang", "fi", "-", "-"]
-        )
-    elif method == "mono-1st-break":
-        pipeline = (
-            pipeline
-            | python[filter_py, "fold-support", "fi", "-", "-"]
-            | python[filter_py, "lang", "fi", "-", "-"]
-            | python[filter_py, "freq-dom", "-", "-"]
-            | python[filter_py, "break-ties", "-", "-"]
-        )
-    elif method == "mono-1st":
+    if method == "mono-1st":
         pipeline = (
             pipeline
             | python[filter_py, "fold-support", "fi", "-", "-"]
@@ -227,9 +213,9 @@ def proc_stiff(method, inf, outf, head=None, no_zstd_out=False):
             | python[filter_py, "fold-support", "fi", "-", "-"]
             | python[filter_py, "lang", "fi", "-", "-"]
             | python[filter_py, "non-recurs-dom", "--proc=rm", "-", "-"]
-            | python[filter_py, "finnpos-rm-pos", "--level=agg", "-", "-"]
+            | python[filter_py, "finnpos-rm-pos", "--level=normal", "-", "-"]
             | python[filter_py, "finnpos-naive-pos-dom", "--proc=rm-agg", "-", "-"]
-            | python[filter_py, "finnpos-naive-lemma-dom", "--proc=rm", "-", "-"]
+            | python[filter_py, "finnpos-naive-lemma-dom", "--proc=dom", "-", "-"]
             | python[filter_py, "has-support-dom", "--proc=dom", "-", "-"]
             | python[filter_py, "align-dom", "--proc=dom", "-", "-"]
             | python[filter_py, "freq-dom", "-", "-"]
@@ -250,15 +236,6 @@ def proc_stiff(method, inf, outf, head=None, no_zstd_out=False):
             | python[filter_py, "has-support-dom", "--proc=rm", "-", "-"]
             | python[filter_py, "freq-dom", "-", "-"]
             | python[filter_py, "rm-ambg", "-", "-"]
-        )
-    elif method == "simple-x-recall":
-        pipeline = (
-            pipeline
-            | python[filter_py, "fold-support", "fi", "-", "-"]
-            | python[filter_py, "lang", "fi", "-", "-"]
-            | python[filter_py, "has-support-dom", "--proc=rm", "-", "-"]
-            | python[filter_py, "freq-dom", "-", "-"]
-            | python[filter_py, "break-ties", "-", "-"]
         )
     elif method == "high-precision":
         pipeline = (
@@ -339,7 +316,6 @@ def proc_stiff(method, inf, outf, head=None, no_zstd_out=False):
 def proc_stiff_to_eval(inf, dirout):
     ensure_dir(dirout)
     for method in (
-        "mono-1st-break",
         "mono-1st",
         "mono-unambg",
         "mono-unambg-finnpos-soft",
@@ -353,7 +329,6 @@ def proc_stiff_to_eval(inf, dirout):
         "finnpos-no-pos-soft-supported-freq-first-precision",
         "simple-precision",
         "simple-recall",
-        "simple-x-recall",
         "high-precision",
         "high-recall",
         "balanced-precision",

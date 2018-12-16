@@ -213,13 +213,23 @@ def pr_eval(gold, eval, csv_out, trace_individual, score):
     df.to_csv(csv_out)
 
 
+INCH_PTS = 72
+
+
 @eval.command("pr-plot")
 @click.argument("opensubs18_csv", type=click.Path())
 @click.argument("eurosense_csv", type=click.Path(), required=False)
-def pr_plot(opensubs18_csv, eurosense_csv=None):
+@click.option("--out")
+def pr_plot(opensubs18_csv, eurosense_csv=None, out=None):
     import matplotlib.pyplot as plt
     from adjustText import adjust_text
     import pareto
+    from brokenaxes import brokenaxes
+    import matplotlib as mpl
+
+    mpl.rcParams.update(
+        {"font.family": "serif", "font.serif": [], "font.sans-serif": []}
+    )
 
     opensubs18_df = pd.read_csv(opensubs18_csv)
 
@@ -252,26 +262,32 @@ def pr_plot(opensubs18_csv, eurosense_csv=None):
     print(df)
 
     fig = plt.gcf()
-    fig.set_size_inches(11.69, 8.27)
+    fig.set_size_inches(645.0 / INCH_PTS, 441.0 / INCH_PTS)
 
-    plt.xlabel("Precision")
-    plt.ylabel("Recall")
-    plt.xlim(0, 1)
-    plt.ylim(0, 1)
+    bax = brokenaxes(
+        xlims=((0, 0.01), (0.29, 1)),
+        ylims=((0, 0.51), (0.99, 1)),
+        hspace=0.05,
+        wspace=0.05,
+    )
 
     for type, (marker, c) in type_markers.items():
-        df[df.type == type].plot.scatter(
-            x="precision", y="recall", marker=marker, c=c, ax=fig.axes[0]
-        )
+        group_df = df[df.type == type]
+        bax.scatter(x=group_df["precision"], y=group_df["recall"], marker=marker, c=c)
     texts = []
     for idx, row in df.iterrows():
         texts.append(
-            plt.text(
+            bax.axs[3].text(
                 row["precision"], row["recall"], row["name"], ha="center", va="center"
             )
         )
-    adjust_text(texts, arrowprops=dict(arrowstyle="->", color="red"))
-    plt.show()
+    adjust_text(texts)
+    bax.set_xlabel("Precision")
+    bax.set_ylabel("Recall")
+    if out is not None:
+        plt.savefig(out, bbox_inches="tight")
+    else:
+        plt.show()
 
 
 @eval.command("cov")

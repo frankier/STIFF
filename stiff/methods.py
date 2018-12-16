@@ -182,10 +182,10 @@ def get_branches(tree):
 DOT = Template(
     """
 digraph G {
-        rankdir="LR";
-        bgcolor="transparent";
-        node[width=0.15, height=0.15, shape=circle];
-        edge[weight=2, arrowhead=none];
+        rankdir="TB";
+        graph[ranksep=0.15, nodesep=0.1];
+        node[width=0.15, height=0.15, shape=none];
+        edge[weight=2, arrowhead=normal];
 $branches
 }
 """

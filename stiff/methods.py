@@ -8,10 +8,9 @@ METHOD_CODES = {
     "mono-unambg-finnpos-hard": "MF2",
     "mono-unambg-finnpos-x-hard": "MF3",
     "finnpos-first-precision": "FP1",
-    "finnpos-no-pos-first-precision": "FP2",
-    "finnpos-no-pos-soft-first-precision": "FP3",
-    "finnpos-no-pos-soft-deriv-first-precision": "FP4",
-    "finnpos-no-pos-soft-supported-freq-first-precision": "FP5",
+    "finnpos-soft-first-precision": "FP2",
+    "finnpos-soft-deriv-first-precision": "FP3",
+    "finnpos-soft-supported-freq-first-precision": "FP4",
     "finnpos-first-recall": "FR",
     "simple-precision": "SP",
     "simple-recall": "SR",
@@ -34,42 +33,30 @@ METHODS = {
     "mono-unambg-finnpos-soft": [
         ["non-recurs-dom", "--proc=rm"],
         ["finnpos-rm-pos", "--level=normal"],
-        ["finnpos-naive-pos-dom", "--proc=dom"],
         ["finnpos-naive-lemma-dom", "--proc=dom"],
         ["rm-ambg"],
     ],
     "mono-unambg-finnpos-hard": [
         ["non-recurs-dom", "--proc=rm"],
         ["finnpos-rm-pos", "--level=agg"],
-        ["finnpos-naive-pos-dom", "--proc=rm"],
         ["finnpos-naive-lemma-dom", "--proc=dom"],
         ["rm-ambg"],
     ],
     "mono-unambg-finnpos-x-hard": [
         ["non-recurs-dom", "--proc=rm"],
         ["finnpos-rm-pos", "--level=agg"],
-        ["finnpos-naive-pos-dom", "--proc=rm-agg"],
         ["finnpos-naive-lemma-dom", "--proc=rm"],
         ["rm-ambg"],
     ],
     "finnpos-first-precision": [
         ["non-recurs-dom", "--proc=rm"],
         ["finnpos-rm-pos", "--level=agg"],
-        ["finnpos-naive-pos-dom", "--proc=rm-agg"],
         ["finnpos-naive-lemma-dom", "--proc=rm"],
         ["has-support-dom", "--proc=dom"],
         ["align-dom", "--proc=dom"],
         ["rm-ambg"],
     ],
-    "finnpos-no-pos-first-precision": [
-        ["non-recurs-dom", "--proc=rm"],
-        ["finnpos-rm-pos", "--level=agg"],
-        ["finnpos-naive-lemma-dom", "--proc=rm"],
-        ["has-support-dom", "--proc=dom"],
-        ["align-dom", "--proc=dom"],
-        ["rm-ambg"],
-    ],
-    "finnpos-no-pos-soft-first-precision": [
+    "finnpos-soft-first-precision": [
         ["non-recurs-dom", "--proc=rm"],
         ["finnpos-rm-pos", "--level=agg"],
         ["finnpos-naive-lemma-dom", "--proc=dom"],
@@ -77,7 +64,7 @@ METHODS = {
         ["align-dom", "--proc=dom"],
         ["rm-ambg"],
     ],
-    "finnpos-no-pos-soft-deriv-first-precision": [
+    "finnpos-soft-deriv-first-precision": [
         ["non-recurs-dom", "--proc=rm"],
         ["finnpos-rm-pos", "--level=agg"],
         ["finnpos-naive-lemma-dom", "--proc=dom"],
@@ -86,7 +73,7 @@ METHODS = {
         ["non-deriv-dom", "--proc=dom"],
         ["rm-ambg"],
     ],
-    "finnpos-no-pos-soft-supported-freq-first-precision": [
+    "finnpos-soft-supported-freq-first-precision": [
         ["non-recurs-dom", "--proc=rm"],
         ["finnpos-rm-pos", "--level=agg"],
         ["finnpos-naive-lemma-dom", "--proc=dom"],
@@ -98,7 +85,6 @@ METHODS = {
     "finnpos-first-recall": [
         ["non-recurs-dom", "--proc=rm"],
         ["finnpos-rm-pos", "--level=normal"],
-        ["finnpos-naive-pos-dom", "--proc=rm-agg"],
         ["finnpos-naive-lemma-dom", "--proc=dom"],
         ["has-support-dom", "--proc=dom"],
         ["align-dom", "--proc=dom"],

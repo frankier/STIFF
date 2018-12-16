@@ -3,22 +3,20 @@ from string import Template
 
 METHOD_CODES = {
     "mono-unambg": "U",
-    "mono-1st": "MR",
-    "mono-unambg-finnpos-soft": "MF1",
-    "mono-unambg-finnpos-hard": "MF2",
-    "mono-unambg-finnpos-x-hard": "MF3",
-    "finnpos-first-precision": "FP1",
-    "finnpos-soft-first-precision": "FP2",
-    "finnpos-soft-deriv-first-precision": "FP3",
-    "finnpos-soft-supported-freq-first-precision": "FP4",
-    "finnpos-first-recall": "FR",
+    "mono-recall": "MR",
+    "mono-precision-1": "MP1",
+    "mono-precision-2": "MP2",
+    "mono-precision-3": "MP3",
+    "bilingual-precision-1": "BP1",
+    "bilingual-precision-2": "BP2",
+    "bilingual-precision-3": "BP3",
+    "bilingual-precision-4": "BP4",
     "simple-precision": "SP",
     "simple-recall": "SR",
-    "high-precision": "HP",
-    "high-recall": "HR",
-    "balanced-recall": "BR",
-    "balanced": "B",
-    "balanced-precision": "BP",
+    "max-precision": "MXP",
+    "bilingual-recall-1": "BR1",
+    "bilingual-recall-2": "BR2",
+    "bilingual-recall-3": "BR3",
     "eurosense-coverage": "EC",
     "eurosense-precision": "EP",
 }
@@ -29,26 +27,26 @@ INV_METHOD_CODES = {
 
 METHODS = {
     "mono-unambg": [["rm-ambg"]],
-    "mono-1st": [["freq-dom"], ["rm-ambg"]],
-    "mono-unambg-finnpos-soft": [
+    "mono-recall": [["freq-dom"], ["rm-ambg"]],
+    "mono-precision-1": [
         ["non-recurs-dom", "--proc=rm"],
         ["finnpos-rm-pos", "--level=normal"],
         ["finnpos-naive-lemma-dom", "--proc=dom"],
         ["rm-ambg"],
     ],
-    "mono-unambg-finnpos-hard": [
+    "mono-precision-2": [
         ["non-recurs-dom", "--proc=rm"],
         ["finnpos-rm-pos", "--level=agg"],
         ["finnpos-naive-lemma-dom", "--proc=dom"],
         ["rm-ambg"],
     ],
-    "mono-unambg-finnpos-x-hard": [
+    "mono-precision-3": [
         ["non-recurs-dom", "--proc=rm"],
         ["finnpos-rm-pos", "--level=agg"],
         ["finnpos-naive-lemma-dom", "--proc=rm"],
         ["rm-ambg"],
     ],
-    "finnpos-first-precision": [
+    "bilingual-precision-1": [
         ["non-recurs-dom", "--proc=rm"],
         ["finnpos-rm-pos", "--level=agg"],
         ["finnpos-naive-lemma-dom", "--proc=rm"],
@@ -56,7 +54,7 @@ METHODS = {
         ["align-dom", "--proc=dom"],
         ["rm-ambg"],
     ],
-    "finnpos-soft-first-precision": [
+    "bilingual-precision-2": [
         ["non-recurs-dom", "--proc=rm"],
         ["finnpos-rm-pos", "--level=agg"],
         ["finnpos-naive-lemma-dom", "--proc=dom"],
@@ -64,7 +62,7 @@ METHODS = {
         ["align-dom", "--proc=dom"],
         ["rm-ambg"],
     ],
-    "finnpos-soft-deriv-first-precision": [
+    "bilingual-precision-3": [
         ["non-recurs-dom", "--proc=rm"],
         ["finnpos-rm-pos", "--level=agg"],
         ["finnpos-naive-lemma-dom", "--proc=dom"],
@@ -73,7 +71,7 @@ METHODS = {
         ["non-deriv-dom", "--proc=dom"],
         ["rm-ambg"],
     ],
-    "finnpos-soft-supported-freq-first-precision": [
+    "bilingual-precision-4": [
         ["non-recurs-dom", "--proc=rm"],
         ["finnpos-rm-pos", "--level=agg"],
         ["finnpos-naive-lemma-dom", "--proc=dom"],
@@ -82,32 +80,23 @@ METHODS = {
         ["supported-freq-dom"],
         ["rm-ambg"],
     ],
-    "finnpos-first-recall": [
-        ["non-recurs-dom", "--proc=rm"],
-        ["finnpos-rm-pos", "--level=normal"],
-        ["finnpos-naive-lemma-dom", "--proc=dom"],
-        ["has-support-dom", "--proc=dom"],
-        ["align-dom", "--proc=dom"],
-        ["freq-dom"],
-        ["rm-ambg"],
-    ],
     "simple-precision": [["has-support-dom", "--proc=rm"], ["rm-ambg"]],
     "simple-recall": [["has-support-dom", "--proc=rm"], ["freq-dom"], ["rm-ambg"]],
-    "high-precision": [
+    "max-precision": [
         ["has-support-dom", "--proc=rm"],
         ["align-dom", "--proc=rm"],
         ["finnpos-rm-pos", "--level=agg"],
         ["finnpos-naive-lemma-dom", "--proc=rm"],
         ["rm-ambg"],
     ],
-    "high-recall": [
+    "bilingual-recall-1": [
         ["has-support-dom", "--proc=dom"],
         ["align-dom", "--proc=dom"],
         ["finnpos-naive-pos-dom", "--proc=dom"],
         ["finnpos-naive-lemma-dom", "--proc=dom"],
         ["freq-dom"],
     ],
-    "balanced-recall": [
+    "bilingual-recall-2": [
         ["has-support-dom", "--proc=dom"],
         ["align-dom", "--proc=dom"],
         ["finnpos-rm-pos", "--level=soft"],
@@ -116,7 +105,7 @@ METHODS = {
         ["freq-dom"],
         ["rm-ambg"],
     ],
-    "balanced": [
+    "bilingual-recall-3": [
         ["has-support-dom", "--proc=dom"],
         ["align-dom", "--proc=dom"],
         ["finnpos-rm-pos", "--level=normal"],
@@ -125,27 +114,15 @@ METHODS = {
         ["freq-dom"],
         ["rm-ambg"],
     ],
-    "balanced-precision": [
-        ["has-support-dom", "--proc=dom"],
-        ["align-dom", "--proc=dom"],
-        ["finnpos-rm-pos", "--level=normal"],
-        ["finnpos-naive-pos-dom", "--proc=dom"],
-        ["finnpos-naive-lemma-dom", "--proc=dom"],
-        ["rm-ambg"],
-    ],
 }
 
 TREE = [
     "U",
-    ["MF1", ["MF2", ["MF3", ["FP1", ["FP2", ["FP3", "FP4", "FP5"]]]]], ["FR"]],
-    ["MR"],
+    ["MP1", ["MP2", ["MP3", ["BP1", ["BP2", "BP3", "BP4"]]]]],
+    ["MR", ["BR1", ["BR2", ["BR3"]]]],
     ["SP"],
     ["SR"],
-    ["HP"],
-    ["HR"],
-    ["BR"],
-    ["B"],
-    ["BP"],
+    ["MXP"],
 ]
 
 

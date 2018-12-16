@@ -126,10 +126,20 @@ TREE = [
 ]
 
 
+def normalise_tree(tree):
+    for idx in range(1, len(tree)):
+        child = tree[idx]
+        if isinstance(child, str):
+            tree[idx] = [child]
+        else:
+            normalise_tree(child)
+
+
+normalise_tree(TREE)
+
+
 def get_branches(tree):
-    if isinstance(tree, str):
-        return [[tree]]
-    elif len(tree) == 1:
+    if len(tree) == 1:
         return [tree]
     head = tree[0]
     children = tree[1:]
@@ -156,8 +166,61 @@ $branches
 
 
 def get_dot(tree):
+    critical_nodes = get_critical_nodes(tree)
     branch_bits = []
     for idx, branch in enumerate(get_branches(tree)):
         branch_bits.append(f"node[group=g{idx}];")
-        branch_bits.append(" -> ".join(branch) + ";")
+        for idx in range(0, len(branch) - 1):
+            parent = branch[idx]
+            child = branch[idx + 1]
+            diff = get_disp_diff(parent, child)
+            if diff and not (parent in critical_nodes and child in critical_nodes):
+                branch_bits.append('{} -> {}[xlabel="{}"];'.format(parent, child, diff))
+            else:
+                branch_bits.append("{} -> {};".format(parent, child))
     return DOT.substitute({"branches": "\n".join(branch_bits)})
+
+
+def get_stages(short_code):
+    return METHODS[INV_METHOD_CODES[short_code]]
+
+
+def get_list_ancestor(diff_tree):
+    if isinstance(diff_tree.t2, list):
+        return diff_tree
+    return get_list_ancestor(diff_tree.up)
+
+
+def get_disp_diff(parent, child):
+    from jsondiff import diff, insert
+
+    parent_stages = get_stages(parent)
+    child_stages = get_stages(child)
+    diffed = diff(parent_stages, child_stages)
+    keys_list = list(diffed.keys())
+    if len(keys_list) != 1:
+        return
+    key = keys_list[0]
+    if key == insert:
+        inserts = diffed[key]
+        if len(inserts) != 1:
+            return
+        return "+ {}".format(" ".join(inserts[0][1]))
+    elif isinstance(key, int):
+        return "{} / {}".format(
+            " ".join(child_stages[key]), " ".join(parent_stages[key])
+        )
+    else:
+        return
+
+
+def get_critical_nodes(tree, parent=None):
+    result = set()
+    head = tree[0]
+    children = tree[1:]
+    diff = get_disp_diff(parent, head) if parent is not None else None
+    if diff is None or not children:
+        result.add(head)
+    for child in children:
+        result.update(get_critical_nodes(child, head))
+    return result

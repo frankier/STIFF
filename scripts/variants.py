@@ -1,7 +1,14 @@
 import os
 import sys
 import click
-from stiff.methods import METHOD_CODES, METHODS, TREE, get_dot
+from stiff.methods import (
+    INV_METHOD_CODES,
+    METHOD_CODES,
+    METHODS,
+    TREE,
+    get_dot,
+    get_critical_nodes,
+)
 from stiff.utils.pipeline import add_head, ensure_dir
 from plumbum import local
 
@@ -79,6 +86,20 @@ def mk_correspondance_table():
     for long_name, short_name in METHOD_CODES.items():
         print(f"{short_name} & {long_name} \\\\")
     print("\\end{tabular}")
+
+
+@variants.command("mk-code-boxes")
+def mk_code_boxes():
+    print("\\begin{multicols}{3}")
+    for method_code in get_critical_nodes(TREE):
+        long_method_code = INV_METHOD_CODES[method_code]
+        stages = METHODS[long_method_code]
+        print("\\begin{framed}")
+        print("\\textbf{" + long_method_code + "}")
+        for stage in stages:
+            print(" ".join(stage))
+        print("\\end{framed}")
+    print("\\end{multicols}")
 
 
 if __name__ == "__main__":

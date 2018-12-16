@@ -14,6 +14,7 @@ pareto = "*"
 "2a4114c" = {file = "https://github.com/scikit-learn/scikit-learn/archive/0.20.1.tar.gz"}
 cython = "*"
 brokenaxes = "*"
+jsondiff = "*"
 
 [dev-packages]
 

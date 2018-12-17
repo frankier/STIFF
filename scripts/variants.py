@@ -7,6 +7,7 @@ from stiff.methods import (
     METHODS,
     TREE,
     get_dot,
+    get_forest,
     get_critical_nodes,
 )
 from stiff.utils.pipeline import add_head, ensure_dir
@@ -76,8 +77,12 @@ def eval(inf, dirout):
 
 
 @variants.command("draw-tree")
-def draw_tree():
-    print(get_dot(TREE))
+@click.option("--dot/--no-dot")
+def draw_tree(dot):
+    if dot:
+        print(get_dot(TREE))
+    else:
+        print(get_forest(TREE))
 
 
 @variants.command("mk-correspondance-table")

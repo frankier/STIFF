@@ -181,6 +181,50 @@ def get_dot(tree):
     return DOT.substitute({"branches": "\n".join(branch_bits)})
 
 
+FOREST = Template(
+    r"""
+\begin{forest}
+  for tree={
+    font=\ttfamily,
+    grow'=0,
+    child anchor=west,
+    parent anchor=south,
+    anchor=west,
+    calign=first,
+    edge path={
+      \noexpand\path [draw, \forestoption{edge}]
+      (!u.south west) +(7.5pt,0) |- node[fill,inner sep=1.25pt] {} (.child anchor)\forestoption{edge label};
+    },
+    before typesetting nodes={
+      if n=1
+        {insert before={[,phantom]}}
+        {}
+    },
+    fit=band,
+    before computing xy={l=15pt},
+  }
+$tree
+\end{forest}
+"""
+)
+
+
+def get_forest(tree):
+    def draw_node(node, parent=None):
+        head = node[0]
+        children = node[1:]
+        diff = get_disp_diff(parent, head)
+        if diff:
+            comment = "\t" + diff
+        else:
+            comment = ""
+        return "[{{{}{}}}\n{}]".format(
+            head, comment, " ".join((draw_node(child, head) for child in children))
+        )
+
+    return FOREST.substitute({"tree": draw_node(tree)})
+
+
 def get_stages(short_code):
     return METHODS[INV_METHOD_CODES[short_code]]
 
@@ -193,6 +237,9 @@ def get_list_ancestor(diff_tree):
 
 def get_disp_diff(parent, child):
     from jsondiff import diff, insert
+
+    if parent is None:
+        return
 
     parent_stages = get_stages(parent)
     child_stages = get_stages(child)

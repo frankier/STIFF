@@ -273,7 +273,9 @@ def pr_plot(opensubs18_csv, eurosense_csv=None, out=None):
 
     for type, (marker, c) in type_markers.items():
         group_df = df[df.type == type]
-        bax.scatter(x=group_df["precision"], y=group_df["recall"], marker=marker, c=c)
+        bax.scatter(
+            x=group_df["precision"], y=group_df["recall"], marker=marker, c=c, s=10
+        )
     texts = []
     for idx, row in df.iterrows():
         texts.append(

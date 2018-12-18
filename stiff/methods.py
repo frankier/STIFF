@@ -78,8 +78,8 @@ METHODS = {
         ["finnpos-naive-lemma-dom", "--proc=rm"],
         ["has-support-dom", "--proc=dom"],
         ["align-dom", "--proc=dom"],
-        ["non-deriv-dom", "--proc=dom"],
         ["supported-freq-dom"],
+        ["non-wiki-trg", "--proc=dom"],
         ["rm-ambg"],
     ],
     "simple-precision": [["has-support-dom", "--proc=rm"], ["rm-ambg"]],
@@ -120,7 +120,7 @@ METHODS = {
 
 TREE = [
     "U",
-    ["MP1", ["MP2", ["MP3", ["BP1", ["BP2", "BP3"], "BP2A"]]]],
+    ["MP1", ["MP2", ["MP3", ["BP1", "BP2", ["BP2A", "BP3"]]]]],
     ["MR", ["BR1", ["BR2", ["BR3"]]]],
     ["SP"],
     ["SR"],

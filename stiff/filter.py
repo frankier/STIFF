@@ -256,3 +256,23 @@ def mk_conditional_tournament(apply_tour, filter_tour, filter_vals):
 SupportedOnlyFreqRank = mk_conditional_tournament(
     FreqRankDom, HasSupportTournament, filter_vals=(1,)
 )
+
+
+class PreferNonWikiTargetDom(SpanKeyMixin, Tournament):
+    @staticmethod
+    def rank(ann):
+        wordnets = set(ann.attrib["wordnets"].split(" "))
+        return 1 if (wordnets - {"qwf"}) else 0
+
+
+class PreferNonWikiSourceDom(SpanKeyMixin, Tournament):
+    @staticmethod
+    def rank(ann):
+        if "support" not in ann.attrib:
+            return 0
+        transfer_from = set()
+        for support_qs in ann.attrib["support"].split(" "):
+            support = parse_qs_single(support_qs)
+            transfer_from = support["transfer-from-wordnets"]
+            transfer_from = set(transfer_from.split("+"))
+        return 1 if (transfer_from - {"qwc"}) else 0

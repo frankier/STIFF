@@ -24,6 +24,8 @@ from stiff.filter import (
     FreqRankDom,
     AlphabeticDom,
     SupportedOnlyFreqRank,
+    PreferNonWikiTargetDom,
+    PreferNonWikiSourceDom,
 )
 from stiff.utils.anns import get_ann_pos, get_ann_pos_dict
 from urllib.parse import urlencode
@@ -541,6 +543,22 @@ def finnpos_rm_pos(inf, outf, level):
         trim_anns(anns, new_anns)
 
     transform_sentences(inf, sent_rm_pos, outf)
+
+
+@filter.command("non-wiki-src")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+@click.option("--proc", type=click.Choice(["dom", "rm"]))
+def non_wiki_src(inf, outf, proc):
+    return PreferNonWikiSourceDom(*decode_dom_arg(proc)).proc_stream(inf, outf)
+
+
+@filter.command("non-wiki-trg")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+@click.option("--proc", type=click.Choice(["dom", "rm"]))
+def non_wiki_trg(inf, outf, proc):
+    return PreferNonWikiTargetDom(*decode_dom_arg(proc)).proc_stream(inf, outf)
 
 
 if __name__ == "__main__":

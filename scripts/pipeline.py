@@ -5,14 +5,15 @@ import click
 from plumbum.cmd import cat, tee
 from plumbum import local
 from stiff.utils.pipeline import add_head, ensure_dir
+from os.path import join as pjoin
 
 python = local[sys.executable]
 
 dir = os.path.dirname(os.path.realpath(__file__))
-filter_py = os.path.join(dir, "filter.py")
-munge_py = os.path.join(dir, "munge.py")
-tag_py = os.path.join(dir, "tag.py")
-man_ann_py = os.path.join(dir, "man_ann.py")
+filter_py = pjoin(dir, "filter.py")
+munge_py = pjoin(dir, "munge.py")
+tag_py = pjoin(dir, "tag.py")
+man_ann_py = pjoin(dir, "man_ann.py")
 
 
 @click.group()
@@ -25,14 +26,23 @@ def pipeline():
 
 
 def mk_eurosense2stifflike_pipeline(pipeline, babel2wn_map):
-    return (
-        pipeline
-        | python[filter_py, "lang", "fi", "-", "-"]
-        | python[munge_py, "babelnet-lookup", "-", babel2wn_map, "-"]
-        | python[munge_py, "eurosense-reanchor", "-", "-"]
-        | python[munge_py, "eurosense-lemma-fix", "--drop-unknown", "-", "-"]
-        | python[filter_py, "rm-empty", "-", "-"]
+    tmp_dir = os.environ.get("EUROSENSE_PIPELINE_TMPDIR")
+    pipeline = pipeline | python[filter_py, "lang", "fi", "-", "-"]
+    if tmp_dir is not None:
+        pipeline = pipeline | tee["-", pjoin(tmp_dir, "lang.fi.xml")]
+    pipeline = pipeline | python[munge_py, "babelnet-lookup", "-", babel2wn_map, "-"]
+    if tmp_dir is not None:
+        pipeline = pipeline | tee["-", pjoin(tmp_dir, "wordnet.looked.up.xml")]
+    pipeline = pipeline | python[munge_py, "eurosense-reanchor", "-", "-"]
+    if tmp_dir is not None:
+        pipeline = pipeline | tee["-", pjoin(tmp_dir, "reanchored.xml")]
+    pipeline = (
+        pipeline | python[munge_py, "eurosense-lemma-fix", "--drop-unknown", "-", "-"]
     )
+    if tmp_dir is not None:
+        pipeline = pipeline | tee["-", pjoin(tmp_dir, "lemma-fixed.xml")]
+    pipeline = pipeline | python[filter_py, "rm-empty", "-", "-"]
+    return pipeline
 
 
 @pipeline.command("eurosense2stifflike")

@@ -9,6 +9,7 @@ from stiff.methods import (
     get_dot,
     get_forest,
     get_critical_nodes,
+    lookup_stage,
 )
 from stiff.utils.pipeline import add_head, ensure_dir
 from plumbum import local
@@ -50,7 +51,8 @@ def proc(method, inf, outf, head=None, no_zstd_out=False):
 
     method_stages = METHODS[method]
     for stage in method_stages:
-        args = [filter_py] + stage + ["-", "-"]
+        long_stage = lookup_stage(stage)
+        args = [filter_py] + long_stage.split(" ") + ["-", "-"]
         pipeline = pipeline | python[args]
 
     if not no_zstd_out:
@@ -102,7 +104,7 @@ def mk_code_boxes():
         print("\\begin{framed}")
         print("\\textbf{" + long_method_code + "}")
         for stage in stages:
-            print(" ".join(stage))
+            print(stage)
         print("\\end{framed}")
     print("\\end{multicols}")
 

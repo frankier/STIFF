@@ -236,7 +236,7 @@ def get_list_ancestor(diff_tree):
 
 
 def get_disp_diff(parent, child):
-    from jsondiff import diff, insert
+    from jsondiff import diff, insert, delete
 
     if parent is None:
         return
@@ -244,19 +244,18 @@ def get_disp_diff(parent, child):
     parent_stages = get_stages(parent)
     child_stages = get_stages(child)
     diffed = diff(parent_stages, child_stages)
-    keys_list = list(diffed.keys())
-    if len(keys_list) != 1:
-        return
-    key = keys_list[0]
-    if key == insert:
-        inserts = diffed[key]
+    keys_set = set(diffed.keys())
+    if keys_set == {insert}:
+        inserts = diffed[insert]
         if len(inserts) != 1:
             return
-        return "+ {}".format(" ".join(inserts[0][1]))
-    elif isinstance(key, int):
-        return "{} / {}".format(
-            " ".join(child_stages[key]), " ".join(parent_stages[key])
-        )
+        return "+ {}".format(inserts[0][1])
+    elif keys_set == {insert, delete}:
+        inserts = diffed[insert]
+        deletes = diffed[delete]
+        if len(inserts) != 1 or len(deletes) != 1:
+            return
+        return "{} / {}".format(inserts[0][1], parent_stages[deletes[0]])
     else:
         return
 

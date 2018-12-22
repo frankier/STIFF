@@ -3,7 +3,7 @@ from string import Template
 
 from stiff.filter import (
     AlignTournament,
-    NonDerivDom,
+    NonDerivTournament,
     HasSupportTournament,
     decode_dom_arg,
 )
@@ -112,7 +112,7 @@ def test_filter_has_support():
 
 
 def test_filter_deriv_dom():
-    tournament = NonDerivDom(*decode_dom_arg("dom"))
+    tournament = NonDerivTournament(*decode_dom_arg("dom"))
     # If we have two annotations, one with deriv/non-deriv and one with
     # only non-deriv, neither should dominate
     sent1 = etree.fromstring(FILTER_ALIGN_DOM_TEST_CORPUS_BOTH_ALIGNED)

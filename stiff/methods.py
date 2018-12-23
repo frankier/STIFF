@@ -200,7 +200,6 @@ FOREST = Template(
     r"""
 \begin{forest}
   for tree={
-    font=\ttfamily,
     grow'=0,
     child anchor=west,
     parent anchor=south,
@@ -230,10 +229,10 @@ def get_forest(tree):
         children = node[1:]
         diff = get_disp_diff(parent, head)
         if diff:
-            comment = "\t" + diff
+            comment = " {\hskip 1em} " + diff
         else:
             comment = ""
-        return "[{{{}{}}}\n{}]".format(
+        return "[{{\\textbf{{{}}}{}}}\n{}]".format(
             head, comment, " ".join((draw_node(child, head) for child in children))
         )
 
@@ -264,7 +263,7 @@ def get_disp_diff(parent, child):
         inserts = diffed[insert]
         if len(inserts) != 1:
             return
-        return "+ {}".format(inserts[0][1])
+        return "+{}".format(inserts[0][1])
     elif keys_set == {insert, delete}:
         inserts = diffed[insert]
         deletes = diffed[delete]

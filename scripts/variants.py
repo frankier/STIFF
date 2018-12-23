@@ -13,6 +13,7 @@ from stiff.methods import (
 )
 from stiff.utils.pipeline import add_head, ensure_dir
 from plumbum import local
+from string import Template
 
 python = local[sys.executable]
 
@@ -107,6 +108,76 @@ def mk_code_boxes():
             print(stage)
         print("\\end{framed}")
     print("\\end{multicols}")
+
+
+FOREST_BEGIN = """
+\\forestset{default preamble={
+for tree={edge={->},align=center,l sep=0,inner ysep=0}
+}}
+"""
+
+
+FOREST_PIPES = Template(
+    """
+\\begin{forest}
+[{\\textbf{$title:}}
+$tree]
+\end{forest}
+"""
+)
+
+
+@variants.command("mk-code-pipes")
+def mk_code_pipes():
+    critical_nodes = get_critical_nodes(TREE)
+
+    lengths = []
+    for method_code in critical_nodes:
+        long_method_code = INV_METHOD_CODES[method_code]
+        stages = METHODS[long_method_code]
+        lengths.append(len(stages))
+
+    longest_node = max(lengths)
+    bins = []
+
+    def new_bin():
+        bins.append({"filled": 0, "contents": []})
+
+    unplaced = list(zip(critical_nodes, lengths))
+    while unplaced:
+        new_bin()
+        to_remove = []
+        for idx, (method_code, length) in enumerate(unplaced):
+            if length + bins[-1]["filled"] <= longest_node:
+                bins[-1]["filled"] += length
+                bins[-1]["contents"].append(method_code)
+                to_remove.append(idx)
+        for idx in reversed(to_remove):
+            del unplaced[idx]
+
+    def draw_node(stages, root=True):
+        if not stages:
+            return ""
+        return "[{{{}}}{} {}]".format(
+            stages[0], ",no edge,l=0" if root else "", draw_node(stages[1:], False)
+        )
+
+    print(FOREST_BEGIN.strip())
+
+    for bin in bins:
+        print("\\begin{adjustbox}{varwidth=3cm,valign=t}")
+        print("\\centering")
+        for idx, method_code in enumerate(bin["contents"]):
+            if idx != 0:
+                print("{\\vskip 1em}")
+            long_method_code = INV_METHOD_CODES[method_code]
+            stages = METHODS[long_method_code]
+            print(
+                FOREST_PIPES.substitute(
+                    {"title": method_code, "tree": draw_node(stages)}
+                ).strip()
+            )
+        print("\\end{adjustbox}")
 
 
 if __name__ == "__main__":

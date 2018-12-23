@@ -9,8 +9,9 @@ METHOD_CODES = {
     "mono-precision-3": "MP3",
     "bilingual-precision-1": "BP1",
     "bilingual-precision-2": "BP2",
-    "bilingual-precision-2a": "BP2A",
     "bilingual-precision-3": "BP3",
+    "bilingual-precision-3a": "BP3A",
+    "bilingual-precision-4": "BP4",
     "simple-precision": "SP",
     "simple-recall": "SR",
     "max-precision": "MXP",
@@ -61,7 +62,6 @@ METHODS = {
         "rm-pos-agg",
         "lemma-rm",
         "sup-dom",
-        "align-dom",
         "rm-ambg",
     ],
     "bilingual-precision-2": [
@@ -70,10 +70,18 @@ METHODS = {
         "lemma-rm",
         "sup-dom",
         "align-dom",
+        "rm-ambg",
+    ],
+    "bilingual-precision-3": [
+        "recurs-rm",
+        "rm-pos-agg",
+        "lemma-rm",
+        "sup-dom",
+        "align-dom",
         "deriv-dom",
         "rm-ambg",
     ],
-    "bilingual-precision-2a": [
+    "bilingual-precision-3a": [
         "recurs-rm",
         "rm-pos-agg",
         "lemma-rm",
@@ -82,7 +90,7 @@ METHODS = {
         "sup-freq-dom",
         "rm-ambg",
     ],
-    "bilingual-precision-3": [
+    "bilingual-precision-4": [
         "recurs-rm",
         "rm-pos-agg",
         "lemma-rm",
@@ -95,7 +103,14 @@ METHODS = {
     "simple-precision": ["sup-rm", "rm-ambg"],
     "simple-recall": ["sup-rm", "freq-dom", "rm-ambg"],
     "max-precision": ["sup-rm", "align-rm", "rm-pos-agg", "lemma-rm", "rm-ambg"],
-    "bilingual-recall-1": ["sup-dom", "align-dom", "pos-dom", "lemma-dom", "freq-dom"],
+    "bilingual-recall-1": [
+        "sup-dom",
+        "align-dom",
+        "pos-dom",
+        "lemma-dom",
+        "freq-dom",
+        "rm-ambg",
+    ],
     "bilingual-recall-2": [
         "sup-dom",
         "align-dom",
@@ -118,7 +133,7 @@ METHODS = {
 
 TREE = [
     "U",
-    ["MP1", ["MP2", ["MP3", ["BP1", "BP2", ["BP2A", "BP3"]]]]],
+    ["MP1", ["MP2", ["MP3", ["BP1", ["BP2", "BP3", ["BP3A", "BP4"]]]]]],
     ["MR", ["BR1", ["BR2", ["BR3"]]]],
     ["SP"],
     ["SR"],

@@ -276,12 +276,14 @@ def get_disp_diff(parent, child):
 
 
 def get_critical_nodes(tree, parent=None):
-    result = set()
+    result = []
     head = tree[0]
     children = tree[1:]
     diff = get_disp_diff(parent, head) if parent is not None else None
     if diff is None or not children:
-        result.add(head)
+        result.append(head)
     for child in children:
-        result.update(get_critical_nodes(child, head))
+        for crit_node in get_critical_nodes(child, head):
+            if crit_node not in result:
+                result.append(crit_node)
     return result

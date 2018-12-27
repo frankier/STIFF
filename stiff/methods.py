@@ -229,7 +229,7 @@ def get_forest(tree):
         children = node[1:]
         diff = get_disp_diff(parent, head)
         if diff:
-            comment = " {\hskip 1em} " + diff
+            comment = " {\\hskip 1em} " + diff
         else:
             comment = ""
         return "[{{\\textbf{{{}}}{}}}\n{}]".format(

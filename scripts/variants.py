@@ -122,7 +122,7 @@ FOREST_PIPES = Template(
 \\begin{forest}
 [{\\textbf{$title:}}
 $tree]
-\end{forest}
+\\end{forest}
 """
 )
 

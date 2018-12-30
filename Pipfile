@@ -15,6 +15,7 @@ pareto = "*"
 cython = "*"
 brokenaxes = "==0.3.1"
 jsondiff = "*"
+click-log = "*"
 
 [dev-packages]
 

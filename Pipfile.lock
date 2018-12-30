@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "e184cabc5d8d7e68dbd6df149fb6a04c7b9338d9b4a46768b5eddb53033c5f58"
+            "sha256": "e97ec5b110b2f2c4420fbba4f89fe129f4a94ef3921d49a90c6c6fc87d040ea4"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -82,17 +82,17 @@
         },
         "boto3": {
             "hashes": [
-                "sha256:9341b88f5242fbd82942b86782a980bad28397ef238774a7d9c860dc6b1a41aa",
-                "sha256:c819bcff87746f1012ea404e918fc9ff50073ad30b1017e3c788cbc45f9a6695"
+                "sha256:90c5634fcd9c658f8d1554885f33d8c472a9adcde5f29d92ef91dcd12bf2e646",
+                "sha256:f45a88dc66e935f03dcc7f41b7702fddfdd9d8ab1f29a9668687c3abba544e0e"
             ],
-            "version": "==1.9.70"
+            "version": "==1.9.71"
         },
         "botocore": {
             "hashes": [
-                "sha256:51ae3d421d88e3e83d1b97ab0b66a8fd1ac8b2c7ca69d8233273fded052ac2ba",
-                "sha256:6170572ac4517eced6631ea55211b7a36d62baf507756c6c2738f0049ec1a540"
+                "sha256:d6fa29f28899892f77014c19afa40ec1b87ef1e57b15c7eac582e8d48eddf32d",
+                "sha256:e5bcea66a1ffad9b2e1ff2935a31455c76f689e00b924e9920cb012b177fbe35"
             ],
-            "version": "==1.12.70"
+            "version": "==1.12.71"
         },
         "brokenaxes": {
             "hashes": [
@@ -176,6 +176,14 @@
         "click": {
             "git": "https://github.com/pallets/click.git",
             "ref": "065653e7996a82e219cf2d0ce90fec7b0574ba36"
+        },
+        "click-log": {
+            "hashes": [
+                "sha256:16fd1ca3fc6b16c98cea63acf1ab474ea8e676849dc669d86afafb0ed7003124",
+                "sha256:eee14dc37cdf3072158570f00406572f9e03e414accdccfccd4c538df9ae322c"
+            ],
+            "index": "pypi",
+            "version": "==0.3.2"
         },
         "conllu": {
             "hashes": [
@@ -450,11 +458,11 @@
         },
         "more-itertools": {
             "hashes": [
-                "sha256:c187a73da93e7a8acc0001572aebc7e3c69daf7bf6881a2cea10650bd4420092",
-                "sha256:c476b5d3a34e12d40130bc2f935028b5f636df8f372dc2c1c01dc19681b2039e",
-                "sha256:fcbfeaea0be121980e15bc97b3817b5202ca73d0eae185b4550cbfce2a3ebb3d"
+                "sha256:38a936c0a6d98a38bcc2d03fdaaedaba9f412879461dd2ceff8d37564d6522e4",
+                "sha256:c0a5785b1109a6bd7fac76d6837fd1feca158e54e521ccd2ae8bfe393cc9d4fc",
+                "sha256:fe7a7cae1ccb57d33952113ff4fa1bc5f879963600ed74918f1236e212ee50b9"
             ],
-            "version": "==4.3.0"
+            "version": "==5.0.0"
         },
         "msgpack": {
             "hashes": [

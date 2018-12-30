@@ -6,21 +6,42 @@ from stiff.utils.xml import transform_sentences, iter_sentences
 import os
 from os.path import join as pjoin
 from plumbum import local
+import click_log
+import logging
+from collections import Counter
+
+logger = logging.getLogger(__name__)
+click_log.basic_config(logger)
 
 python = local[sys.executable]
 
 dir = os.path.dirname(os.path.realpath(__file__))
 fix_eurosense_py = pjoin(dir, "fix-eurosense.py")
 
-# This file is a WIP
-
 
 @click.group("fix-eurosense")
+@click_log.simple_verbosity_option(logger)
 def fix_eurosense():
     """
     Commands to fix up problems in Eurosense
     """
     pass
+
+
+def find_word(haystack, needle, cursor=0):
+    haystack = " " + haystack + " "
+    return haystack.find(" " + needle + " ", cursor)
+
+
+def count_overlap(haystack, needle):
+    count = 0
+    start = 0
+    while True:
+        start = haystack.find(needle, start) + 1
+        if start > 0:
+            count += 1
+        else:
+            return count
 
 
 @fix_eurosense.command("trace")
@@ -43,64 +64,147 @@ def trace(inf: IO):
             if text.text is None:
                 match_pos = -1
             else:
-                match_pos = text.text.find(anchor)
+                match_pos = find_word(text.text, anchor)
             if match_pos == -1:
+                print(lang, text.text)
                 alternatives = []
-                for lang, text in lang_texts.items():
-                    if text.text is None:
+                for alt_lang, alt_text in lang_texts.items():
+                    if alt_text.text is None:
                         continue
-                    match_pos = text.text.find(anchor)
+                    match_pos = find_word(alt_text.text, anchor)
                     if match_pos != -1:
-                        alternatives.append(lang)
+                        alternatives.append(alt_lang)
                 print(
                     "Sent #{}: '{}' not found in {}, could be {}".format(
                         sent_elem.attrib["id"], anchor, lang, " ".join(alternatives)
                     )
                 )
+                # print(etree.tostring(ann, encoding="unicode"))
 
 
 @fix_eurosense.command("reorder-cognates")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
-def reorder_cognates(inf: IO, outf: IO):
+@click.option("--order", type=click.Choice(["set", "multiset", "intersect-grow"]))
+def reorder_cognates(inf: IO, outf: IO, order):
     reorderings = 0
 
-    def proc_sent(sent_elem):
-        nonlocal reorderings
-        sys.stderr.write("Sentence #{}\n".format(sent_elem.attrib["id"]))
-        # Get lang order
-        texts = list(sent_elem.xpath(".//text"))
+    def get_lang_order(texts):
         langs = []
-        for text_idx, text in enumerate(texts):
+        for text in texts:
             lang = text.attrib["lang"]
             langs.append(lang)
-        # Index cognates
-        anns = list(sent_elem.xpath(f".//annotation"))
-        anchor_ann_index = {}
+        return langs
+
+    def correct_order_multiset(langs, ann_langs):
+        correct_order = []
+        for lang in langs:
+            while ann_langs[lang] > 0:
+                correct_order.append(lang)
+                ann_langs[lang] -= 1
+        return correct_order
+
+    def get_correct_order_set(anchor, texts, anns):
+        # Get lang order
+        langs = get_lang_order(texts)
+        # Gather annotation languages
+        ann_langs = set()
         for ann in anns:
-            anchor_ann_index.setdefault(ann.attrib["anchor"], []).append(ann)
-        # Reorder
-        for anchor, anns in anchor_ann_index.items():
-            ann_langs = set()
+            ann_langs.add(ann.attrib["lang"])
+        # Put into correct order
+        correct_order = []
+        for lang in langs:
+            if lang in ann_langs:
+                correct_order.append(lang)
+        return correct_order
+
+    def ann_langs_multiset(anns):
+        ann_langs = Counter()
+        for ann in anns:
+            ann_langs[ann.attrib["lang"]] += 1
+        return ann_langs
+
+    def text_anchor_langs_multiset(anchor, texts):
+        ann_langs = Counter()
+        for text in texts:
+            if text.text is None:
+                continue
+            pad_text = " " + text.text + " "
+            pad_anchor = " " + anchor + " "
+            ann_langs[text.attrib["lang"]] += count_overlap(pad_text, pad_anchor)
+        return ann_langs
+
+    def get_correct_order_multiset(anchor, texts, anns):
+        # Get lang order
+        langs = get_lang_order(texts)
+        # Gather annotation languages
+        ann_langs = ann_langs_multiset(anns)
+        # Put into correct order
+        return correct_order_multiset(langs, ann_langs)
+
+    def get_correct_order_text_intersect_grow(anchor, texts, anns):
+        # Get lang order
+        langs = get_lang_order(texts)
+        # Intersect
+        ann_langs = ann_langs_multiset(anns)
+        text_anchored_langs = text_anchor_langs_multiset(anchor, texts)
+        intersected_langs = ann_langs & text_anchored_langs
+        # Grow into extra text anchors
+        extra_langs = text_anchored_langs - ann_langs
+        target_length = len(anns)
+        intersected_anchors = sum(intersected_langs.values())
+        extra_anchors = sum(extra_langs.values())
+        assert intersected_anchors + extra_anchors >= target_length, (
+            f"{intersected_anchors} + {extra_anchors} < {target_length}: Looking for '{anchor}' with {ann_langs} and {text_anchored_langs} in...\n"
+            + "\n".join(text.text or "" for text in texts)
+        )
+        candidate_langs = intersected_langs
+        for lang in extra_langs:
+            cands = sum(candidate_langs.values())
+            logger.debug(f"{cands} {target_length} {candidate_langs}")
+            if cands == target_length:
+                break
+            candidate_langs[lang] += min(
+                extra_langs[lang], target_length - sum(candidate_langs.values())
+            )
+        return correct_order_multiset(langs, candidate_langs)
+
+    def mk_proc_sent(get_ann_langs):
+        def proc_sent(sent_elem):
+            nonlocal reorderings
+            logger.debug("Sentence #{}\n".format(sent_elem.attrib["id"]))
+            texts = list(sent_elem.xpath(".//text"))
+            # Index cognates
+            anns = list(sent_elem.xpath(f".//annotation"))
+            anchor_ann_index = {}
             for ann in anns:
-                ann_langs.add(ann.attrib["lang"])
-            correct_order = []
-            for lang in langs:
-                if lang in ann_langs:
-                    correct_order.append(lang)
-            for ann, lang in zip(anns, correct_order):
-                if ann.attrib["lang"] != lang:
-                    reorderings += 1
-                    sys.stderr.write("Before\n")
-                    sys.stderr.write(etree.tostring(ann, encoding="unicode"))
-                    ann.attrib["lang"] = lang
-                    sys.stderr.write("After\n")
-                    sys.stderr.write(etree.tostring(ann, encoding="unicode"))
+                anchor_ann_index.setdefault(ann.attrib["anchor"], []).append(ann)
+            # Reorder
+            for anchor, anns in anchor_ann_index.items():
+                correct_order = get_ann_langs(anchor, texts, anns)
+                logger.debug(f"Correct order: {correct_order}\n")
+                for ann, lang in zip(anns, correct_order):
+                    if ann.attrib["lang"] != lang:
+                        reorderings += 1
+                        logger.debug("Before\n")
+                        logger.debug(etree.tostring(ann, encoding="unicode").strip())
+                        ann.attrib["lang"] = lang
+                        logger.debug("After\n")
+                        logger.debug(etree.tostring(ann, encoding="unicode").strip())
+
+        return proc_sent
+
+    if order == "set":
+        proc_sent = mk_proc_sent(get_correct_order_set)
+    elif order == "multiset":
+        proc_sent = mk_proc_sent(get_correct_order_multiset)
+    elif order == "intersect-grow":
+        proc_sent = mk_proc_sent(get_correct_order_text_intersect_grow)
 
     try:
         transform_sentences(inf, proc_sent, outf)
     finally:
-        sys.stderr.write("Reorderings: {}\n".format(reorderings))
+        logger.info("Reorderings: {}\n".format(reorderings))
 
 
 @fix_eurosense.command("retag-languages")
@@ -132,24 +236,23 @@ def retag_languages(inf: IO, outf: IO, trace_only):
         # Find problem annotations
         problem_annotation_idxs = []
         anchors = {}
-        for text_idx, text in enumerate(texts):
+        for text in texts:
             sent = text.text
-            if sent is None:
-                continue
             lang = text.attrib["lang"]
             cursor = 0
             for ann_idx, ann in enumerate(anns):
                 if ann.attrib["lang"] != lang:
                     continue
-                ann = anns[ann_idx]
-                match_pos = sent.find(ann.attrib["anchor"], cursor)
+                if sent is None:
+                    match_pos = -1
+                else:
+                    match_pos = find_word(sent, ann.attrib["anchor"], cursor)
                 if match_pos == -1:
                     problem_annotation_idxs.extend(range(ann_idx, len(anns)))
                     break
                 else:
                     anchors[ann_idx] = (lang, match_pos)
                 cursor = match_pos
-            text_idx += 1
 
         # Tally problems
         num_problems = len(problem_annotation_idxs)
@@ -205,7 +308,7 @@ def retag_languages(inf: IO, outf: IO, trace_only):
                     if next_lang():
                         break
                     continue
-                match_pos = sent.find(ann.attrib["anchor"], cursor)
+                match_pos = find_word(sent, ann.attrib["anchor"], cursor)
                 if match_pos == -1:
                     if next_lang():
                         break
@@ -216,20 +319,20 @@ def retag_languages(inf: IO, outf: IO, trace_only):
                     ann.attrib["lang"] = lang
 
             if not anchored:
-                sys.stderr.write(
+                logger.debug(
                     "Could not anchor annotation #{} in sentence #{}\n".format(
                         problem_annotation_idx, sent_elem.attrib["id"]
                     )
                 )
-                sys.stderr.write(etree.tostring(ann, encoding="unicode"))
+                logger.debug(etree.tostring(ann, encoding="unicode").strip())
                 unfixable_problems += 1
 
     try:
         transform_sentences(inf, proc_sent, outf)
     finally:
-        sys.stderr.write("Problem sentences: {}\n".format(problem_sentences))
-        sys.stderr.write("Total problems: {}\n".format(total_problems))
-        sys.stderr.write("Unfixable problems: {}\n".format(unfixable_problems))
+        logger.info("Problem sentences: {}\n".format(problem_sentences))
+        logger.info("Total problems: {}\n".format(total_problems))
+        logger.info("Unfixable problems: {}\n".format(unfixable_problems))
 
 
 @fix_eurosense.command("rm-empty-texts")
@@ -248,7 +351,34 @@ def rm_empty_texts(inf: IO, outf: IO):
     try:
         transform_sentences(inf, proc_sent, outf)
     finally:
-        sys.stderr.write("Removed empty sentences: {}\n".format(removed))
+        logger.info("Removed empty sentences: {}\n".format(removed))
+
+
+@fix_eurosense.command("drop-unanchorable")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+def drop_unanchorable(inf: IO, outf: IO):
+    dropped = 0
+
+    def proc_sent(sent_elem):
+        nonlocal dropped
+        for annotation in sent_elem.xpath(".//annotation"):
+            anchor_text = annotation.attrib["anchor"]
+            found = False
+            for text in sent_elem.xpath(".//text"):
+                if find_word(text.text or "", anchor_text) != -1:
+                    found = True
+                    break
+            if not found:
+                dropped += 1
+                logger.info(f"Anchor not found: {anchor_text}")
+                logger.info(sent_elem.attrib["id"])
+                annotation.getparent().remove(annotation)
+
+    try:
+        transform_sentences(inf, proc_sent, outf)
+    finally:
+        logger.info("Dropped unanchorable annotations: {}\n".format(dropped))
 
 
 @fix_eurosense.command("pipeline")
@@ -256,7 +386,10 @@ def rm_empty_texts(inf: IO, outf: IO):
 @click.argument("outf", type=click.Path())
 def pipeline(inf, outf):
     cmds = (
-        python[fix_eurosense_py, "reorder-cognates", inf, "-"]
+        python[fix_eurosense_py, "drop-unanchorable", inf, "-"]
+        | python[
+            fix_eurosense_py, "reorder-cognates", "--order=intersect-grow", "-", "-"
+        ]
         | python[fix_eurosense_py, "retag-languages", "-", "-"]
         | python[fix_eurosense_py, "rm-empty-texts", "-", outf]
     )

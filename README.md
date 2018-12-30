@@ -38,7 +38,11 @@ e.g.
 
 #### EuroSense ➡️ Unified
 
-You will need to set the environment variable BABEL2WN_MAP as the path to a TSV
+You will first need to obtain EuroSense. Since there are some language tagging
+issues with the original, I currently recommend you use [a version I have
+attempted to fix](https://github.com/frankier/eurosense).
+
+You will next need to set the environment variable BABEL2WN_MAP as the path to a TSV
 mapping from BabelNet synsets to WordNet synsets. You can either:
 
 1. Obtain the BabelNet indices by following [these

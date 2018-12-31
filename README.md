@@ -33,12 +33,12 @@ consisting of the files needed by
 
 #### Make raw STIFF
 
-    pipenv run python scripts/pipeline.py mk-stiff cmn-fin stiff.raw.xml.zstd
+    pipenv run python scripts/pipeline.py mk-stiff cmn-fin stiff.raw.xml.zst
 
 #### Make recommended STIFF variant + convert ➡️ Unified
 
-    pipenv run python scripts/variants.py proc bilingual-precision-4 stiff.raw.xml.zstd stiff.bp4.xml.zstd
-    ./stiff2unified.sh stiff.bp4.xml.zstd stiff.unified.bp4.xml stiff.unified.bp4.key
+    pipenv run python scripts/variants.py proc bilingual-precision-4 stiff.raw.xml.zst stiff.bp4.xml.zst
+    ./stiff2unified.sh stiff.bp4.xml.zst stiff.unified.bp4.xml stiff.unified.bp4.key
 
 ### EuroSense Pipeline
 
@@ -84,7 +84,7 @@ First obtain [finn-man-ann](https://github.com/frankier/finn-man-ann).
 
 #### Gather STIFF eval data
 
-    pipenv run python scripts/variants.py eval /path/to/stiff.raw.zstd stiff-eval-out
+    pipenv run python scripts/variants.py eval /path/to/stiff.raw.zst stiff-eval-out
     pipenv run python scripts/eval.py pr-eval --score=tok <(pipenv run python scripts/munge.py man-ann-select --source=OpenSubtitles2018 /path/to/finn-man-ann/ann.xml -) stiff-eval-out stiff-eval.csv
 
 #### Gather EuroSense eval data

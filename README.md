@@ -25,14 +25,20 @@ format, which consists of an `xml` and `key` file, and then create a directory
 consisting of the files needed by
 [finn-wsd-eval](https://github.com/frankier/finn-wsd-eval).
 
-### STIFF Pipeline (WIP)
+### STIFF Pipeline
 
-e.g.
+#### Fetch OpenSubtitles2018
 
     pipenv run python scripts/fetch_opensubtitles2018.py cmn-fin
+
+#### Make raw STIFF
+
     pipenv run python scripts/pipeline.py mk-stiff cmn-fin stiff.raw.xml.zstd
-    pipenv run python scripts/pipeline.py proc-stiff simple stiff.raw.xml.zstd stiff.simplefiltered.sample.xml.zstd
-    ./stiff2unified.sh stiff.simplefiltered.sample.xml.zstd stiff.unified.sample.xml stiff.unified.sample.key
+
+#### Make recommended STIFF variant + convert ➡️ Unified
+
+    pipenv run python scripts/variants.py proc bilingual-precision-4 stiff.raw.xml.zstd stiff.bp4.xml.zstd
+    ./stiff2unified.sh stiff.bp4.xml.zstd stiff.unified.bp4.xml stiff.unified.bp4.key
 
 ### EuroSense Pipeline
 
@@ -61,13 +67,39 @@ Then run:
       /path/to/eurosense.v1.0.high-precision.xml eurosense.unified.sample.xml \
       eurosense.unified.sample.key
 
-#### Unified ➡️ Eval
+### Make STIFF or EuroSense into data for finn-wsd-eval
+
+This makes a directory usable by
+[finn-wsd-eval](https://github.com/frankier/finn-wsd-eval).
 
 Run:
 
     pipenv run python scripts/pipeline.py unified-to-eval \
-      /path/to/eurosense.unified.xml /path/to/eurosense.unified.key \
-      eurosense.eval/
+      /path/to/stiff-or-eurosense.unified.xml /path/to/stiff-or-eurosense.unified.key \
+      stiff-or-eurosense.eval/
+
+### Make STIFF and EuroSense P/R plot
+
+First obtain [finn-man-ann](https://github.com/frankier/finn-man-ann).
+
+#### Gather STIFF eval data
+
+    pipenv run python scripts/variants.py eval /path/to/stiff.raw.zstd stiff-eval-out
+    pipenv run python scripts/eval.py pr-eval --score=tok <(pipenv run python scripts/munge.py man-ann-select --source=OpenSubtitles2018 /path/to/finn-man-ann/ann.xml -) stiff-eval-out stiff-eval.csv
+
+#### Gather EuroSense eval data
+
+    pipenv run python scripts/munge.py man-ann-select --source=europarl /path/to/finn-man-ann/ann.xml - | pipenv run python scripts/munge.py lemma-to-synset - man-ann-europarl.xml
+    mkdir eurosense-pr
+    mv /path/to/eurosense/high-precision.xml eurosense-pr/EP.xml
+    mv /path/to/eurosense/high-coverage.xml eurosense-pr/EC.xml
+    pipenv run python scripts/eval.py pr-eval --score=tok man-ann-europarl.xml eurosense-pr europarl.csv
+
+#### Plot on common axis
+
+Warning, plot may be misleading...
+
+    pipenv run python scripts/eval.py pr-plot stiff-eval.csv europarl.csv
 
 ## Organisation & usage
 

@@ -106,11 +106,13 @@ Warning, plot may be misleading...
 For help using the tools, try running with `--help`. The main entry points are
 in `scripts`.
 
-Innards
-    `scripts/tag.py`: Produce an unfiltered STIFF
-    `scripts/filter.py`: Filter STIFF according to various criteria
-    `scripts/munge.py`: Convert between different corpus/stream formats
+### Innards
 
-Wrappers:
-    `scripts/stiff2unified.sh`: Convert from STIFF format to the unified format
-    `scripts/pipeline.py`: Various pipelines composing multiple layers of filtering/conversion
+ * `scripts/tag.py`: Produce an unfiltered STIFF
+ * `scripts/filter.py`: Filter STIFF according to various criteria
+ * `scripts/munge.py`: Convert between different corpus/stream formats
+
+### Wrappers
+
+ * `scripts/stiff2unified.sh`: Convert from STIFF format to the unified format
+ * `scripts/pipeline.py`: Various pipelines composing multiple layers of filtering/conversion

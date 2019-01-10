@@ -2,10 +2,11 @@ import tempfile
 import os
 import sys
 import click
-from plumbum.cmd import tee
+from plumbum.cmd import cp, tee
 from plumbum import local
+from stiff.eval import get_eval_paths
 from stiff.utils.pipeline import add_head, add_zstd, ensure_dir
-from os.path import join as pjoin
+from os.path import join as pjoin, samefile
 
 python = local[sys.executable]
 
@@ -109,8 +110,6 @@ def unified_to_eval(inf, keyin, dirout):
     Converts a unified corpus into all the data needed for finn-wsd-eval in a
     directory.
     """
-    from stiff.eval import get_eval_paths
-
     ensure_dir(dirout)
     root, ps = get_eval_paths(dirout)
     python(
@@ -125,16 +124,36 @@ def unified_to_eval(inf, keyin, dirout):
         ps["test"]["unikey"],
         ps["train"]["unikey"],
     )
-    for pdict in ps.values():
-        unified_to_sup.callback(
-            pdict["unified"],
-            pdict["unikey"],
-            pdict["sup"],
-            pdict["sup3key"],
-            pdict["supkey"],
-        )
-        python(munge_py, "finnpos-senseval", pdict["sup"], pdict["suptag"])
-        python(munge_py, "omorfi-segment-senseval", pdict["sup"], pdict["supseg"])
+    for seg in ps.key():
+        unified_to_single_eval(seg, inf, keyin, dirout)
+
+
+@pipeline.command("unified-to-single-eval")
+@click.argument("seg")
+@click.argument("inf", type=click.Path(exists=True))
+@click.argument("keyin", type=click.Path(exists=True))
+@click.argument("dirout", type=click.Path())
+def unified_to_single_eval(seg, inf, keyin, dirout):
+    """
+    Converts a unified corpus into all the data the data needed for a single
+    test/train segment by finn-wsd-eval.
+    """
+    root, ps = get_eval_paths(dirout)
+    pdict = ps[seg]
+    for src, dest in [(inf, pdict["unified"]), (keyin, pdict["unikey"])]:
+        if samefile(src, dest):
+            continue
+        cp(src, dest)
+
+    unified_to_sup.callback(
+        pdict["unified"],
+        pdict["unikey"],
+        pdict["sup"],
+        pdict["sup3key"],
+        pdict["supkey"],
+    )
+    python(munge_py, "finnpos-senseval", pdict["sup"], pdict["suptag"])
+    python(munge_py, "omorfi-segment-senseval", pdict["sup"], pdict["supseg"])
 
 
 @pipeline.command("mk-stiff")

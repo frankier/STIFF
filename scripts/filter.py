@@ -95,7 +95,8 @@ def fold_support(lang, inf, outf):
                     "./annotations/annotation[@id='{}']".format(trans_from)
                 )[0]
                 from_wordnets = from_elem.attrib["wordnets"]
-                for position in from_elem.attrib["anchor-positions"].split(" "):
+                anchor_positions = from_elem.attrib["anchor-positions"]
+                for position in anchor_positions.split(" "):
                     from_anchor = parse_qs_single(position)
                     from_source = from_anchor["from-id"]
                 from_lemma_path = from_elem.attrib["lemma-path"]
@@ -105,6 +106,7 @@ def fold_support(lang, inf, outf):
                         "transfer-from-wordnets": from_wordnets,
                         "transfer-from-source": from_source,
                         "transfer-from-lemma-path": from_lemma_path,
+                        "transfer-from-anchor-positions": anchor_positions,
                     }
                 )
                 new_support.append(urlencode(supp))

@@ -2,9 +2,9 @@ import tempfile
 import os
 import sys
 import click
-from plumbum.cmd import cat, tee
+from plumbum.cmd import tee
 from plumbum import local
-from stiff.utils.pipeline import add_head, ensure_dir
+from stiff.utils.pipeline import add_head, add_zstd, ensure_dir
 from os.path import join as pjoin
 
 python = local[sys.executable]
@@ -51,7 +51,7 @@ def mk_eurosense2stifflike_pipeline(pipeline, babel2wn_map):
 @click.option("--head", default=None)
 @click.option("--babel2wn-map", envvar="BABEL2WN_MAP", required=True)
 def eurosense2stifflike(inf, outf, head, babel2wn_map):
-    pipeline = add_head(filter_py, cat[inf], head)
+    pipeline = add_head(filter_py, add_zstd(inf), head)
     pipeline = (
         mk_eurosense2stifflike_pipeline(pipeline, babel2wn_map)
         | python[munge_py, "eurosense-add-anchor-positions", "-", outf]
@@ -71,7 +71,7 @@ def eurosense2unified(inf, outf, keyout, head, babel2wn_map):
     Convert from the Eurosense format to the Unified format so that Eurosense
     tagged data can be compared with STIFF.
     """
-    pipeline = add_head(filter_py, cat[inf], head)
+    pipeline = add_head(filter_py, add_zstd(inf), head)
     pipeline = (
         mk_eurosense2stifflike_pipeline(pipeline, babel2wn_map)
         | python[munge_py, "eurosense-to-unified", "-", "-"]

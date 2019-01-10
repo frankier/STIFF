@@ -14,6 +14,7 @@ from stiff.data.constants import DEFAULT_SAMPLE_LINES, DEFAULT_SAMPLE_MAX
 from stiff.filter import (
     decode_dom_arg,
     get_finnpos_analys,
+    greedy_max_span,
     trim_anns,
     HasSupportTournament,
     AlignTournament,
@@ -353,31 +354,6 @@ def break_ties(inf, outf):
 @click.argument("outf", type=click.File("wb"))
 def supported_freq_dom(inf, outf):
     return SupportedOnlyFreqRank().proc_stream(inf, outf)
-
-
-def greedy_max_span(positions):
-    max_pos = 0
-    for pos in positions:
-        positions[pos].sort(reverse=True, key=lambda pair: pair[0])
-        if pos > max_pos:
-            max_pos = pos
-    anns = []
-    cur_pos = 0
-    while cur_pos <= max_pos:
-        while cur_pos not in positions:
-            cur_pos += 1
-            if cur_pos > max_pos:
-                break
-        if cur_pos > max_pos:
-            break
-        cur_len, ann = positions[cur_pos][0]
-        anns.append(ann)
-        for other_len, ann in positions[cur_pos][1:]:
-            if other_len != cur_len:
-                break
-            anns.append(ann)
-        cur_pos += cur_len
-    return anns
 
 
 @filter.command("tok-span-dom")

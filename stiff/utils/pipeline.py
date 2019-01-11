@@ -15,7 +15,7 @@ def add_head(filter_py, pipeline, head):
 
 def add_zstd(in_path):
     if isinstance(in_path, str) and in_path.endswith(".zst"):
-        return zstdmt["-o", "-D", "zstd-compression-dictionary", "-d", in_path]
+        return zstdmt["--stdout", "-D", "zstd-compression-dictionary", "-d", in_path]
     else:
         return cat[in_path]
 

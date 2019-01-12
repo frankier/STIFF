@@ -2,6 +2,7 @@ from string import Template
 
 
 METHOD_CODES = {
+    "null": "N",
     "mono-unambg": "U",
     "mono-recall": "MR",
     "mono-precision-1": "MP1",
@@ -53,6 +54,7 @@ def lookup_stage(stage):
 
 
 METHODS = {
+    "null": [],
     "mono-unambg": ["rm-ambg"],
     "mono-recall": ["freq-dom", "rm-ambg"],
     "mono-precision-1": ["recurs-rm", "rm-pos-norm", "lemma-dom", "rm-ambg"],

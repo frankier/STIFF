@@ -63,19 +63,10 @@ def trim_anns(anns, new_anns):
             ann.getparent().remove(ann)
 
 
-class Tournament(ABC):
-    def __init__(self, do_dom=True, rm_ranks=()):
-        self.do_dom = do_dom
-        self.rm_ranks = rm_ranks
-
+class TournamentBase(ABC):
     @staticmethod
     @abstractmethod
     def key(ann):
-        pass
-
-    @staticmethod
-    @abstractmethod
-    def rank(ann):
         pass
 
     def proc_stream(self, inf, outf):
@@ -88,9 +79,23 @@ class Tournament(ABC):
     def get_anns(self, sent, *extra):
         return sent.xpath("./annotations/annotation")
 
+    @abstractmethod
+    def proc_anns(self, anns):
+        pass
+
     def proc_sent(self, sent):
         extra = self.prepare_sent(sent)
         anns = self.get_anns(sent, *extra)
+        self.proc_anns(anns, *extra)
+
+
+class NumRankTournamentBase(TournamentBase):
+    @staticmethod
+    @abstractmethod
+    def rank(ann):
+        pass
+
+    def proc_anns(self, anns, *extra):
         new_anns = anns.copy()
         best_ranks = {}
         ranks = {}
@@ -112,9 +117,49 @@ class Tournament(ABC):
         trim_anns(anns, new_anns)
 
 
-class DomOnlyTournament(Tournament):
+class RankTournament(NumRankTournamentBase):
+    def __init__(self, do_dom=True, rm_ranks=()):
+        self.do_dom = do_dom
+        self.rm_ranks = rm_ranks
+        super().__init__()
+
+
+class DomOnlyRankTournament(NumRankTournamentBase):
     def __init__(self):
-        return super().__init__()
+        self.do_dom = True
+        self.rm_ranks = ()
+        super().__init__()
+
+
+class CmpTournament(TournamentBase):
+    @staticmethod
+    @abstractmethod
+    def cmp(ann1, ann2):
+        pass
+
+    def proc_anns(self, anns, *extra):
+        grouped = {}
+        for ann in anns:
+            key = self.key(ann)
+            grouped.setdefault(key, []).append(ann)
+        new_anns = []
+        for key, group_anns in grouped.items():
+            nondominated = set(group_anns)
+            for idx, ann in enumerate(group_anns):
+                if idx not in nondominated:
+                    continue
+                for other_idx, other_ann in enumerate(group_anns[idx + 1 :], idx + 1):
+                    if other_idx not in nondominated:
+                        continue
+                    cmp_res = self.cmp(ann, other_ann)
+                    if cmp_res == -1:
+                        nondominated.remove(ann)
+                    elif cmp_res == 1:
+                        nondominated.remove(other_ann)
+                    else:
+                        pass
+            new_anns.extend(nondominated)
+        trim_anns(anns, new_anns)
 
 
 class SpanKeyMixin:
@@ -123,13 +168,13 @@ class SpanKeyMixin:
         return get_ann_pos(ann)
 
 
-class HasSupportTournament(SpanKeyMixin, Tournament):
+class HasSupportTournament(SpanKeyMixin, RankTournament):
     @staticmethod
     def rank(ann):
         return 1 if "support" in ann.attrib and ann.attrib["support"] else 0
 
 
-class AlignTournament(SpanKeyMixin, Tournament):
+class AlignTournament(SpanKeyMixin, RankTournament):
     @staticmethod
     def rank(ann):
         if "support" not in ann.attrib:
@@ -142,13 +187,68 @@ class AlignTournament(SpanKeyMixin, Tournament):
         return 1 if have_aligned else 0
 
 
+class SrcCharLenTournament(SpanKeyMixin, RankTournament):
+    @staticmethod
+    def rank(ann):
+        if "support" not in ann.attrib:
+            return 0
+        max_len = 0
+        for support_qs in ann.attrib["support"].split(" "):
+            support = parse_qs_single(support_qs)
+            cur_len = int(support["transfer-from-anchor-char-length"])
+            if cur_len > max_len:
+                max_len = cur_len
+        return max_len
+
+
+class SrcCharSpanTournament(SpanKeyMixin, CmpTournament):
+    @staticmethod
+    def cmp(ann, other_ann):
+        def extract_spans(ann):
+            for support_qs in ann.attrib["support"].split(" "):
+                support_dict = parse_qs_single(support_qs)
+                positions = parse_qs_single(
+                    support_dict["transfer-from-anchor-positions"]
+                )
+                yield int(positions["char"]), int(
+                    support_dict["transfer-from-anchor-char-length"]
+                )
+
+        def cmp_sup(sup1, sup2):
+            char1, len1 = sup1
+            char2, len2 = sup2
+            end1 = char1 + len1
+            end2 = char2 + len2
+            if (char1 < char2 and end1 >= end2) or (char1 <= char2 and end1 > end2):
+                return 1
+            elif (char1 > char2 and end1 <= end2) or (char1 >= char2 and end1 < end2):
+                return -1
+            else:
+                return 0
+
+        if "support" not in ann.attrib and "support" not in other_ann.attrib:
+            return 0
+
+        results = [
+            cmp_sup(span1, span2)
+            for span1 in extract_spans(ann)
+            for span2 in extract_spans(other_ann)
+        ]
+        if all((res == 1 for res in results)):
+            return 1
+        elif all((res == -1 for res in results)):
+            return -1
+        else:
+            return 0
+
+
 class FinnPOSMixin:
     @staticmethod
     def prepare_sent(sent):
         return (get_finnpos_analys(sent),)
 
 
-class NaiveLemmaTournament(FinnPOSMixin, SpanKeyMixin, Tournament):
+class NaiveLemmaTournament(FinnPOSMixin, SpanKeyMixin, RankTournament):
     @staticmethod
     def rank(ann, finnpos_analys):
         tok, tok_len = get_ann_pos(ann)
@@ -162,7 +262,7 @@ class NaiveLemmaTournament(FinnPOSMixin, SpanKeyMixin, Tournament):
         return 1 if any_match else 0
 
 
-class NaivePosTournament(FinnPOSMixin, SpanKeyMixin, Tournament):
+class NaivePosTournament(FinnPOSMixin, SpanKeyMixin, RankTournament):
     @staticmethod
     def rank(ann, finnpos_analys):
         tok, tok_len = get_ann_pos(ann)
@@ -172,7 +272,7 @@ class NaivePosTournament(FinnPOSMixin, SpanKeyMixin, Tournament):
         return lemmatized_pos_match(wn_pos, feats)
 
 
-class LemmaPathTournament(SpanKeyMixin, Tournament):
+class LemmaPathTournament(SpanKeyMixin, RankTournament):
     @staticmethod
     def rank(ann):
         return (
@@ -196,7 +296,7 @@ class ReverseOrder:
         return self.wrapped > other.wrapped
 
 
-class NonDerivTournament(SpanKeyMixin, Tournament):
+class NonDerivTournament(SpanKeyMixin, RankTournament):
     @staticmethod
     def rank(ann):
         if "support" not in ann.attrib:
@@ -213,20 +313,20 @@ class NonDerivTournament(SpanKeyMixin, Tournament):
         return 1 if has_non_deriv else 0
 
 
-class FreqRankDom(SpanKeyMixin, DomOnlyTournament):
+class FreqRankDom(SpanKeyMixin, DomOnlyRankTournament):
     @staticmethod
     def rank(ann):
         return -int(ann.attrib["rank"])
 
 
-class AlphabeticDom(SpanKeyMixin, DomOnlyTournament):
+class AlphabeticDom(SpanKeyMixin, DomOnlyRankTournament):
     @staticmethod
     def rank(ann):
         return ReverseOrder(ann.text)
 
 
 def mk_conditional_tournament(apply_tour, filter_tour, filter_vals):
-    class ConditionalTournament(Tournament):
+    class ConditionalTournament(RankTournament):
         @staticmethod
         def prepare_sent(sent):
             return apply_tour.prepare_sent(sent), filter_tour.prepare_sent(sent)
@@ -258,14 +358,14 @@ SupportedOnlyFreqRank = mk_conditional_tournament(
 )
 
 
-class PreferNonWikiTargetDom(SpanKeyMixin, Tournament):
+class PreferNonWikiTargetDom(SpanKeyMixin, RankTournament):
     @staticmethod
     def rank(ann):
         wordnets = set(ann.attrib["wordnets"].split(" "))
         return 1 if (wordnets - {"qwf"}) else 0
 
 
-class PreferNonWikiSourceDom(SpanKeyMixin, Tournament):
+class PreferNonWikiSourceDom(SpanKeyMixin, RankTournament):
     @staticmethod
     def rank(ann):
         if "support" not in ann.attrib:

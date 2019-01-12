@@ -27,6 +27,8 @@ from stiff.filter import (
     SupportedOnlyFreqRank,
     PreferNonWikiTargetDom,
     PreferNonWikiSourceDom,
+    SrcCharLenTournament,
+    SrcCharSpanTournament,
 )
 from stiff.utils.anns import get_ann_pos, get_ann_pos_dict
 from urllib.parse import urlencode
@@ -101,6 +103,7 @@ def fold_support(lang, inf, outf):
                     from_anchor = parse_qs_single(position)
                     from_source = from_anchor["from-id"]
                 from_lemma_path = from_elem.attrib["lemma-path"]
+                from_anchor_char_length = len(from_elem.attrib["anchor"])
                 del supp["transfer-from"]
                 supp.update(
                     {
@@ -108,6 +111,7 @@ def fold_support(lang, inf, outf):
                         "transfer-from-source": from_source,
                         "transfer-from-lemma-path": from_lemma_path,
                         "transfer-from-anchor-positions": anchor_positions,
+                        "transfer-from-anchor-char-length": from_anchor_char_length,
                     }
                 )
                 new_support.append(urlencode(supp))
@@ -418,6 +422,32 @@ def char_span_dom(inf, outf):
         trim_anns(anns, new_anns)
 
     transform_sentences(inf, sent_span_dom, outf)
+
+
+@filter.command("src-char-len-dom")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+def src_char_len_dom(inf, outf):
+    """
+    Dominance filter:
+
+    Based on token character length in the source language.
+    """
+
+    return SrcCharLenTournament().proc_stream(inf, outf)
+
+
+@filter.command("src-char-span-dom")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+def src_char_span_dom(inf, outf):
+    """
+    Dominance filter:
+
+    Based on character spanning in the source language.
+    """
+
+    return SrcCharSpanTournament().proc_stream(inf, outf)
 
 
 @filter.command("non-recurs-dom")

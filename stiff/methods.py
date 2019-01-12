@@ -14,6 +14,8 @@ METHOD_CODES = {
     "bilingual-precision-3a": "BP3A",
     "bilingual-precision-4": "BP4",
     "bilingual-precision-5": "BP5",
+    "bilingual-precision-6": "BP6",
+    "bilingual-precision-6a": "BP6A",
     "simple-precision": "SP",
     "simple-recall": "SR",
     "max-precision": "MXP",
@@ -43,6 +45,8 @@ STAGE_CODES = {
     "sup-dom": "has-support-dom --proc=dom",
     "sup-rm": "has-support-dom --proc=rm",
     "sup-freq-dom": "supported-freq-dom",
+    "src-len-dom": "src-char-len-dom",
+    "src-span-dom": "src-char-span-dom",
 }
 
 
@@ -114,6 +118,30 @@ METHODS = {
         "wiki-trg-dom",
         "rm-ambg",
     ],
+    "bilingual-precision-6": [
+        "recurs-rm",
+        "rm-pos-agg",
+        "lemma-rm",
+        "sup-dom",
+        "align-dom",
+        "tok-span-dom",
+        "src-span-dom",
+        "sup-freq-dom",
+        "wiki-trg-dom",
+        "rm-ambg",
+    ],
+    "bilingual-precision-6a": [
+        "recurs-rm",
+        "rm-pos-agg",
+        "lemma-rm",
+        "sup-dom",
+        "align-dom",
+        "tok-span-dom",
+        "src-len-dom",
+        "sup-freq-dom",
+        "wiki-trg-dom",
+        "rm-ambg",
+    ],
     "simple-precision": ["sup-rm", "rm-ambg"],
     "simple-recall": ["sup-rm", "freq-dom", "rm-ambg"],
     "max-precision": ["sup-rm", "align-rm", "rm-pos-agg", "lemma-rm", "rm-ambg"],
@@ -147,7 +175,13 @@ METHODS = {
 
 TREE = [
     "U",
-    ["MP1", ["MP2", ["MP3", ["BP1", ["BP2", "BP3", ["BP3A", ["BP4", "BP5"]]]]]]],
+    [
+        "MP1",
+        [
+            "MP2",
+            ["MP3", ["BP1", ["BP2", "BP3", ["BP3A", ["BP4", ["BP5", "BP6", "BP6A"]]]]]],
+        ],
+    ],
     ["MR", ["BR1", ["BR2", ["BR3"]]]],
     ["SP"],
     ["SR"],

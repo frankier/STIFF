@@ -144,7 +144,7 @@ class CmpTournament(TournamentBase):
             grouped.setdefault(key, []).append(ann)
         new_anns = []
         for key, group_anns in grouped.items():
-            nondominated = set(group_anns)
+            nondominated = set(range(len(group_anns)))
             for idx, ann in enumerate(group_anns):
                 if idx not in nondominated:
                     continue
@@ -153,12 +153,12 @@ class CmpTournament(TournamentBase):
                         continue
                     cmp_res = self.cmp(ann, other_ann)
                     if cmp_res == -1:
-                        nondominated.remove(ann)
+                        nondominated.remove(idx)
                     elif cmp_res == 1:
-                        nondominated.remove(other_ann)
+                        nondominated.remove(other_idx)
                     else:
                         pass
-            new_anns.extend(nondominated)
+            new_anns.extend((group_anns[idx] for idx in nondominated))
         trim_anns(anns, new_anns)
 
 
@@ -203,7 +203,13 @@ class SrcCharLenTournament(SpanKeyMixin, RankTournament):
 
 class SrcCharSpanTournament(SpanKeyMixin, CmpTournament):
     @staticmethod
-    def cmp(ann, other_ann):
+    def cmp(ann1, ann2):
+        """
+        Returns  1 if ann1 dominates ann2
+              | -1 if ann2 dominates ann1
+              |  0 otherwise
+        """
+
         def extract_spans(ann):
             for support_qs in ann.attrib["support"].split(" "):
                 support_dict = parse_qs_single(support_qs)
@@ -215,6 +221,11 @@ class SrcCharSpanTournament(SpanKeyMixin, CmpTournament):
                 )
 
         def cmp_sup(sup1, sup2):
+            """
+            Returns  1 if sup1 spans sup2
+                  | -1 if sup2 spans sup1
+                  |  0 otherwise
+            """
             char1, len1 = sup1
             char2, len2 = sup2
             end1 = char1 + len1
@@ -226,17 +237,24 @@ class SrcCharSpanTournament(SpanKeyMixin, CmpTournament):
             else:
                 return 0
 
-        if "support" not in ann.attrib and "support" not in other_ann.attrib:
+        if "support" not in ann1.attrib and "support" not in ann2.attrib:
             return 0
 
-        results = [
-            cmp_sup(span1, span2)
-            for span1 in extract_spans(ann)
-            for span2 in extract_spans(other_ann)
-        ]
-        if all((res == 1 for res in results)):
+        ann1dom = any(
+            (
+                all((cmp_sup(span1, span2) == 1 for span2 in extract_spans(ann2)))
+                for span1 in extract_spans(ann1)
+            )
+        )
+        ann2dom = any(
+            (
+                all((cmp_sup(span2, span1) == 1 for span1 in extract_spans(ann1)))
+                for span2 in extract_spans(ann2)
+            )
+        )
+        if ann1dom and not ann2dom:
             return 1
-        elif all((res == -1 for res in results)):
+        elif ann2dom and not ann1dom:
             return -1
         else:
             return 0

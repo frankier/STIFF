@@ -106,3 +106,8 @@ def test_hyvaa():
     assert wordnet_counts["fin"] >= 27
     assert wordnet_counts["qf2"] >= 25
     assert wordnet_counts["qwf"] >= 7
+
+
+def test_gordon():
+    tagging = get_extractor("FinExtractor").extract("Gordon on jossain täällä .")
+    assert tagging.tokens[0].anchors[0].char == 7

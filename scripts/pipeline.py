@@ -81,6 +81,22 @@ def eurosense2unified(inf, outf, keyout, head, babel2wn_map):
     pipeline(retcode=[-13, 0], stderr=sys.stderr)
 
 
+@pipeline.command("stiff2unified")
+@click.argument("inf", type=click.Path(exists=True))
+@click.argument("outf", type=click.Path())
+@click.argument("keyout", type=click.Path())
+@click.option("--head", default=None)
+@click.option("--eurosense/--no-eurosense")
+def stiff2unified(inf, outf, keyout, head, eurosense):
+    pipeline = add_head(filter_py, add_zstd(inf), head)
+    if eurosense:
+        pipeline = pipeline | python[munge_py, "stiff-to-eurosense", "-", "-"]
+    else:
+        pipeline = pipeline | python[munge_py, "stiff-to-unified", "-", "-"]
+    pipeline = pipeline | python[munge_py, "unified-split", "-", outf, keyout]
+    pipeline(retcode=[-13, 0], stderr=sys.stderr)
+
+
 @pipeline.command("unified-to-sup")
 @click.argument("inf", type=click.Path(exists=True))
 @click.argument("keyin", type=click.Path(exists=True))

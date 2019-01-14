@@ -58,7 +58,7 @@ def stiff_to_unified(stiff: IO, unified: IO):
             our_pos = None
             for pos_enc in ann.attrib["anchor-positions"].split(" "):
                 pos = parse_qs_single(pos_enc)
-                if pos["from"] == text_id:
+                if pos["from-id"] == text_id:
                     our_pos = pos
             assert our_pos is not None, "Didn't find a usable anchor position"
             char_id = int(our_pos["char"])

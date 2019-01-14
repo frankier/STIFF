@@ -4,14 +4,14 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-"stiff" = {editable = true, path = ".", extras = ["dev"]}
-nltk = {editable = true, ref = "e1b3fda3768288ba96309dd92fd1ee7943cc43f9", git = "https://github.com/nltk/nltk"}
-black = {ref = "cb67a322423cb2b4bcfb2faa68fb769326741d6a", git = "https://github.com/ambv/black.git"}
-pyahocorasick = {editable = true, ref = "stiff-2018-09-20-3", git = "https://github.com/frankier/pyahocorasick.git"}
-click = {ref = "065653e7996a82e219cf2d0ce90fec7b0574ba36", git = "https://github.com/pallets/click.git"}
+stiff = {extras = ["dev", "docs"],path = "."}
+nltk = {editable = true,ref = "e1b3fda3768288ba96309dd92fd1ee7943cc43f9",git = "https://github.com/nltk/nltk"}
+black = {ref = "cb67a322423cb2b4bcfb2faa68fb769326741d6a",git = "https://github.com/ambv/black.git"}
+pyahocorasick = {editable = true,ref = "stiff-2018-09-20-3",git = "https://github.com/frankier/pyahocorasick.git"}
+click = {ref = "065653e7996a82e219cf2d0ce90fec7b0574ba36",git = "https://github.com/pallets/click.git"}
 adjusttext = "*"
 pareto = "*"
-"2a4114c" = {file = "https://github.com/scikit-learn/scikit-learn/archive/0.20.1.tar.gz"}
+2a4114c = {file = "https://github.com/scikit-learn/scikit-learn/archive/0.20.1.tar.gz"}
 cython = "*"
 brokenaxes = "==0.3.1"
 jsondiff = "*"

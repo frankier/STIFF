@@ -187,7 +187,7 @@ def unified_to_eval(inf, keyin, dirout):
         ps["train"]["unikey"],
     )
     for seg in ps.key():
-        unified_to_single_eval(seg, inf, keyin, dirout)
+        unified_to_single_eval.callback(seg, inf, keyin, dirout)
 
 
 @pipeline.command("unified-to-single-eval")

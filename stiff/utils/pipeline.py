@@ -17,7 +17,7 @@ def add_zstd(in_path):
     if isinstance(in_path, str) and in_path.endswith(".zst"):
         return zstdmt["--stdout", "-D", "zstd-compression-dictionary", "-d", in_path]
     else:
-        return cat[in_path]
+        return cat < in_path
 
 
 def ensure_dir(dirout):

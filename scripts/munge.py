@@ -52,13 +52,13 @@ def stiff_to_unified(stiff: IO, unified: IO):
             '<sentence id="stiff.{:08d}">\n'.format(int(sent_elem.attrib["id"]))
         )
         text_elem = sent_elem.xpath("text")[0]
-        text_id = text_elem.attrib["id"]
+        text_id = text_elem.attrib.get("id")
         anns = []
         for ann in sent_elem.xpath(".//annotation"):
             our_pos = None
             for pos_enc in ann.attrib["anchor-positions"].split(" "):
                 pos = parse_qs_single(pos_enc)
-                if pos["from-id"] == text_id:
+                if text_id is None or pos["from-id"] == text_id:
                     our_pos = pos
             assert our_pos is not None, "Didn't find a usable anchor position"
             char_id = int(our_pos["char"])

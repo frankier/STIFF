@@ -200,8 +200,7 @@ def unified_to_single_eval(seg, inf, keyin, dirout):
     Converts a unified corpus into all the data the data needed for a single
     test/train segment by finn-wsd-eval.
     """
-    root, ps = get_eval_paths(dirout)
-    pdict = ps[seg]
+    pdict = get_partition_paths(dirout, seg)
     for src, dest in [(inf, pdict["unified"]), (keyin, pdict["unikey"])]:
         if samefile(src, dest):
             continue

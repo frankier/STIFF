@@ -6,7 +6,10 @@ RUN apk --no-cache add opencc opencc-dev --update-cache --repository http://dl-3
 RUN ln -s locale.h /usr/include/xlocale.h
 COPY . /stiff
 WORKDIR /stiff
-RUN pipenv install --deploy --system
+
+RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
+RUN poetry config settings.virtualenvs.create false
+RUN poetry install
 RUN python3 -m stiff.scripts.post_install
 
 # Install WordNet

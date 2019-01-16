@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "stiff"
+version = "0.0.3"
+description = ""
+authors = ["Frankie Robertson <frankie@robertson.name>"]
+license = "Apache-2.0"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+adjusttext = "=0.7.3"
+pareto = "^1.1"
+cython = "^0.29.2"
+brokenaxes = "=0.3.1"
+jsondiff = "^1.1"
+click-log = "^0.3.2"
+
+click = "^6.7"
+plumbum = "^1.6.6"
+pyahocorasick = "^1.1.8"
+pygtrie = "^2.2"
+opencc = "^0.2"
+opus-api = "^0.6.2"
+finntk = "^0.0.31"
+streamz = "^0.3.0"
+lxml = "^4.2.3"
+conllu = "^1.1"
+
+[tool.poetry.dev-dependencies]
+flake8 = "^3.5.0"
+pre-commit = "^1.10.2"
+pytest = "^4.1.1"
+mypy = "0.650"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"

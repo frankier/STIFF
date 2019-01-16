@@ -90,7 +90,7 @@ def eurosense2unified(inf, outf, keyout, head, babel2wn_map):
 def stiff2unified(inf, outf, keyout, head, eurosense):
     pipeline = add_head(filter_py, add_zstd(inf), head)
     if eurosense:
-        pipeline = pipeline | python[munge_py, "stiff-to-eurosense", "-", "-"]
+        pipeline = pipeline | python[munge_py, "eurosense-to-unified", "-", "-"]
     else:
         pipeline = pipeline | python[munge_py, "stiff-to-unified", "-", "-"]
     pipeline = pipeline | python[munge_py, "unified-split", "-", outf, keyout]

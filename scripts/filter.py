@@ -9,6 +9,7 @@ from stiff.utils.xml import (
     BREAK,
     free_elem,
     close_all,
+    iter_sentences,
 )
 from stiff.data.constants import DEFAULT_SAMPLE_LINES, DEFAULT_SAMPLE_MAX
 from stiff.filter import (
@@ -32,6 +33,7 @@ from stiff.filter import (
 )
 from stiff.utils.anns import get_ann_pos, get_ann_pos_dict
 from urllib.parse import urlencode
+from more_itertools import peekable
 
 
 @click.group()
@@ -312,6 +314,34 @@ def split(inf, testf, trainf, keyin, testkey, trainkey, sentences):
                 trainkey.write(line)
             else:
                 testkey.write(line)
+
+
+@filter.command("unified-test-dev-split")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("ingoldf", type=click.File("rb"))
+@click.argument("keyin", type=click.File("rb"))
+@click.argument("goldkeyin", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+@click.argument("keyout", type=click.File("wb"))
+def unified_test_dev_split(inf, ingoldf, keyin, goldkeyin, outf, keyout):
+    gold_sent_iter = peekable(iter_sentences(ingoldf))
+
+    def sent_rm_gold(sent):
+        gold_sent = gold_sent_iter.peek(None)
+        if gold_sent is not None and gold_sent.attrib["id"] == sent.attrib["id"]:
+            next(gold_sent_iter)
+            return BYPASS
+
+    transform_sentences(inf, sent_rm_gold, outf)
+
+    gold_key_iter = peekable(goldkeyin)
+
+    for line in keyin:
+        gold_line = gold_key_iter.peek(None)
+        if gold_line is not None and gold_line.split()[0] == line.split()[0]:
+            next(gold_key_iter)
+            continue
+        keyout.write(line)
 
 
 @filter.command("join")

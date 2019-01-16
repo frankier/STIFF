@@ -4,7 +4,7 @@ import sys
 import click
 from plumbum.cmd import cp, tee
 from plumbum import local
-from stiff.eval import get_eval_paths
+from stiff.eval import get_eval_paths, get_partition_paths
 from stiff.utils.pipeline import add_head, add_zstd, ensure_dir
 from os.path import join as pjoin, samefile
 
@@ -115,6 +115,52 @@ def unified_to_sup(inf, keyin, outf, key3out, keyout):
         | tee[key3out]
         | python[munge_py, "unified-key-to-ims-test", "-", keyout]
     )()
+
+
+@pipeline.command("unified-auto-man-to-evals")
+@click.argument("inf", type=click.Path(exists=True))
+@click.argument("ingoldf", type=click.Path(exists=True))
+@click.argument("keyin", type=click.Path(exists=True))
+@click.argument("goldkeyin", type=click.Path(exists=True))
+@click.argument("dirout", type=click.Path())
+def unified_auto_man_to_evals(inf, ingoldf, keyin, goldkeyin, dirout):
+    ps = {}
+    for seg in ["train", "devtest", "dev", "test"]:
+        segoutdir = pjoin(dirout, seg)
+        os.makedirs(segoutdir, exist_ok=True)
+        ps[seg] = get_partition_paths(segoutdir, "corpus")
+    python(
+        filter_py,
+        "split",
+        "--sentences",
+        "1000",
+        inf,
+        ps["devtest"]["unified"],
+        ps["train"]["unified"],
+        keyin,
+        ps["devtest"]["unikey"],
+        ps["train"]["unikey"],
+    )
+    python(
+        filter_py,
+        "unified-test-dev-split",
+        ps["devtest"]["unified"],
+        ingoldf,
+        ps["devtest"]["unikey"],
+        goldkeyin,
+        ps["test"]["unified"],
+        ps["test"]["unikey"],
+    )
+    cp(ingoldf, ps["dev"]["unified"])
+    cp(goldkeyin, ps["dev"]["unikey"])
+    for seg in ["train", "dev", "test"]:
+        segoutdir = pjoin(dirout, seg)
+        unified_to_single_eval.callback(
+            "corpus",
+            pjoin(segoutdir, "corpus.xml"),
+            pjoin(segoutdir, "corpus.key"),
+            segoutdir,
+        )
 
 
 @pipeline.command("unified-to-eval")

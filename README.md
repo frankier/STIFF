@@ -67,20 +67,46 @@ Then run:
       /path/to/eurosense.v1.0.high-precision.xml eurosense.unified.sample.xml \
       eurosense.unified.sample.key
 
+### Process finn-man-ann
+
+First obtain [finn-man-ann](https://github.com/frankier/finn-man-ann).
+
+Then run:
+
+    pipenv run python scripts/munge.py man-ann-select --source=europarl \
+      ../finn-man-ann/ann.xml - \
+      | pipenv run python scripts/munge.py lemma-to-synset - man-ann-europarl.xml
+    pipenv run python scripts/munge.py man-ann-select --source=OpenSubtitles2018 \
+      ../finn-man-ann/ann.xml man-ann-opensubs18.xml
+
 ### Make STIFF or EuroSense into data for finn-wsd-eval
 
 This makes a directory usable by
 [finn-wsd-eval](https://github.com/frankier/finn-wsd-eval).
 
-Run:
+#### Old
 
     pipenv run python scripts/pipeline.py unified-to-eval \
       /path/to/stiff-or-eurosense.unified.xml /path/to/stiff-or-eurosense.unified.key \
       stiff-or-eurosense.eval/
 
+#### New
+
+TODO: STIFF
+
+    pipenv run python scripts/filter.py tok-span-dom man-ann-europarl.xml \
+      man-ann-europarl.filtered.xml
+    pipenv run python scripts/pipeline.py stiff2unified --eurosense \
+      man-ann-europarl.filtered.xml man-ann-europarl.uni.xml man-ann-europarl.uni.key
+    pipenv run python scripts/pipeline.py stiff2unified man-ann-opensubs18.xml \
+      man-ann-opensubs18.uni.xml man-ann-opensubs18.key.xml
+    pipenv run python scripts/pipeline.py unified-auto-man-to-evals \
+      eurosense.unified.sample.xml man-ann-europarl.uni.xml \
+      eurosense.unified.sample.key man-ann-europarl.uni.key eurosense.eval
+
 ### Make STIFF and EuroSense P/R plot
 
-First obtain [finn-man-ann](https://github.com/frankier/finn-man-ann).
+First process finn-man-ann.
 
 #### Gather STIFF eval data
 

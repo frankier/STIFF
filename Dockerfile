@@ -7,6 +7,7 @@ RUN ln -s locale.h /usr/include/xlocale.h
 COPY . /stiff
 WORKDIR /stiff
 
+RUN apk --no-cache add curl
 RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python3
 RUN ~/.poetry/bin/poetry config settings.virtualenvs.create false
 RUN ~/.poetry/bin/poetry install

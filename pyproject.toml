@@ -24,6 +24,7 @@ finntk = "^0.0.31"
 streamz = "^0.3.0"
 lxml = "^4.2.3"
 conllu = "^1.1"
+hfst = {version = "3.15.0.0b0",allows-prereleases = true}
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.5.0"

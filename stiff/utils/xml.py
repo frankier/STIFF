@@ -116,10 +116,13 @@ def cb_to_iter(f):
 
         q = Queue()
         job_done = object()
+        abort = False
 
         def cb(x):
             q.put(x)
             q.join()
+            if abort:
+                raise Exception("Aborting thread")
 
         def task(*args, **kwargs):
             f(*(args + (cb,)), **kwargs)
@@ -128,13 +131,20 @@ def cb_to_iter(f):
         thread = Thread(target=task, args=args, kwargs=kwargs)
         thread.start()
 
-        while True:
-            next_item = q.get(True)
-            if next_item is job_done:
-                break
-            yield next_item
-            q.task_done()
-        thread.join()
+        try:
+            while True:
+                next_item = q.get(True)
+                if next_item is job_done:
+                    break
+                yield next_item
+                q.task_done()
+        finally:
+            abort = True
+            try:
+                q.task_done()
+            except ValueError:
+                pass
+            thread.join(5)
 
     return iter
 

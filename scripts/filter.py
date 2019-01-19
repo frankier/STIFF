@@ -325,21 +325,28 @@ def split(inf, testf, trainf, keyin, testkey, trainkey, sentences):
 @click.argument("keyout", type=click.File("wb"))
 def unified_test_dev_split(inf, ingoldf, keyin, goldkeyin, outf, keyout):
     gold_sent_iter = peekable(iter_sentences(ingoldf))
+    rm_inst_ids = []
 
     def sent_rm_gold(sent):
         gold_sent = gold_sent_iter.peek(None)
         if gold_sent is not None and gold_sent.attrib["id"] == sent.attrib["id"]:
+            for instance in sent.xpath("./instance"):
+                rm_inst_ids.append(instance.attrib["id"])
             next(gold_sent_iter)
             return BYPASS
 
     transform_sentences(inf, sent_rm_gold, outf)
 
-    gold_key_iter = peekable(goldkeyin)
+    def next_rm():
+        try:
+            return rm_inst_ids.pop(0)
+        except IndexError:
+            return None
 
+    rm_id = next_rm()
     for line in keyin:
-        gold_line = gold_key_iter.peek(None)
-        if gold_line is not None and gold_line.split()[0] == line.split()[0]:
-            next(gold_key_iter)
+        if rm_id == line.split()[0]:
+            rm_id = next_rm()
             continue
         keyout.write(line)
 

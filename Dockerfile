@@ -1,13 +1,12 @@
-FROM frankierr/finntk:requirements
+FROM registry.gitlab.com/frankier/finntk/requirements-deb:latest
 
-RUN apk --no-cache add openssl-dev freetype-dev libpng-dev openblas-dev \
-	musl-dev openblas libxml2-dev xmlsec-dev zstd
-RUN apk --no-cache add opencc opencc-dev --update-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/ --allow-untrusted
-RUN ln -s locale.h /usr/include/xlocale.h
+RUN apt-get update && apt-get install -y \
+	libssl-dev libfreetype6-dev libpng-dev libopenblas-dev \
+	musl-dev libopenblas-base libxml2-dev libxmlsec1-dev zstd \
+	opencc libopencc-dev curl
 COPY . /stiff
 WORKDIR /stiff
 
-RUN apk --no-cache add curl
 RUN ln -sf /usr/bin/python3 /usr/local/bin/python
 RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python3
 RUN pip3 install https://download.pytorch.org/whl/cu100/torch-1.0.0-cp37-cp37m-linux_x86_64.whl

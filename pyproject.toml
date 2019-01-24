@@ -13,7 +13,6 @@ cython = "^0.29.2"
 brokenaxes = "=0.3.1"
 jsondiff = "^1.1"
 click-log = "^0.3.2"
-
 click = "^6.7"
 plumbum = "^1.6.6"
 pyahocorasick = { git = "https://github.com/frankier/pyahocorasick.git", branch = "stiff-2018-09-20-3" }

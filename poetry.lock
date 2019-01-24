@@ -574,8 +574,12 @@ description = "pyahocorasick is a fast and memory efficient library for exact or
 name = "pyahocorasick"
 optional = false
 python-versions = "*"
-version = "1.4.0"
+version = "1.1.9.dev1"
 
+[package.source]
+reference = "ca029040175eaba65719e301045dd2c9a821281e"
+type = "git"
+url = "https://github.com/frankier/pyahocorasick.git"
 [[package]]
 category = "dev"
 description = "Python style guide checker"
@@ -971,7 +975,7 @@ plumbum = ["d143f079bfb60b11e9bec09a49695ce2e55ce5ca0246877bdb0818ab7c7fc312", "
 portalocker = ["b5ba72ace4f50093e3841c65a24f65d4f1bddd8d47cf439e56ab30b1aebd62a0", "e6b3fdca1f232504da1a79dbe6230dfce241bac77698bd713883527c53db09ad"]
 pre-commit = ["2cb7a588fdc78e4ec4e624932765e65d285159f4b3425121106cbd9060e40e04", "74ee5779a17ef540efdf9a832911fe9057b1bb57d5d0152eace6534a228a863b"]
 py = ["bf92637198836372b520efcba9e020c330123be8ce527e535d185ed4b6f45694", "e76826342cefe3c3d5f7e8ee4316b80d1dd8a300781612ddbc765c17ba25a6c6"]
-pyahocorasick = ["f9431a20e47e893cadd29f367825e882dbc6fc324a3c24c41e3ff9648e5d04b2"]
+pyahocorasick = []
 pycodestyle = ["74abc4e221d393ea5ce1f129ea6903209940c1ecd29e002e8c6933c2b21026e0", "cbc619d09254895b0d12c2c691e237b2e91e9b2ecf5e84c26b35400f93dcfb83", "cbfca99bd594a10f674d0cd97a3d802a1fdef635d4361e1a2658de47ed261e3a"]
 pycparser = ["a988718abfad80b6b157acce7bf130a30876d27603738ac39f140993246b25b3"]
 pyflakes = ["9a7662ec724d0120012f6e29d6248ae3727d821bba522a0e6b356eff19126a49", "f661252913bc1dbe7fcfcbf0af0db3f42ab65aabd1a6ca68fe5d466bace94dae"]

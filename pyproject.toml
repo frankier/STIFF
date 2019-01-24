@@ -16,7 +16,7 @@ click-log = "^0.3.2"
 
 click = "^6.7"
 plumbum = "^1.6.6"
-pyahocorasick = "^1.1.8"
+pyahocorasick = { git = "https://github.com/frankier/pyahocorasick.git", branch = "stiff-2018-09-20-3" }
 pygtrie = "^2.2"
 opencc = "^0.2"
 opus-api = "^0.6.2"

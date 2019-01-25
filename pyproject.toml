@@ -19,7 +19,7 @@ pyahocorasick = { git = "https://github.com/frankier/pyahocorasick.git", branch 
 pygtrie = "^2.2"
 opencc = "^0.2"
 opus-api = "^0.6.2"
-finntk = "^0.0.31"
+finntk = { git = "https://github.com/frankier/finntk.git", branch = "stiff-01-25" }
 streamz = "^0.3.0"
 lxml = "^4.2.3"
 conllu = "^1.1"

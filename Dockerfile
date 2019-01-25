@@ -16,3 +16,6 @@ RUN python3 -m stiff.scripts.post_install
 
 # Install WordNet
 RUN python3 -c "from nltk import download as d; d('wordnet'); d('omw'); d('punkt')"
+
+# Temp quickfix
+RUN echo "/usr/local/lib/python3.7/site-packages/" > "/usr/local/lib/python3.7/dist-packages/site.pth"

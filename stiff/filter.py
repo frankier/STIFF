@@ -154,6 +154,7 @@ class CmpTournament(TournamentBase):
                     cmp_res = self.cmp(ann, other_ann)
                     if cmp_res == -1:
                         nondominated.remove(idx)
+                        break
                     elif cmp_res == 1:
                         nondominated.remove(other_idx)
                     else:

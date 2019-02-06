@@ -270,6 +270,8 @@ class FinnPOSMixin:
 class NaiveLemmaTournament(FinnPOSMixin, SpanKeyMixin, RankTournament):
     @staticmethod
     def rank(ann, finnpos_analys):
+        if "wnlemma" not in ann.attrib:
+            return 0
         tok, tok_len = get_ann_pos(ann)
         head_off = get_headword_offset(ann)
         finnpos_head, feats = finnpos_analys[tok + head_off]

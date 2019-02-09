@@ -44,6 +44,7 @@ def realign(untok: IO, tok: IO, skiplimit=200) -> Iterator[Tuple[str, str]]:
 def read_opensubtitles2018(
     dir: str
 ) -> Iterator[Tuple[int, str, str, str, str, str, bool, "WordAlignment"]]:
+    idx = 0
     for zh in CHINESES:
         pair = "fi-{}".format(zh)
         pair_dir = pjoin(dir, pair)
@@ -55,8 +56,8 @@ def read_opensubtitles2018(
         ids_f = open(pjoin(pair_dir, "ids"))
 
         prev_imdb_id = None
-        for idx, ((zh_untok, zh_tok), fi_tok, line_id, moses_alignment) in enumerate(
-            zip(realign(zh_untok_f, zh_tok_f), fi_tok_f, ids_f, alignment_f)
+        for (zh_untok, zh_tok), fi_tok, line_id, moses_alignment in zip(
+            realign(zh_untok_f, zh_tok_f), fi_tok_f, ids_f, alignment_f
         ):
             src = get_src(line_id)
             srcs, imdb_id = src[:-1], src[-1]
@@ -65,6 +66,7 @@ def read_opensubtitles2018(
                 :-1
             ], srcs, imdb_id, prev_imdb_id != imdb_id, align
             prev_imdb_id = imdb_id
+            idx += 1
 
 
 def get_src(line_id: str):

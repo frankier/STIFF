@@ -23,3 +23,9 @@ def add_zstd(in_path):
 def ensure_dir(dirout):
     if not os.path.exists(dirout):
         os.makedirs(dirout, exist_ok=True)
+
+
+def exec_pipeline(pipeline, retcode=(-13, 0)):
+    if os.environ.get("TRACE_PIPELINE"):
+        print(pipeline)
+    pipeline(retcode=retcode, stderr=sys.stderr)

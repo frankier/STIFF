@@ -11,7 +11,7 @@ from stiff.methods import (
     get_critical_nodes,
     lookup_stage,
 )
-from stiff.utils.pipeline import add_head, ensure_dir
+from stiff.utils.pipeline import add_head, ensure_dir, exec_pipeline
 from plumbum import local
 from string import Template
 
@@ -62,9 +62,8 @@ def proc(method, inf, outf, head=None, no_zstd_out=False):
         )
     else:
         pipeline = pipeline > outf
-    if os.environ.get("TRACE_PIPELINE"):
-        print(pipeline)
-    pipeline(retcode=[-13, 0])
+
+    exec_pipeline(pipeline, retcode=[-13, 0])
 
 
 @variants.command("eval")

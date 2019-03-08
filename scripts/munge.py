@@ -50,10 +50,21 @@ def opensubs18_ids_to_unified(iter_stiff):
         )
 
 
+def iter_sentences_opensubs18_man_ann(stream):
+    # XXX: This assumes a 1-1 imdb subtitle correspondance -- which should be
+    # the case near the beginning where the man-ann takes place, but should be
+    # fixed in general
+    for sent in iter_sentences(stream):
+        sources, imdb, sent_id = sent.attrib["id"].split("; ")
+        sent_id = "stiff.{:010d}.000.{:08d}".format(int(imdb), int(sent_id))
+        yield sent_id, sent
+
+
 @munge.command("stiff-to-unified")
 @click.argument("stiff", type=click.File("rb"))
 @click.argument("unified", type=click.File("w"))
-def stiff_to_unified(stiff: IO, unified: IO):
+@click.option("--man-ann/--stiff")
+def stiff_to_unified(stiff: IO, unified: IO, man_ann: bool = False):
     """
     Do the XML conversion from the STIFF format (similar to the Eurosense
     format) to the Unified format. Note that this assumes is that previous
@@ -62,9 +73,11 @@ def stiff_to_unified(stiff: IO, unified: IO):
     unified.write('<?xml version="1.0" encoding="UTF-8" ?>\n')
     unified.write('<corpus lang="fi" source="stiff">\n')
     unified.write('<text id="stiff">\n')
-    for sent_id, sent_elem in opensubs18_ids_to_unified(
-        iter_sentences_opensubs18(stiff)
-    ):
+    if man_ann:
+        sent_iter = iter_sentences_opensubs18_man_ann(stiff)
+    else:
+        sent_iter = opensubs18_ids_to_unified(iter_sentences_opensubs18(stiff))
+    for sent_id, sent_elem in sent_iter:
         unified.write('<sentence id="{}">\n'.format(sent_id))
         text_elem = sent_elem.xpath("text")[0]
         text_id = text_elem.attrib.get("id")
@@ -644,20 +657,6 @@ def man_ann_select(inf: IO, outf: IO, source, end):
             and elem.attrib["id"] == end
         ):
             stopped = True
-
-
-@munge.command("man-ann-eurosense2stiff")
-@click.argument("inf", type=click.File("rb"))
-@click.argument("outf", type=click.File("wb"))
-def man_ann_eurosense2stiff(inf: IO, outf: IO):
-    # XXX: This assumes a 1-1 imdb subtitle correspondance -- which should be
-    # the case near the beginning where the man-ann takes place, but should be
-    # fixed in general
-    def relabel_sent(sent):
-        sources, imdb, sent_id = sent.attrib["id"].split("; ")
-        sent.attrib["id"] = "stiff.{:010d}.000.{:08d}".format(int(imdb), int(sent_id))
-
-    transform_sentences(inf, relabel_sent, outf)
 
 
 if __name__ == "__main__":

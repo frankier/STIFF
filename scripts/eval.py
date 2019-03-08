@@ -1,7 +1,7 @@
 from lxml import etree
 import click
 from stiff.utils.anns import get_ann_pos, get_ann_pos_dict
-from stiff.utils.xml import cb_to_iter, chunk_cb, eq_matcher, iter_sentences
+from stiff.utils.xml import iter_sentences, iter_sent_to_pairs, iter_sentence_id_pairs
 import pandas as pd
 from streamz import Stream
 from streamz.dataframe import DataFrame
@@ -45,42 +45,6 @@ def align_with_gold(gold_sents, guess_sents, max_slack=1000):
                     + f"trying to find {gold_id}"
                 )
         yield gold_id, gold_sent, guess_sent
-
-
-def iter_sent_to_pairs(sent_iter):
-    for sent in sent_iter:
-        yield sent.attrib["id"], sent
-
-
-def iter_sentence_id_pairs(fp):
-    """
-    Like iter_sentences(...), but returns also sentence IDs, in the case of
-    OpenSubtitles2018 adjusted to include also subtitle information.
-    """
-    # Detect OpenSubtitles2018
-    stream = etree.iterparse(fp, events=("start", "end"))
-    opensubs18 = None
-    for idx, (event, element) in zip(range(100), stream):
-        if element.tag == "corpus":
-            opensubs18 = element.attrib["source"] == "OpenSubtitles2018"
-            break
-    else:
-        assert False, "No <corpus ...> tag found."
-    if opensubs18:
-
-        def sentence_chunker(cb):
-            chunk_cb(stream, eq_matcher("sentence"), cb)
-
-        for event, element in stream:
-            if event == "start" and element.tag == "subtitle":
-                sources = " ".join(element.attrib["sources"].split("; "))
-                imdb = element.attrib["imdb"]
-                for sent in cb_to_iter(sentence_chunker)():
-                    full_id = "{}; {}; {}".format(sources, imdb, sent.attrib["id"])
-                    yield full_id, sent
-    else:
-        for pair in iter_sent_to_pairs(iter_sentences(stream)):
-            yield pair
 
 
 def anns_to_set(anns):

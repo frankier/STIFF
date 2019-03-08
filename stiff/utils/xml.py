@@ -170,6 +170,55 @@ def iter_blocks(block):
 iter_sentences = iter_blocks("sentence")
 
 
+def iter_sent_to_pairs(sent_iter):
+    for sent in sent_iter:
+        yield sent.attrib["id"], sent
+
+
+def iter_sentences_opensubs18_stream(stream):
+    def sentence_chunker(cb):
+        chunk_cb(stream, eq_matcher("sentence"), cb)
+
+    for event, element in stream:
+        if event == "start" and element.tag == "subtitle":
+            sources = " ".join(element.attrib["sources"].split("; "))
+            imdb = element.attrib["imdb"]
+            for sent in cb_to_iter(sentence_chunker)():
+                yield (sources, imdb, sent.attrib["id"]), sent
+
+
+def iter_sentences_opensubs18(fp):
+    stream = etree.iterparse(fp, events=("start", "end"))
+    return iter_sentences_opensubs18_stream(stream)
+
+
+def format_opensubs_id(bits):
+    sources, imdb, sent_id = bits
+    return "{}; {}; {}".format(sources, imdb, sent_id)
+
+
+def iter_sentence_id_pairs(fp):
+    """
+    Like iter_sentences(...), but returns also sentence IDs, in the case of
+    OpenSubtitles2018 adjusted to include also subtitle information.
+    """
+    # Detect OpenSubtitles2018
+    stream = etree.iterparse(fp, events=("start", "end"))
+    opensubs18 = None
+    for idx, (event, element) in zip(range(100), stream):
+        if element.tag == "corpus":
+            opensubs18 = element.attrib["source"] == "OpenSubtitles2018"
+            break
+    else:
+        assert False, "No <corpus ...> tag found."
+    if opensubs18:
+        for bits, sent in iter_sentences_opensubs18_stream(stream):
+            yield format_opensubs_id(bits), sent
+    else:
+        for pair in iter_sent_to_pairs(iter_sentences(stream)):
+            yield pair
+
+
 def chunk_stream_cb(stream, matcher: Matcher, outside_cb, inside_cb, always_cb=None):
     inside = False
     depth = 0

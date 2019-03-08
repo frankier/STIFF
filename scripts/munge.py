@@ -76,7 +76,22 @@ def stiff_to_unified(stiff: IO, unified: IO):
                     char_id >= cursor
                 ), "Moved past anchor position - can't have overlapping anchors"
                 if char_id > cursor:
-                    break
+                    # Try again to move past leading punctation which has been
+                    # put in the same token like: `-ajoneuvo` with anchor
+                    # ajoneuvo
+
+                    # XXX: This approach just deletes the leading punctation.
+                    # Probably not what is wanted but servicable for the time
+                    # being.
+                    old_cursor = cursor
+                    while not (
+                        sent[cursor].isalnum() or sent[cursor].isspace()
+                    ) and cursor < min(char_id, len(sent)):
+                        cursor += 1
+                    if cursor != char_id:
+                        # Reset
+                        cursor = old_cursor
+                        break
                 if instance is None:
                     instance = {"lemma": lemma, "anchor": anchor, "key": []}
                 else:

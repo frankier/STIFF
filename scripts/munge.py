@@ -132,9 +132,13 @@ def stiff_to_unified(stiff: IO, unified: IO, man_ann: bool = False):
                 instance["key"].append(ann)
                 del anns[0]
             if instance is not None:
+                pos = WN_UNI_POS_MAP[instance["key"][-1][-1]]
                 unified.write(
-                    '<instance lemma="{}" key="{}">{}</instance>\n'.format(
-                        instance["lemma"], " ".join(instance["key"]), instance["anchor"]
+                    '<instance lemma="{}" key="{}" pos="{}">{}</instance>\n'.format(
+                        instance["lemma"],
+                        " ".join(instance["key"]),
+                        pos,
+                        instance["anchor"],
                     )
                 )
                 cursor += len(instance["anchor"]) + 1

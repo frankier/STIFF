@@ -141,7 +141,15 @@ def stiff_to_unified(stiff: IO, unified: IO, man_ann: bool = False):
                         instance["anchor"],
                     )
                 )
-                cursor += len(instance["anchor"]) + 1
+                # XXX: This approach just deletes the trailing punctation.
+                # Probably not what is wanted but servicable for the time
+                # being. Old code:
+                # cursor += len(instance["anchor"]) + 1
+
+                end_pos = sent.find(" ", cursor)
+                if end_pos == -1:
+                    break
+                cursor = end_pos + 1
             else:
                 end_pos = sent.find(" ", cursor)
                 if end_pos == -1:

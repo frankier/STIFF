@@ -319,10 +319,10 @@ def split(inf, testf, trainf, keyin, testkey, trainkey, sentences):
 @filter.command("unified-test-dev-split")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("ingoldf", type=click.File("rb"))
-@click.argument("keyin", type=click.File("rb"))
-@click.argument("goldkeyin", type=click.File("rb"))
+@click.argument("keyin", type=click.File("r"))
+@click.argument("goldkeyin", type=click.File("r"))
 @click.argument("outf", type=click.File("wb"))
-@click.argument("keyout", type=click.File("wb"))
+@click.argument("keyout", type=click.File("w"))
 def unified_test_dev_split(inf, ingoldf, keyin, goldkeyin, outf, keyout):
     gold_sent_iter = peekable(iter_sentences(ingoldf))
     rm_inst_ids = []
@@ -349,6 +349,8 @@ def unified_test_dev_split(inf, ingoldf, keyin, goldkeyin, outf, keyout):
             rm_id = next_rm()
             continue
         keyout.write(line)
+
+    assert len(rm_inst_ids) == 0 and rm_id is None
 
 
 @filter.command("join")

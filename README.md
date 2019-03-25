@@ -18,7 +18,52 @@ You can then run
 
     $ ./install.sh
 
-## Example processing & conversion pipelines
+## **(Untested)** Conversion pipelines and evaluation using the Makefile
+
+There is a [Makefile](Makefile). Reading the source is a recommended next step
+after this `README`. It has variables for most file paths. These are over
+ridable with default. You can override them to help make it convenient when
+supplying intermediate steps/upstream corpora yourself, wanting outputs in
+a particular place, and when running it with Docker when you may want to use
+bind mounts to make the aforementioned appear on the host.
+
+### Make STIFF or EuroSense into data for finn-wsd-eval
+
+You can make the data needed for
+[finn-wsd-eval](https://github.com/frankier/finn-wsd-eval) by running::
+
+   make wsd-eval
+
+which will make the STIFF and EuroSense WSD evaluation corpora, including
+trying to fetch all dependencies. However,
+
+1. It will take a long time. The longest step is building STIFF from scratch
+   which can take around two weeks. To speed things up you can supply a premade
+   `stiff.raw.xml.zst` downloaded from here **(TODO)**.
+2. It will not fetch one dependency with restrictions upon it: BABELWNMAP.
+
+#### Obtaining `BABELWNMAP`
+
+You will next need to set the environment variable `BABELWNMAP` as the path to a TSV
+mapping from BabelNet synsets to WordNet synsets. You can either:
+
+1. Obtain the BabelNet indices by following [these
+   instructions](https://babelnet.org/guide#access) and dump out the TSV by
+   following the instructions at https://github.com/frankier/babelnet-lookup
+2. If you are affiliated with a research institution, I have permission to send
+   you the TSV file, but you must send me a direct communication from your
+   institutional email address. (Please shortly state your position/affiliation
+   and non-commercial research use in the email so there is a record.)
+3. Alternatively (subject to the same conditions) if you prefer, I can just
+   send you eurosense.unified.sample.xml eurosense.unified.sample.key
+
+### Make STIFF and EuroSense P/R plot
+
+Run::
+
+   make corpus-eval
+
+## **(OLD)** Example conversion pipelines and evaluation
 
 Both the following pipelines first create a corpus tagged in the unified
 format, which consists of an `xml` and `key` file, and then create a directory
@@ -142,3 +187,7 @@ in `scripts`.
 
  * `scripts/stiff2unified.sh`: Convert from STIFF format to the unified format
  * `scripts/pipeline.py`: Various pipelines composing multiple layers of filtering/conversion
+
+### Top level
+
+The `Makefile` and `Makefile.manann`.

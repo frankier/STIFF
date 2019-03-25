@@ -1,0 +1,15 @@
+# Select europarl/opensubs from finn-man-ann
+${WORK}/man-ann-${SOURCE}.xml: ${MANANN}/ann.xml
+	python scripts/munge.py man-ann-select --source=${SOURCE} $< $@
+
+# tok-span-dom
+${WORK}/man-ann-${SOURCE}.filtered.xml: ${WORK}/man-ann-${SOURCE}.xml
+	python3 scripts/filter.py tok-span-dom $< $@
+
+# convert => unified
+${WORK}/man-ann-${SOURCE}.uni.target: ${WORK}/man-ann-${SOURCE}.filtered.xml
+	python3 scripts/pipeline.py stiff2unified ${S2U_FLAG} \
+		$< ${WORK}/man-ann-${SOURCE}.uni.xml ${WORK}/man-ann-${SOURCE}.uni.key
+	touch $@ ${WORK}/man-ann-${SOURCE}.uni.xml ${WORK}/man-ann-${SOURCE}.uni.key
+
+${WORK}/man-ann-${SOURCE}.uni.xml ${WORK}/man-ann-${SOURCE}.uni.key: ${WORK}/man-ann-${SOURCE}.uni.target

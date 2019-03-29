@@ -1,3 +1,6 @@
+.SECONDARY:
+.EXPORT_ALL_VARIABLES:
+
 ## Environment variables -- overriding encouraged!
 
 # Workdirs
@@ -10,6 +13,7 @@ CORPUSPREVALWORK=work/corpus-pr-eval
 OPENSUBS=${STIFFWORK}/cmn-fin
 RAWSTIFF=${STIFFWORK}/stiff.raw.xml.zst
 BP6=${STIFFWORK}/bp6.zst
+BP6UNI=${STIFFWORK}/bp6.uni
 MANANN=finn-man-ann
 
 # Eurosense
@@ -81,7 +85,7 @@ ${EUROSENSEHP}:
 ${EUROSENSEUNI}.target: ${EUROSENSEHP} ${BABELWNMAP}
 	python scripts/pipeline.py eurosense2unified \
 		--babel2wn-map=${BABELWNMAP} \
-      		${EUROSENSEHP} ${EUROSENSEUNI}.xml ${EUROSENSEUNI}.key
+		${EUROSENSEHP} ${EUROSENSEUNI}.xml ${EUROSENSEUNI}.key
 	touch $@ ${EUROSENSEUNI}.xml ${EUROSENSEUNI}.key
 
 ${EUROSENSEUNI}.xml ${EUROSENSEUNI}.key: ${EUROSENSEUNI}.target
@@ -89,7 +93,7 @@ ${EUROSENSEUNI}.xml ${EUROSENSEUNI}.key: ${EUROSENSEUNI}.target
 ## Evaluation creation
 
 # STIFF
-${STIFFEVAL}: ${BP6UNI}.xml ${STIFFWORK}/man-ann-OpenSubtitles2018.uni.xml ${BP6UNI}.key ${STIFFWORK}/man-ann-OpenSubtitles2018.uni.key:
+${STIFFEVAL}: ${BP6UNI}.xml ${STIFFWORK}/man-ann-OpenSubtitles2018.uni.xml ${BP6UNI}.key ${STIFFWORK}/man-ann-OpenSubtitles2018.uni.key
 	python scripts/pipeline.py unified-auto-man-to-evals $^ $@
 
 # Eurosense
@@ -103,7 +107,7 @@ ${CORPUSPREVALWORK}/stiff-eval-out: ${RAWSTIFF}
 	python scripts/variants.py eval $< $@
 
 ${CORPUSPREVALWORK}/stiff-eval.csv: ${STIFFWORK}/man-ann-OpenSubtitles2018.xml ${CORPUSPREVALWORK}/stiff-eval-out
-    	python scripts/eval.py pr-eval --score=tok $^ $@
+	python scripts/eval.py pr-eval --score=tok $^ $@
 
 # Eurosense data
 ${EUROPARLWORK}/man-ann-europarl.synset.xml: ${EUROPARLWORK}/man-ann-europarl.xml 

@@ -18,7 +18,7 @@ You can then run
 
     $ ./install.sh
 
-## **(Untested)** Conversion pipelines and evaluation using the Makefile
+## **(Only partially tested)** Conversion pipelines and evaluation using the Makefile
 
 There is a [Makefile](Makefile). Reading the source is a recommended next step
 after this `README`. It has variables for most file paths. These are over

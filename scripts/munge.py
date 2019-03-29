@@ -277,18 +277,26 @@ def eurosense_to_unified(eurosense: IO, unified: IO):
     unified.write("</corpus>\n")
 
 
+def langs_of_wns(wns):
+    res = set()
+    if "fin" in wns or "qwf" in wns:
+        res.add("eng")
+    if "qf2" in wns:
+        res.add("fin")
+    return res
+
+
 @munge.command("lemma-to-synset")
 @click.argument("inf", type=click.File("rb", lazy=True))
 @click.argument("outf", type=click.File("wb"))
 def lemma_to_synset(inf: IO, outf: IO):
     def l2ss(ann):
         wordnets = set(ann.attrib["wordnets"].split())
-        has_english = "fin" in wordnets or "qwf" in wordnets
-        has_finnish = "qf2" in wordnets
+        langs = langs_of_wns(wordnets)
         synset_str = ann.text
         chosen_wn = None
-        if has_english:
-            if has_finnish:
+        if "eng" in langs:
+            if "fin" in langs:
                 bits = synset_str.split(" ")
                 assert len(bits) in (1, 2)
                 synset_str = bits[0]
@@ -298,7 +306,7 @@ def lemma_to_synset(inf: IO, outf: IO):
                 assert "qwf" in wordnets
                 chosen_wn = "qwf"
         else:
-            assert has_finnish
+            assert "fin" in langs
             chosen_wn = "qf2"
         assert synset_str.count(" ") == 0
         synset = WordnetFin.synset(chosen_wn, synset_str)
@@ -669,6 +677,43 @@ def man_ann_select(inf: IO, outf: IO, source, end):
             and elem.attrib["id"] == end
         ):
             stopped = True
+
+
+@munge.command("stiff-select-wn")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+@click.option(
+    "--wn",
+    type=click.Choice(["fin", "qf2", "qwf"]),
+    default=["qf2"],
+    multiple=True,
+    help="Which WordNet (multiple allowed) to use: OMW FiWN, "
+    "FiWN2 or OMW FiWN wikitionary based extensions",
+)
+def stiff_select_wn(inf: IO, outf: IO, wn):
+    selected_wns = set(wn)
+    selected_langs = langs_of_wns(selected_wns)
+
+    def select_wn(ann):
+        ann_wns = ann.attrib["wordnets"].split()
+        common_wns = [wn for wn in ann_wns if wn in selected_wns]
+        if not len(common_wns):
+            return BYPASS
+        ann.attrib["wordnets"] = " ".join(common_wns)
+        ann_langs = langs_of_wns(ann_wns)
+        if len(ann_langs) <= len(selected_langs):
+            return
+        lemmas_str = ann.text
+        bits = lemmas_str.split(" ")
+        assert len(bits) <= 2
+        if len(bits) <= 1:
+            return
+        if "eng" in selected_langs:
+            ann.text = bits[0]
+        else:
+            ann.text = bits[1]
+
+    transform_blocks(eq_matcher("annotation"), inf, select_wn, outf)
 
 
 if __name__ == "__main__":

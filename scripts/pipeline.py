@@ -90,6 +90,10 @@ def eurosense2unified(inf, outf, keyout, head, babel2wn_map):
 @click.option("--man-ann/--stiff")
 def stiff2unified(inf, outf, keyout, head, eurosense, man_ann):
     pipeline = add_head(filter_py, add_zstd(inf), head)
+    if not eurosense:
+        pipeline = (
+            pipeline | python[munge_py, "stiff-select-wn", "--wn", "qf2", "-", "-"]
+        )
     pipeline = pipeline | python[munge_py, "lemma-to-synset", "-", "-"]
     if eurosense:
         pipeline = pipeline | python[munge_py, "eurosense-to-unified", "-", "-"]

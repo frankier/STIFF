@@ -6,8 +6,8 @@
 # Workdirs
 WORK=work
 STIFFWORK=${WORK}/stiff
-EUROPARLWORK=work/eurosense
-CORPUSPREVALWORK=work/corpus-pr-eval
+EUROPARLWORK=${WORK}/eurosense
+CORPUSPREVALWORK=${WORK}/corpus-pr-eval
 
 # STIFF
 OPENSUBS=${STIFFWORK}/cmn-fin

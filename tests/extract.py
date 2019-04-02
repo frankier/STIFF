@@ -33,6 +33,14 @@ def test_extract_fin_ei_koskaan():
     assert 1 <= len(ei_koskaan_tokens) <= 2
 
 
+def test_extract_fin_murhamies_has_murha_and_mies():
+    tagging = get_extractor("FinExtractor").extract("murhamies")
+    murha_tokens = _filter_toks(tagging, "murha")
+    assert len(murha_tokens) == 1
+    mies_tokens = _filter_toks(tagging, "mies")
+    assert len(mies_tokens) == 1
+
+
 def test_extract_zh_hollywood():
     zh_tok = "好莱坞"
     zh_untok = "好莱坞"

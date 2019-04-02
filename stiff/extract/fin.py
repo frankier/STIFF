@@ -78,7 +78,7 @@ class FinExtractor:
             conf_net.append(tok_choices)
         extract_tokenized_iter(
             tagging,
-            conf_net_search(self.tok_auto, conf_net, lambda x: x[0]),
+            conf_net_search(self.tok_auto, conf_net, lambda x: id(x)),
             WordnetFin,
             surfs,
             starts,

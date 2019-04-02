@@ -59,3 +59,33 @@ def conf_net_search(auto, conf_net, elem_id_fn=lambda x: x):
         if len(next_auto_its) == 0:
             next_auto_its.append(cur_root)
         auto_its = next_auto_its
+
+
+def conf_net_search_simple(auto, conf_net, elem_id_fn=lambda x: x):
+    """
+    As above, but take no account of domination
+    """
+    root = auto.iter(())
+    auto_its = [root]
+
+    for opts in conf_net:
+        # Don't add the root pointer to begin with
+        next_auto_its = []
+        # We can get duplicates with the current scheme, so filter
+        elem_ids = set()
+        elems = []
+        for auto_it in auto_its:
+            for opt in opts:
+                new_auto_it = copy(auto_it)
+                new_auto_it.set((opt,))
+                for elem in new_auto_it:
+                    if new_auto_it.pos_id() in next_auto_its:
+                        break
+                    elem_id = elem_id_fn(elem)
+                    if elem_id not in elem_ids:
+                        elem_ids.add(elem_id)
+                        elems.append(elem)
+                next_auto_its.append(new_auto_it)
+        for elem in elems:
+            yield elem
+        auto_its = next_auto_its

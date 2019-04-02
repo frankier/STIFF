@@ -1,6 +1,9 @@
 .SECONDARY:
 .EXPORT_ALL_VARIABLES:
 
+print-%:
+	@echo $*=$($*)
+
 ## Environment variables -- overriding encouraged!
 
 # Workdirs

@@ -12,7 +12,7 @@ def ann_common_attrs(lang: str, tok: Token, tag: TaggedLemma) -> str:
         ("anchor", tok.token),
         ("anchor-positions", " ".join(anchor_positions)),
         ("lemma", tag.lemma),
-        ("wnlemma", " ".join(tag.lemma_names)),
+        ("wnlemma", tag.lemma_names_url),
         ("wordnets", " ".join((tag.wordnets))),
         ("lemma-path", tag.lemma_path),
     )  # type: Tuple[Tuple[str, str], ...]

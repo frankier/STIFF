@@ -86,6 +86,16 @@ class TaggedLemma:
         return set((lemma_obj.name() for (_wn, lemma_obj) in self.lemma_objs))
 
     @property
+    def lemma_names_url(self) -> str:
+        d = {}
+        for (wn, lemma_obj) in self.lemma_objs:
+            d.setdefault(lemma_obj.name(), []).append(wn)
+        return " ".join(
+            "l={}&wn={}".format(lemma_name, ",".join(wns))
+            for lemma_name, wns in d.items()
+        )
+
+    @property
     def synset_names(self) -> Set[str]:
         return set((lemma_obj.synset().name() for (_wn, lemma_obj) in self.lemma_objs))
 

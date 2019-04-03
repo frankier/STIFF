@@ -4,7 +4,8 @@ ${WORK}/man-ann-${SOURCE}.xml: ${MANANN}/ann.xml
 
 # tok-span-dom
 ${WORK}/man-ann-${SOURCE}.filtered.xml: ${WORK}/man-ann-${SOURCE}.xml
-	python3 scripts/filter.py tok-span-dom $< $@
+	python3 scripts/filter.py tok-span-dom $< - \
+	| python3 scripts/filter.py rm-ambg - $@
 
 # convert => unified
 ${WORK}/man-ann-${SOURCE}.uni.target: ${WORK}/man-ann-${SOURCE}.filtered.xml

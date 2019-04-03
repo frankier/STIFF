@@ -2,7 +2,7 @@ import re
 from lxml import etree
 import sys
 import click
-from stiff.utils import parse_qs_single
+from stiff.utils import parse_qs_single, wnlemma_to_analy_lemma
 from stiff.utils.xml import (
     eq_matcher,
     iter_sentences,
@@ -17,7 +17,6 @@ from stiff.utils.xml import (
 from xml.sax.saxutils import escape
 import pygtrie
 from stiff.data.constants import WN_UNI_POS_MAP, UNI_POS_WN_MAP
-from stiff.wordnet.fin import Wordnet as WordnetFin
 from finntk.wordnet.reader import fiwn, get_en_fi_maps
 from finntk.wordnet.utils import pre_id_to_post, post_id_to_pre, pre2ss
 from finntk.omor.extract import lemma_intersect
@@ -26,6 +25,7 @@ from os import makedirs, listdir
 from contextlib import contextmanager
 from typing import Dict, Set, IO
 from collections import Counter
+from urllib.parse import urlencode
 
 
 @click.group("munge")
@@ -60,6 +60,25 @@ def iter_sentences_opensubs18_man_ann(stream):
         yield sent_id, sent
 
 
+def get_lemma(ann):
+    best_lemma = None
+    best_lemma_goodness = -2
+    for idx, lemma_bit in enumerate(ann.attrib["wnlemma"].split(" ")):
+        lemma_dict = parse_qs_single(lemma_bit)
+        lemma = lemma_dict["l"]
+        wn_lemma_surfed = wnlemma_to_analy_lemma(lemma)
+        goodness = (
+            2
+            if wn_lemma_surfed == ann.attrib["lemma"]
+            else (1 if wn_lemma_surfed == ann.attrib["anchor"].lower() else -idx)
+        )
+        if goodness > best_lemma_goodness:
+            best_lemma = lemma
+            best_lemma_goodness = goodness
+    assert best_lemma is not None
+    return best_lemma
+
+
 @munge.command("stiff-to-unified")
 @click.argument("stiff", type=click.File("rb"))
 @click.argument("unified", type=click.File("w"))
@@ -90,7 +109,7 @@ def stiff_to_unified(stiff: IO, unified: IO, man_ann: bool = False):
                     our_pos = pos
             assert our_pos is not None, "Didn't find a usable anchor position"
             char_id = int(our_pos["char"])
-            anns.append((char_id, ann.attrib["anchor"], ann.attrib["lemma"], ann.text))
+            anns.append((char_id, ann.attrib["anchor"], get_lemma(ann), ann.text))
         anns.sort()
         sent = text_elem.text
         cursor = 0
@@ -277,41 +296,14 @@ def eurosense_to_unified(eurosense: IO, unified: IO):
     unified.write("</corpus>\n")
 
 
-def langs_of_wns(wns):
-    res = set()
-    if "fin" in wns or "qwf" in wns:
-        res.add("eng")
-    if "qf2" in wns:
-        res.add("fin")
-    return res
-
-
 @munge.command("lemma-to-synset")
 @click.argument("inf", type=click.File("rb", lazy=True))
 @click.argument("outf", type=click.File("wb"))
 def lemma_to_synset(inf: IO, outf: IO):
+    from stiff.munge.utils import synset_id_of_ann
+
     def l2ss(ann):
-        wordnets = set(ann.attrib["wordnets"].split())
-        langs = langs_of_wns(wordnets)
-        synset_str = ann.text
-        chosen_wn = None
-        if "eng" in langs:
-            if "fin" in langs:
-                bits = synset_str.split(" ")
-                assert len(bits) in (1, 2)
-                synset_str = bits[0]
-            if "fin" in wordnets:
-                chosen_wn = "fin"
-            else:
-                assert "qwf" in wordnets
-                chosen_wn = "qwf"
-        else:
-            assert "fin" in langs
-            chosen_wn = "qf2"
-        assert synset_str.count(" ") == 0
-        synset = WordnetFin.synset(chosen_wn, synset_str)
-        synset_id = WordnetFin.canonical_synset_id_of_synset(chosen_wn, synset)
-        ann.text = pre_id_to_post(synset_id)
+        ann.text = pre_id_to_post(synset_id_of_ann(ann))
 
     transform_blocks(eq_matcher("annotation"), inf, l2ss, outf)
 
@@ -691,15 +683,36 @@ def man_ann_select(inf: IO, outf: IO, source, end):
     "FiWN2 or OMW FiWN wikitionary based extensions",
 )
 def stiff_select_wn(inf: IO, outf: IO, wn):
+    from stiff.munge.utils import langs_of_wns
+
     selected_wns = set(wn)
     selected_langs = langs_of_wns(selected_wns)
 
+    def filter_wns(wns):
+        return [wn for wn in wns if wn in selected_wns]
+
     def select_wn(ann):
+        # annotation[wordnets]
         ann_wns = ann.attrib["wordnets"].split()
-        common_wns = [wn for wn in ann_wns if wn in selected_wns]
+        common_wns = filter_wns(ann_wns)
         if not len(common_wns):
             return BYPASS
         ann.attrib["wordnets"] = " ".join(common_wns)
+
+        # annotation[wnlemma]
+        wnlemma_bits = ann.attrib["wnlemma"].split(" ")
+        new_wmlemmas_bits = []
+        for wnlemma in wnlemma_bits:
+            wnlemma_dict = parse_qs_single(wnlemma)
+            wnlemma_wns = wnlemma_dict["wn"].split(",")
+            common_wns = filter_wns(wnlemma_wns)
+            if not common_wns:
+                continue
+            wnlemma_dict["wn"] = ",".join(common_wns)
+            new_wmlemmas_bits.append(urlencode(wnlemma_dict))
+        ann.attrib["wnlemma"] = " ".join(new_wmlemmas_bits)
+
+        # annotation > #text
         ann_langs = langs_of_wns(ann_wns)
         if len(ann_langs) <= len(selected_langs):
             return

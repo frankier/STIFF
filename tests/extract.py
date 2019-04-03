@@ -41,6 +41,15 @@ def test_extract_fin_murhamies_has_murha_and_mies():
     assert len(mies_tokens) == 1
 
 
+def test_heraa_hetkeksi():
+    extor = get_extractor("FinExtractor")
+    tagging = extor.extract("hetkeksi")
+    assert len(tagging.tokens) == 1
+    tagging = extor.extract("Herää hetkeksi")
+    hetkeksi_tokens = _filter_toks(tagging, "hetki")
+    assert len(hetkeksi_tokens) == 1
+
+
 def test_extract_zh_hollywood():
     zh_tok = "好莱坞"
     zh_untok = "好莱坞"

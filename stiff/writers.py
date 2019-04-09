@@ -1,5 +1,5 @@
 from xml.sax.saxutils import quoteattr
-from nltk.corpus.reader.wordnet import Synset, WordNetError
+from nltk.corpus.reader.wordnet import Lemma, Synset, WordNetError
 from stiff.models import Token, TaggedLemma
 from typing import Tuple  # noqa: F401
 from typing import Optional, List
@@ -45,11 +45,11 @@ def maybe_fi2en_ss(ss: Synset) -> Optional[Synset]:
         return None
 
 
-def related_lemma_list(tag: TaggedLemma) -> str:
-    synsets = set((lemma_obj.synset() for (wn, lemma_obj) in tag.lemma_objs))
+def related_lemma_list(lemma_objs: List[Tuple[str, Lemma]]) -> str:
+    synsets = set((lemma_obj.synset() for (wn, lemma_obj) in lemma_objs))
     related_synsets = synsets.copy()
-    if len(tag.lemma_objs) == 1:
-        wn, lemma_obj = tag.lemma_objs[0]
+    if len(lemma_objs) == 1:
+        wn, lemma_obj = lemma_objs[0]
         if wn == "qf2":
             extra_ss = maybe_fi2en_ss(lemma_obj.synset())
             if extra_ss:
@@ -59,22 +59,33 @@ def related_lemma_list(tag: TaggedLemma) -> str:
     return ", ".join(lemma_names)
 
 
-def preferred_synset(tag: TaggedLemma) -> Synset:
-    d = dict(tag.lemma_objs)
+def preferred_synset(lemma_objs: List[Tuple[str, Lemma]]) -> Synset:
+    d = dict(lemma_objs)
     lemma = d.get("fin") or d.get("qf2") or d.get("qwf")
     assert lemma is not None
     return lemma.synset()
 
 
-def man_ann_ann(lang: str, tok: Token, tag: TaggedLemma) -> str:
-    def maybe_fmt_list(title: str, synsets: List[Synset]) -> str:
-        names = sorted([hyp.name() for hyp in synsets])
-        if names:
-            return "{}: {}; ".format(title, ", ".join(names))
-        return ""
+def maybe_fmt_list(title: str, synsets: List[Synset]) -> str:
+    names = sorted([hyp.name() for hyp in synsets])
+    if names:
+        return "{}: {}; ".format(title, ", ".join(names))
+    return ""
 
-    synset = preferred_synset(tag)
+
+def annotation_comment(lemma_objs: List[Tuple[str, Lemma]]):
+    synset = preferred_synset(lemma_objs)
     defn = synset.definition().replace("--", "-")
+    return "{}: {} ({}{}lexname: {})".format(
+        related_lemma_list(lemma_objs),
+        defn,
+        maybe_fmt_list("hyp", synset.hypernyms()),
+        maybe_fmt_list("root", synset.root_hypernyms()),
+        synset.lexname(),
+    )
+
+
+def man_ann_ann(lang: str, tok: Token, tag: TaggedLemma) -> str:
     return (
         "<annotation "
         'type="man-ann" '
@@ -84,11 +95,7 @@ def man_ann_ann(lang: str, tok: Token, tag: TaggedLemma) -> str:
     ).format(
         ann_common_attrs(lang, tok, tag),
         ann_text(tag),
-        related_lemma_list(tag),
-        defn,
-        maybe_fmt_list("hyp", synset.hypernyms()),
-        maybe_fmt_list("root", synset.root_hypernyms()),
-        synset.lexname(),
+        annotation_comment(tag.lemma_objs),
     )
 
 

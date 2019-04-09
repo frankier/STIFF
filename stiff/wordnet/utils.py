@@ -32,16 +32,22 @@ def merge_lemma_maps(*lemma_maps: Dict[str, List[str]]) -> Dict[str, List[str]]:
     return result
 
 
-def synset_group_lemmas(
+def synset_key_lemmas(
     wordnet_lemmas: Dict[str, List[Lemma]], wordnet: Type[ExtractableWordnet]
-) -> Iterable[List[Tuple[str, Lemma]]]:
+) -> Dict[str, List[Tuple[str, Lemma]]]:
     grouped_lemmas: DefaultDict[str, List[Tuple[str, Lemma]]] = defaultdict(list)
     for wn, lemmas in wordnet_lemmas.items():
         for lemma_obj in lemmas:
             grouped_lemmas[wordnet.canonical_synset_id(wn, lemma_obj)].append(
                 (wn, lemma_obj)
             )
-    return grouped_lemmas.values()
+    return grouped_lemmas
+
+
+def synset_group_lemmas(
+    wordnet_lemmas: Dict[str, List[Lemma]], wordnet: Type[ExtractableWordnet]
+) -> Iterable[List[Tuple[str, Lemma]]]:
+    return synset_key_lemmas(wordnet_lemmas, wordnet).values()
 
 
 def get_rev_map(lang):

@@ -276,8 +276,10 @@ class NaiveLemmaTournament(FinnPOSMixin, SpanKeyMixin, RankTournament):
         head_off = get_headword_offset(ann)
         finnpos_head, feats = finnpos_analys[tok + head_off]
         any_match = False
-        for wnlemma_attr in ann.attrib["wnlemma"].split(" "):
-            wn_head = wnlemma_attr.split("_")[head_off]
+        for lemma_bit in ann.attrib["wnlemma"].split(" "):
+            lemma_dict = parse_qs_single(lemma_bit)
+            lemma = lemma_dict["l"]
+            wn_head = lemma.split("_")[head_off]
             if finnpos_head == wn_head:
                 any_match = True
         return 1 if any_match else 0

@@ -69,11 +69,11 @@ def score_anns_tokwise(gold_anns, guess_anns, toks):
     for gold, guess in zip(gold_cov, guess_cov):
         if gold & guess:
             tp += 1
-        else:
-            if gold:
-                fn += 1
-            if guess:
-                fp += 1
+        elif gold:
+            fn += 1
+        incorrect = guess - gold
+        if incorrect:
+            fp += len(incorrect)
     return tp, fp, fn
 
 

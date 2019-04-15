@@ -109,6 +109,10 @@ def transform(stream, matcher: Matcher, transformer: Transformer, outf: IO):
     chunk_stream_cb(stream, matcher, outside, inside, always)
 
 
+class AbortThread(BaseException):
+    pass
+
+
 def cb_to_iter(f):
     def iter(*args, **kwargs):
         from threading import Thread
@@ -122,11 +126,14 @@ def cb_to_iter(f):
             q.put(x)
             q.join()
             if abort:
-                raise Exception("Aborting thread")
+                raise AbortThread
 
         def task(*args, **kwargs):
-            f(*(args + (cb,)), **kwargs)
-            q.put(job_done)
+            try:
+                f(*(args + (cb,)), **kwargs)
+                q.put(job_done)
+            except AbortThread:
+                pass
 
         thread = Thread(target=task, args=args, kwargs=kwargs)
         thread.start()

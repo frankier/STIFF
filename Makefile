@@ -20,8 +20,8 @@ BP6UNI=${STIFFWORK}/bp6.uni
 MANANN=finn-man-ann
 
 # Eurosense
-EUROSENSEHC=${EUROPARLWORK}/eurosense-hc.fixed.xml.zstd
-EUROSENSEHP=${EUROPARLWORK}/eurosense-hp.fixed.xml.zstd
+EUROSENSEHC=${EUROPARLWORK}/eurosense-hc.fixed.xml.zst
+EUROSENSEHP=${EUROPARLWORK}/eurosense-hp.fixed.xml.zst
 BABELWNMAP=${EUROPARLWORK}/babelwnmap.clean.tsv 
 EUROSENSEUNI=${EUROPARLWORK}/eurosense.unified
 
@@ -82,7 +82,10 @@ ${BP6UNI}.xml ${BP6UNI}.key: ${BP6UNI}.target
 
 # Fetch eurosense-hp.fixed
 ${EUROSENSEHP}:
-	wget https://archive.org/download/eurosense-hp.fixed.xml/eurosense-hp.fixed.xml.zstd $@
+	wget https://archive.org/download/eurosense-hp.fixed.xml/eurosense-hp.fixed.xml.zstd -O $@
+
+${EUROSENSEHC}:
+	wget https://archive.org/download/eurosense-hp.fixed.xml/eurosense-hc.fixed.xml.zstd -O $@
 
 # Convert Eurosense => unified
 ${EUROSENSEUNI}.target: ${EUROSENSEHP} ${BABELWNMAP}
@@ -116,15 +119,19 @@ ${CORPUSPREVALWORK}/stiff-eval.csv: ${STIFFWORK}/man-ann-OpenSubtitles2018.xml $
 ${EUROPARLWORK}/man-ann-europarl.synset.xml: ${EUROPARLWORK}/man-ann-europarl.xml 
 	python scripts/munge.py lemma-to-synset $< $@
 
-${CORPUSPREVALWORK}/eurosense-pr/EC.xml: ${EUROSENSEHC}
-	ln -sf ${EUROSENSEHC} eurosense-pr/EC.xml
+${CORPUSPREVALWORK}/eurosense-pr/EC.xml: ${EUROSENSEHC} ${CORPUSPREVALWORK}/eurosense-pr ${BABELWNMAP}
+	python scripts/pipeline.py eurosense2stifflike \
+		--head 1000 \
+		--babel2wn-map=${BABELWNMAP} $< $@
 
-${CORPUSPREVALWORK}/eurosense-pr/EP.xml: ${EUROSENSEHP}
-	ln -sf ${EUROSENSEHP} eurosense-pr/EP.xml
+${CORPUSPREVALWORK}/eurosense-pr/EP.xml: ${EUROSENSEHP} ${CORPUSPREVALWORK}/eurosense-pr ${BABELWNMAP}
+	python scripts/pipeline.py eurosense2stifflike \
+		--head 1000 \
+		--babel2wn-map=${BABELWNMAP} $< $@
 
-${CORPUSPREVALWORK}/europarl-eval.csv: ${EUROPARLWORK}/man-ann-europarl.xml ${CORPUSPREVALWORK}/eurosense-pr
-	python scripts/eval.py pr-eval --score=tok $^ $@
+${CORPUSPREVALWORK}/europarl-eval.csv: ${EUROPARLWORK}/man-ann-europarl.synset.xml ${CORPUSPREVALWORK}/eurosense-pr/EC.xml  ${CORPUSPREVALWORK}/eurosense-pr/EP.xml
+	python scripts/eval.py pr-eval --score=tok $< ${CORPUSPREVALWORK}/eurosense-pr/ $@
 
 # Plot
 ${CORPUSPREVALPLOT}: ${CORPUSPREVALWORK}/stiff-eval.csv ${CORPUSPREVALWORK}/europarl-eval.csv
-	python scripts/eval.py pr-plot $^ $@
+	python scripts/eval.py pr-plot --out $@ $^

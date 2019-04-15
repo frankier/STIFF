@@ -151,7 +151,7 @@ class CmpTournament(TournamentBase):
                 for other_idx, other_ann in enumerate(group_anns[idx + 1 :], idx + 1):
                     if other_idx not in nondominated:
                         continue
-                    cmp_res = self.cmp(ann, other_ann)
+                    cmp_res = self.cmp(ann, other_ann, *extra)
                     if cmp_res == -1:
                         nondominated.remove(idx)
                         break
@@ -348,16 +348,16 @@ class AlphabeticDom(SpanKeyMixin, DomOnlyRankTournament):
         return ReverseOrder(ann.text)
 
 
-def mk_conditional_tournament(apply_tour, filter_tour, filter_vals):
-    class ConditionalTournament(RankTournament):
+def mk_conditional_tournament(ApplyTour, FilterTour, filter_vals):
+    class ConditionalTournament(ApplyTour):
         @staticmethod
         def prepare_sent(sent):
-            return apply_tour.prepare_sent(sent), filter_tour.prepare_sent(sent)
+            return ApplyTour.prepare_sent(sent), FilterTour.prepare_sent(sent)
 
         @staticmethod
         def key(ann):
-            apply_key = apply_tour.key(ann)
-            filter_key = filter_tour.key(ann)
+            apply_key = ApplyTour.key(ann)
+            filter_key = FilterTour.key(ann)
             assert apply_key == filter_key
             return apply_key
 
@@ -366,12 +366,16 @@ def mk_conditional_tournament(apply_tour, filter_tour, filter_vals):
             return [
                 ann
                 for ann in anns
-                if filter_tour.rank(ann, *filter_extra) in filter_vals
+                if FilterTour.rank(ann, *filter_extra) in filter_vals
             ]
 
         @staticmethod
         def rank(ann, apply_extra, filter_extra):
-            return apply_tour.rank(ann, *apply_extra)
+            return ApplyTour.rank(ann, *apply_extra)
+
+        @staticmethod
+        def cmp(ann1, ann2, apply_extra, filter_extra):
+            return ApplyTour.cmp(ann1, ann2, *apply_extra)
 
     return ConditionalTournament
 
@@ -401,6 +405,11 @@ class PreferNonWikiSourceDom(SpanKeyMixin, RankTournament):
         return 1 if (transfer_from - {"qwc"}) else 0
 
 
+SupportedOnlyNonWikiSrc = mk_conditional_tournament(
+    PreferNonWikiSourceDom, HasSupportTournament, filter_vals=(1,)
+)
+
+
 def greedy_max_span(positions):
     max_pos = 0
     for pos in positions:
@@ -424,3 +433,54 @@ def greedy_max_span(positions):
             anns.append(ann)
         cur_pos += cur_len
     return anns
+
+
+class HypTournament(SpanKeyMixin, CmpTournament):
+    @staticmethod
+    def cmp(ann1, ann2):
+        """
+        Returns  1 if ann1 dominates ann2
+              | -1 if ann2 dominates ann1
+              |  0 otherwise
+        """
+
+        def hypernym_of(hyper, hypo):
+            return len(hypo) > len(hyper) and hypo[: len(hyper)] == hyper
+
+        def ann2ss(ann):
+            from stiff.munge.utils import synset_id_of_ann
+            from nltk.corpus import wordnet
+            from finntk.wordnet.utils import pre_id_to_post
+
+            synset_id = pre_id_to_post(synset_id_of_ann(ann))
+            # TODO: proper handling of new FinnWordNet synsets
+            if synset_id[0] == "9":
+                return
+            return wordnet.of2ss(synset_id)
+
+        syn1 = ann2ss(ann1)
+        syn2 = ann2ss(ann2)
+        syn1_dom = False
+        syn2_dom = False
+
+        if syn1 is None or syn2 is None:
+            return 0
+
+        for hyp_path1 in syn1.hypernym_paths():
+            for hyp_path2 in syn2.hypernym_paths():
+                if hypernym_of(hyp_path1, hyp_path2):
+                    syn1_dom = True
+                elif hypernym_of(hyp_path2, hyp_path1):
+                    syn2_dom = True
+
+        if syn1_dom and not syn2_dom:
+            return 1
+        elif syn2_dom and not syn1_dom:
+            return -1
+        else:
+            return 0
+
+
+SupportedOnlyHypTournament = mk_conditional_tournament(
+    HypTournament, HasSupportTournament, filter_vals=(1,)
+)

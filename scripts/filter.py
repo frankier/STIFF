@@ -30,6 +30,9 @@ from stiff.filter import (
     PreferNonWikiSourceDom,
     SrcCharLenTournament,
     SrcCharSpanTournament,
+    SupportedOnlyNonWikiSrc,
+    HypTournament,
+    SupportedOnlyHypTournament,
 )
 from stiff.utils.anns import get_ann_pos, get_ann_pos_dict
 from urllib.parse import urlencode
@@ -402,7 +405,8 @@ def supported_freq_dom(inf, outf):
 @filter.command("tok-span-dom")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
-def tok_span_dom(inf, outf):
+@click.option("--sup-only/--all-anns")
+def tok_span_dom(inf, outf, sup_only=False):
     """
     Dominance filter:
 
@@ -415,9 +419,15 @@ def tok_span_dom(inf, outf):
         anns = sent.xpath("./annotations/annotation")
         token_positions = {}
         for ann in anns:
+            if sup_only and not HasSupportTournament.rank(ann):
+                continue
             tok, tok_len = get_ann_pos(ann)
             token_positions.setdefault(tok, []).append((tok_len, ann))
         new_anns = greedy_max_span(token_positions)
+        if sup_only:
+            for ann in anns:
+                if not HasSupportTournament.rank(ann):
+                    new_anns.append(ann)
         trim_anns(anns, new_anns)
 
     transform_sentences(inf, sent_span_dom, outf)
@@ -606,6 +616,27 @@ def non_wiki_src(inf, outf, proc):
 @click.option("--proc", type=click.Choice(["dom", "rm"]))
 def non_wiki_trg(inf, outf, proc):
     return PreferNonWikiTargetDom(*decode_dom_arg(proc)).proc_stream(inf, outf)
+
+
+@filter.command("supported-non-wiki-src")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+def supported_non_wiki_src(inf, outf):
+    return SupportedOnlyNonWikiSrc().proc_stream(inf, outf)
+
+
+@filter.command("hyp-dom")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+def hyp_dom(inf, outf):
+    return HypTournament().proc_stream(inf, outf)
+
+
+@filter.command("hyp-sup")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+def hyp_sup(inf, outf):
+    return SupportedOnlyHypTournament().proc_stream(inf, outf)
 
 
 if __name__ == "__main__":

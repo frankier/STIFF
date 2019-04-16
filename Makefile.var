@@ -1,0 +1,17 @@
+# Make recommended STIFF variant
+${VAR}: ${RAWSTIFF}
+	python scripts/variants.py proc \
+		${VARLONG} $< $@
+
+# Convert STIFF => unified
+${VARUNI}.target: ${VAR}
+	python scripts/pipeline.py stiff2unified \
+		$< ${VARUNI}.xml ${VARUNI}.key
+	touch $@ ${VARUNI}.xml ${VARUNI}.key
+
+${VARUNI}.xml ${VARUNI}.key: ${VARUNI}.target
+
+# Evaluation creation
+
+${VAREVAL}: ${VARUNI}.xml ${STIFFWORK}/man-ann-OpenSubtitles2018.uni.xml ${VARUNI}.key ${STIFFWORK}/man-ann-OpenSubtitles2018.uni.key
+	python scripts/pipeline.py unified-auto-man-to-evals $^ $@

@@ -15,8 +15,10 @@ CORPUSPREVALWORK=${WORK}/corpus-pr-eval
 # STIFF
 OPENSUBS=${STIFFWORK}/cmn-fin
 RAWSTIFF=${STIFFWORK}/stiff.raw.xml.zst
-BP6=${STIFFWORK}/bp6.zst
-BP6UNI=${STIFFWORK}/bp6.uni
+BP4=${STIFFWORK}/bp4.zst
+BP4UNI=${STIFFWORK}/bp4.uni
+BR4=${STIFFWORK}/br4.zst
+BR4UNI=${STIFFWORK}/br4.uni
 MANANN=finn-man-ann
 
 # Eurosense
@@ -26,16 +28,18 @@ BABELWNMAP=${EUROPARLWORK}/babelwnmap.clean.tsv
 EUROSENSEUNI=${EUROPARLWORK}/eurosense.unified
 
 # wsd-eval outputs
-STIFFEVAL=${STIFFWORK}/wsd-eval
+BP4EVAL=${STIFFWORK}/bp4-wsd-eval
+BR4EVAL=${STIFFWORK}/br4-wsd-eval
 EUROPARLEVAL=${EUROPARLWORK}/wsd-eval
 
 # corpus-pr-eval outputs
 CORPUSPREVALPLOT=${CORPUSPREVALWORK}/plot.pgf
 
 ## Top levels
-.PHONY: all wsd-eval corpus-eval
+.PHONY: all wsd-eval stiff-wsd-eval corpus-eval
 all: wsd-eval corpus-eval
-wsd-eval: ${STIFFEVAL} ${EUROPARLEVAL}
+wsd-eval: stiff-wsd-eval ${EUROPARLEVAL}
+stiff-wsd-eval: ${BP4EVAL} ${BR4EVAL}
 corpus-eval: ${CORPUSPREVALPLOT}
 
 ## Directory creation
@@ -65,19 +69,6 @@ ${OPENSUBS}:
 ${RAWSTIFF}: ${OPENSUBS}
 	python scripts/pipeline.py mk-stiff $< $@
 
-# Make recommended STIFF variant
-${BP6}: ${RAWSTIFF}
-	python scripts/variants.py proc \
-		bilingual-precision-6 $< $@
-
-# Convert STIFF => unified
-${BP6UNI}.target: ${BP6}
-	python scripts/pipeline.py stiff2unified \
-		$< ${BP6UNI}.xml ${BP6UNI}.key
-	touch $@ ${BP6UNI}.xml ${BP6UNI}.key
-
-${BP6UNI}.xml ${BP6UNI}.key: ${BP6UNI}.target
-
 ## Eurosense preparation
 
 # Fetch eurosense-hp.fixed
@@ -99,8 +90,11 @@ ${EUROSENSEUNI}.xml ${EUROSENSEUNI}.key: ${EUROSENSEUNI}.target
 ## Evaluation creation
 
 # STIFF
-${STIFFEVAL}: ${BP6UNI}.xml ${STIFFWORK}/man-ann-OpenSubtitles2018.uni.xml ${BP6UNI}.key ${STIFFWORK}/man-ann-OpenSubtitles2018.uni.key
-	python scripts/pipeline.py unified-auto-man-to-evals $^ $@
+${BP4EVAL}: ${RAWSTIFF}
+	${MAKE} VAR=${BP4} VARUNI=${BP4UNI} VARLONG="bilingual-precision-4" VAREVAL=$@ -f Makefile.var $@
+
+${BR4EVAL}: ${RAWSTIFF}
+	${MAKE} VAR=${BR4} VARUNI=${BR4UNI} VARLONG="bilingual-recall-4" VAREVAL=$@ -f Makefile.var $@
 
 # Eurosense
 ${EUROPARLEVAL}: ${EUROSENSEUNI}.xml ${EUROPARLWORK}/man-ann-europarl.uni.xml ${EUROSENSEUNI}.key ${EUROPARLWORK}/man-ann-europarl.uni.key

@@ -87,7 +87,7 @@ class TaggedLemma:
 
     @property
     def lemma_names_url(self) -> str:
-        d = {}
+        d = {}  # type: Dict[str, List[str]]
         for (wn, lemma_obj) in self.lemma_objs:
             d.setdefault(lemma_obj.name(), []).append(wn)
         return " ".join(

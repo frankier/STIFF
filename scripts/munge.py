@@ -63,6 +63,7 @@ def iter_sentences_opensubs18_man_ann(stream):
 def get_lemma(ann):
     best_lemma = None
     best_lemma_goodness = -2
+    assert ann.attrib["wnlemma"]
     for idx, lemma_bit in enumerate(ann.attrib["wnlemma"].split(" ")):
         lemma_dict = parse_qs_single(lemma_bit)
         lemma = lemma_dict["l"]

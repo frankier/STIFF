@@ -128,3 +128,10 @@ def test_hyvaa():
 def test_gordon():
     tagging = get_extractor("FinExtractor").extract("Gordon on jossain täällä .")
     assert tagging.tokens[0].anchors[0].char == 7
+
+
+def test_open_brace():
+    tagging = get_extractor("FinExtractor").extract("[ sillä on tapansa !")
+    for token in tagging.tokens:
+        for tag in token.tags:
+            assert tag.lemma != ""

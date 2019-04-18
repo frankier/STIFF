@@ -26,7 +26,7 @@ class Wordnet(ExtractableWordnet):
         return merge_lemmas(
             ("fin", wordnet.all_lemma_names(lang="fin")),
             ("qwf", wordnet.all_lemma_names(lang="qwf")),
-            ("qf2", fiwn_encnt.all_lemma_names()),
+            ("qf2", (l for l in fiwn_encnt.all_lemma_names() if l != "")),
         )
 
     @staticmethod

@@ -66,7 +66,7 @@ ${OPENSUBS}:
 	python scripts/fetch_opensubtitles2018.py $@
 
 # Make raw STIFF
-${RAWSTIFF}: ${OPENSUBS}
+${RAWSTIFF}: ${OPENSUBS} ${STIFFWORK}
 	python scripts/pipeline.py mk-stiff $< $@
 
 ## Eurosense preparation

@@ -157,11 +157,11 @@ def unified_auto_man_to_evals(inf, ingoldf, keyin, goldkeyin, dirout):
         ingoldf,
         ps["devtest"]["unikey"],
         goldkeyin,
-        ps["test"]["unified"],
-        ps["test"]["unikey"],
+        ps["dev"]["unified"],
+        ps["dev"]["unikey"],
     )
-    cp(ingoldf, ps["dev"]["unified"])
-    cp(goldkeyin, ps["dev"]["unikey"])
+    cp(ingoldf, ps["test"]["unified"])
+    cp(goldkeyin, ps["test"]["unikey"])
     for seg in ["train", "dev", "test"]:
         segoutdir = pjoin(dirout, seg)
         unified_to_single_eval.callback(

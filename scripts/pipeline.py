@@ -86,23 +86,19 @@ def eurosense2unified(inf, outf, keyout, head, babel2wn_map):
 @click.argument("outf", type=click.Path())
 @click.argument("keyout", type=click.Path())
 @click.option("--head", default=None)
-@click.option("--eurosense/--no-eurosense")
-@click.option("--man-ann/--stiff")
-def stiff2unified(inf, outf, keyout, head, eurosense, man_ann):
-    pipeline = add_head(filter_py, add_zstd(inf), head)
-    if not eurosense:
-        pipeline = (
-            pipeline | python[munge_py, "stiff-select-wn", "--wn", "qf2", "-", "-"]
-        )
-    pipeline = pipeline | python[munge_py, "lemma-to-synset", "-", "-"]
-    if eurosense:
-        pipeline = pipeline | python[munge_py, "eurosense-to-unified", "-", "-"]
-    else:
-        args = [munge_py, "stiff-to-unified", "-", "-"]
-        if man_ann:
-            args.insert(2, "--man-ann")
-        pipeline = pipeline | python[args]
-    pipeline = pipeline | python[munge_py, "unified-split", "-", outf, keyout]
+@click.option(
+    "--input-fmt",
+    type=click.Choice(["man-ann-stiff", "man-ann-europarl", "stiff"]),
+    default="stiff",
+)
+def stiff2unified(inf, outf, keyout, head, input_fmt):
+    pipeline = (
+        add_head(filter_py, add_zstd(inf), head)
+        | python[munge_py, "stiff-select-wn", "--wn", "qf2", "-", "-"]
+        | python[munge_py, "lemma-to-synset", "-", "-"]
+        | python[munge_py, "stiff-to-unified", "--input-fmt", input_fmt, "-", "-"]
+        | python[munge_py, "unified-split", "-", outf, keyout]
+    )
     pipeline(retcode=[-13, 0], stderr=sys.stderr)
 
 

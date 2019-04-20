@@ -11,6 +11,7 @@ RUN pip3 install https://download.pytorch.org/whl/cu100/torch-1.0.0-cp37-cp37m-l
 RUN ~/.poetry/bin/poetry config settings.virtualenvs.create false
 
 # Slow changing stuff
+RUN mkdir /stiff/
 WORKDIR /stiff
 COPY poetry.lock pyproject.toml /stiff/
 RUN ~/.poetry/bin/poetry install --no-interaction

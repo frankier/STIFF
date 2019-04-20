@@ -9,7 +9,7 @@ ${WORK}/man-ann-${SOURCE}.filtered.xml: ${WORK}/man-ann-${SOURCE}.xml
 
 # convert => unified
 ${WORK}/man-ann-${SOURCE}.uni.target: ${WORK}/man-ann-${SOURCE}.filtered.xml
-	python3 scripts/pipeline.py stiff2unified ${S2U_FLAG} \
+	python3 scripts/pipeline.py stiff2unified --input-fmt ${INPUT_FMT} \
 		$< ${WORK}/man-ann-${SOURCE}.uni.xml ${WORK}/man-ann-${SOURCE}.uni.key
 	touch $@ ${WORK}/man-ann-${SOURCE}.uni.xml ${WORK}/man-ann-${SOURCE}.uni.key
 

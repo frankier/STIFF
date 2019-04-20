@@ -54,10 +54,10 @@ ${MANANN}/ann.xml:
 
 # Calling into Makefile.manann
 ${STIFFWORK}/%: ${MANANN}/ann.xml | ${STIFFWORK}
-	${MAKE} WORK=${STIFFWORK} SOURCE="OpenSubtitles2018" S2U_FLAG="--man-ann" -f Makefile.manann $@
+	${MAKE} WORK=${STIFFWORK} SOURCE="OpenSubtitles2018" INPUT_FMT="man-ann-stiff" -f Makefile.manann $@
 
 ${EUROPARLWORK}/%: ${MANANN}/ann.xml | ${EUROPARLWORK}
-	${MAKE} WORK=${EUROPARLWORK} SOURCE="europarl" S2U_FLAG="--eurosense" -f Makefile.manann $@
+	${MAKE} WORK=${EUROPARLWORK} SOURCE="europarl" INPUT_FMT="man-ann-europarl" -f Makefile.manann $@
 
 ## STIFF preparation
 

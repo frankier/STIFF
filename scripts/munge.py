@@ -60,6 +60,11 @@ def iter_sentences_opensubs18_man_ann(stream):
         yield sent_id, sent
 
 
+def iter_sentences_eurosense(stream):
+    for sent_elem in iter_sentences(stream):
+        yield "eurosense.{:08d}".format(int(sent_elem.attrib["id"])), sent_elem
+
+
 def get_lemma(ann):
     best_lemma = None
     best_lemma_goodness = -2
@@ -84,19 +89,25 @@ def get_lemma(ann):
 @click.argument("stiff", type=click.File("rb"))
 @click.argument("unified", type=click.File("w"))
 @click.option("--man-ann/--stiff")
-def stiff_to_unified(stiff: IO, unified: IO, man_ann: bool = False):
+@click.option(
+    "--input-fmt",
+    type=click.Choice(["man-ann-stiff", "man-ann-europarl", "stiff"]),
+    default="stiff",
+)
+def stiff_to_unified(stiff: IO, unified: IO, input_fmt: str):
     """
     Do the XML conversion from the STIFF format (similar to the Eurosense
     format) to the Unified format. Note that this assumes is that previous
     filtering has produced an unambiguous tagging.
     """
-    unified.write('<?xml version="1.0" encoding="UTF-8" ?>\n')
-    unified.write('<corpus lang="fi" source="stiff">\n')
-    unified.write('<text id="stiff">\n')
-    if man_ann:
+    write_header(unified, "eurosense" if input_fmt == "man-ann-europarl" else "stiff")
+    if input_fmt == "man-ann-stiff":
         sent_iter = iter_sentences_opensubs18_man_ann(stiff)
-    else:
+    elif input_fmt == "stiff":
         sent_iter = opensubs18_ids_to_unified(iter_sentences_opensubs18(stiff))
+    else:
+        assert input_fmt == "man-ann-europarl"
+        sent_iter = iter_sentences_eurosense(stiff)
     for sent_id, sent_elem in sent_iter:
         unified.write('<sentence id="{}">\n'.format(sent_id))
         text_elem = sent_elem.xpath("text")[0]
@@ -252,6 +263,12 @@ def eurosense_add_anchor_positions(inf: IO, outf: IO):
     transform_sentences(inf, add_anchor_positions, outf)
 
 
+def write_header(unified, source):
+    unified.write('<?xml version="1.0" encoding="UTF-8" ?>\n')
+    unified.write('<corpus lang="fi" source="' + source + '">\n')
+    unified.write('<text id="' + source + '">\n')
+
+
 @munge.command("eurosense-to-unified")
 @click.argument("eurosense", type=click.File("rb", lazy=True))
 @click.argument("unified", type=click.File("w"))
@@ -262,13 +279,9 @@ def eurosense_to_unified(eurosense: IO, unified: IO):
     ids. For the full conversion pipeline see eurosense2unified in
     `pipeline.py`.
     """
-    unified.write('<?xml version="1.0" encoding="UTF-8" ?>\n')
-    unified.write('<corpus lang="fi" source="eurosense">\n')
-    unified.write('<text id="eurosense">\n')
-    for sent_elem in iter_sentences(eurosense):
-        unified.write(
-            '<sentence id="eurosense.{:08d}">\n'.format(int(sent_elem.attrib["id"]))
-        )
+    write_header(unified, "eurosense")
+    for sent_id, sent_elem in iter_sentences_eurosense(eurosense):
+        unified.write('<sentence id="{}">\n'.format(sent_id))
         trie = pygtrie.StringTrie(separator=" ")
         anns = sent_elem.xpath(".//annotation")
         for ann in anns:

@@ -88,7 +88,6 @@ def get_lemma(ann):
 @munge.command("stiff-to-unified")
 @click.argument("stiff", type=click.File("rb"))
 @click.argument("unified", type=click.File("w"))
-@click.option("--man-ann/--stiff")
 @click.option(
     "--input-fmt",
     type=click.Choice(["man-ann-stiff", "man-ann-europarl", "stiff"]),

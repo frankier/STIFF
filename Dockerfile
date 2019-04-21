@@ -14,6 +14,7 @@ RUN ~/.poetry/bin/poetry config settings.virtualenvs.create false
 RUN mkdir /stiff/
 WORKDIR /stiff
 COPY poetry.lock pyproject.toml /stiff/
+RUN mkdir /stiff/stiff && touch /stiff/stiff/__init__.py
 RUN ~/.poetry/bin/poetry install --no-interaction
 RUN python3 -c "from nltk import download as d; d('wordnet'); d('omw'); d('punkt')"
 

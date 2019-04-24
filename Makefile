@@ -90,10 +90,10 @@ ${EUROSENSEUNI}.xml ${EUROSENSEUNI}.key: ${EUROSENSEUNI}.target
 ## Evaluation creation
 
 # STIFF
-${BP4EVAL}: ${RAWSTIFF}
+${BP4EVAL}: ${RAWSTIFF} ${STIFFWORK}/man-ann-OpenSubtitles2018.uni.xml ${STIFFWORK}/man-ann-OpenSubtitles2018.uni.key
 	${MAKE} VAR=${BP4} VARUNI=${BP4UNI} VARLONG="bilingual-precision-4" VAREVAL=$@ -f Makefile.var $@
 
-${BR4EVAL}: ${RAWSTIFF}
+${BR4EVAL}: ${RAWSTIFF} ${STIFFWORK}/man-ann-OpenSubtitles2018.uni.xml ${STIFFWORK}/man-ann-OpenSubtitles2018.uni.key
 	${MAKE} VAR=${BR4} VARUNI=${BR4UNI} VARLONG="bilingual-recall-4" VAREVAL=$@ -f Makefile.var $@
 
 # Eurosense

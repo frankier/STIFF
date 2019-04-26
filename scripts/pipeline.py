@@ -95,6 +95,7 @@ def stiff2unified(inf, outf, keyout, head, input_fmt):
     pipeline = (
         add_head(filter_py, add_zstd(inf), head)
         | python[munge_py, "stiff-select-wn", "--wn", "qf2", "-", "-"]
+        | python[filter_py, "tok-span-dom", "-", "-"]
         | python[munge_py, "lemma-to-synset", "-", "-"]
         | python[munge_py, "stiff-to-unified", "--input-fmt", input_fmt, "-", "-"]
         | python[munge_py, "unified-split", "-", outf, keyout]

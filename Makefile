@@ -66,7 +66,7 @@ ${OPENSUBS}:
 	python scripts/fetch_opensubtitles2018.py $@
 
 # Make raw STIFF
-${RAWSTIFF}: ${OPENSUBS} ${STIFFWORK}
+${RAWSTIFF}: ${OPENSUBS} | ${STIFFWORK}
 	python scripts/pipeline.py mk-stiff $< $@
 
 ## Eurosense preparation
@@ -103,7 +103,7 @@ ${EUROPARLEVAL}: ${EUROSENSEUNI}.xml ${EUROPARLWORK}/man-ann-europarl.uni.xml ${
 ## Make STIFF and EuroSense P/R plot
 
 # STIFF data
-${CORPUSPREVALWORK}/stiff-eval-out: ${RAWSTIFF}
+${CORPUSPREVALWORK}/stiff-eval-out: ${RAWSTIFF} | ${CORPUSPREVALWORK}
 	python scripts/variants.py eval $< $@
 
 ${CORPUSPREVALWORK}/stiff-eval.csv: ${STIFFWORK}/man-ann-OpenSubtitles2018.xml ${CORPUSPREVALWORK}/stiff-eval-out
@@ -113,12 +113,12 @@ ${CORPUSPREVALWORK}/stiff-eval.csv: ${STIFFWORK}/man-ann-OpenSubtitles2018.xml $
 ${EUROPARLWORK}/man-ann-europarl.synset.xml: ${EUROPARLWORK}/man-ann-europarl.xml 
 	python scripts/munge.py lemma-to-synset $< $@
 
-${CORPUSPREVALWORK}/eurosense-pr/EC.xml: ${EUROSENSEHC} ${CORPUSPREVALWORK}/eurosense-pr ${BABELWNMAP}
+${CORPUSPREVALWORK}/eurosense-pr/EC.xml: ${EUROSENSEHC} ${BABELWNMAP} | ${CORPUSPREVALWORK}/eurosense-pr
 	python scripts/pipeline.py eurosense2stifflike \
 		--head 1000 \
 		--babel2wn-map=${BABELWNMAP} $< $@
 
-${CORPUSPREVALWORK}/eurosense-pr/EP.xml: ${EUROSENSEHP} ${CORPUSPREVALWORK}/eurosense-pr ${BABELWNMAP}
+${CORPUSPREVALWORK}/eurosense-pr/EP.xml: ${EUROSENSEHP} ${BABELWNMAP} | ${CORPUSPREVALWORK}/eurosense-pr
 	python scripts/pipeline.py eurosense2stifflike \
 		--head 1000 \
 		--babel2wn-map=${BABELWNMAP} $< $@

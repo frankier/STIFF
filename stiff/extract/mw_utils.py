@@ -12,7 +12,7 @@ def chr_to_maybe_space(chr: str, lfs: Iterable[str]) -> Set[str]:
 def chrs_to_maybe_space(chrs: Iterable[str], lf: str) -> Set[str]:
     res = {lf}
     for chr in chrs:
-        res = chr_to_maybe_space(chr, res)
+        res |= chr_to_maybe_space(chr, res)
     return res
 
 

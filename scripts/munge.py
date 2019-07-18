@@ -742,5 +742,36 @@ def stiff_select_wn(inf: IO, outf: IO, wn):
     transform_blocks(eq_matcher("annotation"), inf, select_wn, outf)
 
 
+@munge.command("senseval-select-lemma")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("keyin", type=click.File("r"))
+@click.argument("outf", type=click.File("wb"))
+@click.argument("keyout", type=click.File("w"))
+@click.argument("lemma_pos")
+def senseval_select_lemma(inf, keyin, outf, keyout, lemma_pos):
+    if "." in lemma_pos:
+        lemma, pos = lemma_pos.rsplit(".", 1)
+    else:
+        lemma = lemma_pos
+        pos = None
+
+    keys = set()
+
+    def filter_lexelt(lexelt):
+        if lexelt.attrib["item"] != lemma:
+            return BYPASS
+        if pos and lexelt.attrib["pos"] != pos:
+            return BYPASS
+        for instance in lexelt:
+            keys.add(instance.attrib["id"])
+
+    transform_blocks(eq_matcher("lexelt"), inf, filter_lexelt, outf)
+
+    for line in keyin:
+        if line.split(" ", 1)[0] not in keys:
+            continue
+        keyout.write(line)
+
+
 if __name__ == "__main__":
     munge()

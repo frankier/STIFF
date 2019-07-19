@@ -186,7 +186,6 @@ INCH_PTS = 72
 @click.option("--out")
 def pr_plot(opensubs18_csv, eurosense_csv=None, out=None):
     import matplotlib.pyplot as plt
-    from adjustText import adjust_text
     import pareto
     from brokenaxes import brokenaxes
     import matplotlib as mpl
@@ -247,7 +246,6 @@ def pr_plot(opensubs18_csv, eurosense_csv=None, out=None):
                 row["precision"], row["recall"], row["name"], ha="center", va="center"
             )
         )
-    adjust_text(texts)
     bax.set_xlabel("Precision")
     bax.set_ylabel("Recall")
     if out is not None:

@@ -2,9 +2,12 @@ import os
 import sys
 import click
 from stiff.methods import (
+    CAT_DOCS,
     INV_METHOD_CODES,
     METHOD_CODES,
     METHODS,
+    STAGE_CATS,
+    STAGE_DOCS,
     TREE,
     get_dot,
     get_forest,
@@ -85,6 +88,96 @@ def draw_tree(dot):
         print(get_dot(TREE))
     else:
         print(get_forest(TREE))
+
+
+def get_used_stages():
+    return {stage for method in METHODS.values() for stage in method}
+
+
+def get_cat_stages(stage_cats):
+    for stage_names in stage_cats.values():
+        if isinstance(stage_names, dict):
+            yield from get_cat_stages(stage_names)
+        else:
+            yield from stage_names
+
+
+def get_doc_stages():
+    categorised_stages = set(get_cat_stages(STAGE_CATS))
+    documented_stages = set(STAGE_DOCS.keys())
+    categorised_undocumented_stages = categorised_stages - documented_stages
+    if len(categorised_undocumented_stages):
+        print(
+            "Found the following stages which were categorised but not documented: {}".format(
+                ", ".join(categorised_undocumented_stages)
+            )
+        )
+        return
+    documented_uncategorised_stages = documented_stages - categorised_stages
+    if len(documented_uncategorised_stages):
+        print(
+            "Found the following stages which were documented but not categorised: {}".format(
+                ", ".join(documented_uncategorised_stages)
+            )
+        )
+        return
+    return documented_stages
+
+
+@variants.command("stages-check")
+def stages_check():
+    """
+    Check the integrity of the stages, such as listing undocumented stages or
+    documented stages which are not used.
+    """
+    doc_stages = get_doc_stages()
+    if doc_stages is None:
+        return
+    replacements = []
+    for stage in doc_stages:
+        if "/" not in stage:
+            continue
+        replacements.append(stage)
+    doc_stages -= set(replacements)
+    new_stages = []
+    for replacement in replacements:
+        new_bit, old_bit = replacement.split("/")
+        for stage in doc_stages:
+            new_stages.append(stage.replace(old_bit, new_bit))
+    doc_stages |= set(new_stages)
+
+    used_stages = get_used_stages()
+    used_undocumented_stages = used_stages - doc_stages
+    if len(used_undocumented_stages):
+        print(
+            "Found the following stages which were used but undocumented: {}".format(
+                ", ".join(used_undocumented_stages)
+            )
+        )
+        return
+
+
+def print_stage_tree(stages):
+    for cat_code, stage_codes in stages.items():
+        print("  \\item {}".format(CAT_DOCS[cat_code]).strip())
+        print("  \\begin{itemize}")
+        if isinstance(stage_codes, dict):
+            print_stage_tree(stage_codes)
+        else:
+            for stage_code in stage_codes:
+                print(
+                    "    \\item \\textbf{{{}}} {}".format(
+                        stage_code, STAGE_DOCS[stage_code].strip()
+                    )
+                )
+        print("  \\end{itemize}")
+
+
+@variants.command("mk-tournament-stages")
+def mk_tournament_stages():
+    print("\\begin{itemize}")
+    print_stage_tree(STAGE_CATS)
+    print("\\end{itemize}")
 
 
 @variants.command("mk-correspondance-table")

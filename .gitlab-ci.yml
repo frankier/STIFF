@@ -34,7 +34,7 @@ test:pytest:
   stage: test
   image: $CI_REGISTRY_IMAGE
   script:
-    - pytest tests/*.py
+    - pytest
 
 test:flake8:
   stage: test

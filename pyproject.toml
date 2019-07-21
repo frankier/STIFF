@@ -6,7 +6,7 @@ authors = ["Frankie Robertson <frankie@robertson.name>"]
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.6"
 adjusttext = "=0.7.3"
 pareto = "^1.1"
 cython = "^0.29.2"
@@ -19,7 +19,7 @@ pyahocorasick = { git = "https://github.com/frankier/pyahocorasick.git", branch 
 pygtrie = "^2.2"
 opencc = "^0.2"
 opus-api = "^0.6.2"
-finntk = ">=0.0.36"
+finntk = ">=0.0.52"
 streamz = "^0.3.0"
 lxml = "^4.2.3"
 conllu = "^1.1"
@@ -31,6 +31,8 @@ flake8 = "^3.5.0"
 pre-commit = "^1.10.2"
 pytest = "^4.1.1"
 mypy = "0.650"
+tox = "^3.13"
+black = {version = "^19.3b0",allows-prereleases = true}
 
 [build-system]
 requires = ["poetry>=0.12"]

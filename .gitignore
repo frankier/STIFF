@@ -4,3 +4,5 @@ wn-data-cmn-fixed.tab
 /explore/confmat.pdf
 /data/
 /.pytest_cache/
+/.mypy_cache/
+/.tox/

@@ -1,1 +1,1 @@
-pipenv run black stiff scripts
+poetry run black stiff scripts

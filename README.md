@@ -13,7 +13,7 @@ notably code to convert (the CC-NC licensed)
 ## Set up
 
 You will need HFST and OMorFi installed globally before beginning. The reason
-for this is neither are currently PyPI installable. You will also need pipenv.
+for this is neither are currently PyPI installable. You will also need poetry.
 You can then run
 
     $ ./install.sh
@@ -74,15 +74,15 @@ consisting of the files needed by
 
 #### Fetch OpenSubtitles2018
 
-    pipenv run python scripts/fetch_opensubtitles2018.py cmn-fin
+    poetry run python scripts/fetch_opensubtitles2018.py cmn-fin
 
 #### Make raw STIFF
 
-    pipenv run python scripts/pipeline.py mk-stiff cmn-fin stiff.raw.xml.zst
+    poetry run python scripts/pipeline.py mk-stiff cmn-fin stiff.raw.xml.zst
 
 #### Make recommended STIFF variant + convert ➡️ Unified
 
-    pipenv run python scripts/variants.py proc bilingual-precision-4 stiff.raw.xml.zst stiff.bp4.xml.zst
+    poetry run python scripts/variants.py proc bilingual-precision-4 stiff.raw.xml.zst stiff.bp4.xml.zst
     ./stiff2unified.sh stiff.bp4.xml.zst stiff.unified.bp4.xml stiff.unified.bp4.key
 
 ### EuroSense Pipeline
@@ -108,7 +108,7 @@ mapping from BabelNet synsets to WordNet synsets. You can either:
 
 Then run:
 
-    pipenv run python scripts/pipeline.py eurosense2unified \
+    poetry run python scripts/pipeline.py eurosense2unified \
       /path/to/eurosense.v1.0.high-precision.xml eurosense.unified.sample.xml \
       eurosense.unified.sample.key
 
@@ -118,10 +118,10 @@ First obtain [finn-man-ann](https://github.com/frankier/finn-man-ann).
 
 Then run:
 
-    pipenv run python scripts/munge.py man-ann-select --source=europarl \
+    poetry run python scripts/munge.py man-ann-select --source=europarl \
       ../finn-man-ann/ann.xml - \
-      | pipenv run python scripts/munge.py lemma-to-synset - man-ann-europarl.xml
-    pipenv run python scripts/munge.py man-ann-select --source=OpenSubtitles2018 \
+      | poetry run python scripts/munge.py lemma-to-synset - man-ann-europarl.xml
+    poetry run python scripts/munge.py man-ann-select --source=OpenSubtitles2018 \
       ../finn-man-ann/ann.xml man-ann-opensubs18.xml
 
 ### Make STIFF or EuroSense into data for finn-wsd-eval
@@ -131,7 +131,7 @@ This makes a directory usable by
 
 #### Old
 
-    pipenv run python scripts/pipeline.py unified-to-eval \
+    poetry run python scripts/pipeline.py unified-to-eval \
       /path/to/stiff-or-eurosense.unified.xml /path/to/stiff-or-eurosense.unified.key \
       stiff-or-eurosense.eval/
 
@@ -139,13 +139,13 @@ This makes a directory usable by
 
 TODO: STIFF
 
-    pipenv run python scripts/filter.py tok-span-dom man-ann-europarl.xml \
+    poetry run python scripts/filter.py tok-span-dom man-ann-europarl.xml \
       man-ann-europarl.filtered.xml
-    pipenv run python scripts/pipeline.py stiff2unified --eurosense \
+    poetry run python scripts/pipeline.py stiff2unified --eurosense \
       man-ann-europarl.filtered.xml man-ann-europarl.uni.xml man-ann-europarl.uni.key
-    pipenv run python scripts/pipeline.py stiff2unified man-ann-opensubs18.xml \
+    poetry run python scripts/pipeline.py stiff2unified man-ann-opensubs18.xml \
       man-ann-opensubs18.uni.xml man-ann-opensubs18.key.xml
-    pipenv run python scripts/pipeline.py unified-auto-man-to-evals \
+    poetry run python scripts/pipeline.py unified-auto-man-to-evals \
       eurosense.unified.sample.xml man-ann-europarl.uni.xml \
       eurosense.unified.sample.key man-ann-europarl.uni.key eurosense.eval
 
@@ -155,22 +155,22 @@ First process finn-man-ann.
 
 #### Gather STIFF eval data
 
-    pipenv run python scripts/variants.py eval /path/to/stiff.raw.zst stiff-eval-out
-    pipenv run python scripts/eval.py pr-eval --score=tok <(pipenv run python scripts/munge.py man-ann-select --source=OpenSubtitles2018 /path/to/finn-man-ann/ann.xml -) stiff-eval-out stiff-eval.csv
+    poetry run python scripts/variants.py eval /path/to/stiff.raw.zst stiff-eval-out
+    poetry run python scripts/eval.py pr-eval --score=tok <(poetry run python scripts/munge.py man-ann-select --source=OpenSubtitles2018 /path/to/finn-man-ann/ann.xml -) stiff-eval-out stiff-eval.csv
 
 #### Gather EuroSense eval data
 
-    pipenv run python scripts/munge.py man-ann-select --source=europarl /path/to/finn-man-ann/ann.xml - | pipenv run python scripts/munge.py lemma-to-synset - man-ann-europarl.xml
+    poetry run python scripts/munge.py man-ann-select --source=europarl /path/to/finn-man-ann/ann.xml - | poetry run python scripts/munge.py lemma-to-synset - man-ann-europarl.xml
     mkdir eurosense-pr
     mv /path/to/eurosense/high-precision.xml eurosense-pr/EP.xml
     mv /path/to/eurosense/high-coverage.xml eurosense-pr/EC.xml
-    pipenv run python scripts/eval.py pr-eval --score=tok man-ann-europarl.xml eurosense-pr europarl.csv
+    poetry run python scripts/eval.py pr-eval --score=tok man-ann-europarl.xml eurosense-pr europarl.csv
 
 #### Plot on common axis
 
 Warning, plot may be misleading...
 
-    pipenv run python scripts/eval.py pr-plot stiff-eval.csv europarl.csv
+    poetry run python scripts/eval.py pr-plot stiff-eval.csv europarl.csv
 
 ## Organisation & usage
 

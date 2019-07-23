@@ -1,1 +1,1 @@
-pipenv run flake8 stiff scripts tests
+poetry run flake8 stiff scripts tests

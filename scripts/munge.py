@@ -26,6 +26,7 @@ from contextlib import contextmanager
 from typing import Dict, Set, IO
 from collections import Counter
 from urllib.parse import urlencode
+import pickle
 
 
 @click.group("munge")
@@ -771,6 +772,47 @@ def senseval_select_lemma(inf, keyin, outf, keyout, lemma_pos):
         if line.split(" ", 1)[0] not in keys:
             continue
         keyout.write(line)
+
+
+@munge.command("senseval-rm-lemma")
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+@click.argument("rm_key_out", type=click.File("wb"), required=False)
+@click.option("--lemmas")
+def senseval_rm_lemma(inf, outf, rm_key_out=None, lemmas=None):
+    lemmas = ",".split(lemmas) if lemmas else []
+
+    rm_keys = set()
+
+    def filter_lexelt(lexelt):
+        if lexelt.attrib["item"] in lemmas:
+            if rm_key_out:
+                for instance in lexelt:
+                    rm_keys.add(instance.attrib["id"])
+            return BYPASS
+
+    transform_blocks(eq_matcher("lexelt"), inf, filter_lexelt, outf)
+
+    if rm_key_out:
+        pickle.dump(rm_key_out, rm_keys)
+
+
+@munge.command("key-rm-lemma")
+@click.argument("inf", type=click.File("r"))
+@click.argument("outf", type=click.File("w"))
+@click.argument("rm_key_in", type=click.File("r"))
+@click.option("--three/--two")
+def key_rm_lemma(inf, outf, rm_key_in, three):
+    rm_keys = pickle.load(rm_key_in)
+    for line in inf:
+        if (
+            three
+            and line.split(" ", 2)[1] in rm_keys
+            or not three
+            and line.split(" ", 1)[0]
+        ):
+            continue
+        outf.write(line)
 
 
 if __name__ == "__main__":

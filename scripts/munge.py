@@ -780,12 +780,12 @@ def senseval_select_lemma(inf, keyin, outf, keyout, lemma_pos):
 @click.argument("rm_key_out", type=click.File("wb"), required=False)
 @click.option("--lemmas")
 def senseval_rm_lemma(inf, outf, rm_key_out=None, lemmas=None):
-    lemmas = ",".split(lemmas) if lemmas else []
+    lemmas = lemmas.split(",") if lemmas else []
 
     rm_keys = set()
 
     def filter_lexelt(lexelt):
-        if lexelt.attrib["item"] in lemmas:
+        if str(lexelt.attrib["item"]) in lemmas:
             if rm_key_out:
                 for instance in lexelt:
                     rm_keys.add(instance.attrib["id"])
@@ -794,7 +794,7 @@ def senseval_rm_lemma(inf, outf, rm_key_out=None, lemmas=None):
     transform_blocks(eq_matcher("lexelt"), inf, filter_lexelt, outf)
 
     if rm_key_out:
-        pickle.dump(rm_key_out, rm_keys)
+        pickle.dump(rm_keys, rm_key_out)
 
 
 @munge.command("key-rm-lemma")

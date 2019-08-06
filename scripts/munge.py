@@ -805,11 +805,8 @@ def senseval_rm_lemma(inf, outf, rm_key_out=None, lemmas=None):
 def key_rm_lemma(inf, outf, rm_key_in, three):
     rm_keys = pickle.load(rm_key_in)
     for line in inf:
-        if (
-            three
-            and line.split(" ", 2)[1] in rm_keys
-            or not three
-            and line.split(" ", 1)[0]
+        if (three and line.split(" ", 2)[1] in rm_keys) or (
+            not three and line.split(" ", 1)[0] in rm_keys
         ):
             continue
         outf.write(line)

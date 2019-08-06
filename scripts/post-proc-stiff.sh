@@ -1,4 +1,6 @@
-cp -r $1 $2
+mkdir -p $2
+cp $1/corpus.xml $2/corpus.xml
+cp $1/corpus.key $2/corpus.key
 poetry run scripts/munge.py senseval-rm-lemma --lemmas olla,ei $1/corpus.sup.xml $2/corpus.sup.xml $2/keys.pkl
 poetry run scripts/munge.py senseval-rm-lemma --lemmas olla,ei $1/corpus.sup.seg.xml $2/corpus.sup.seg.xml
 poetry run scripts/munge.py senseval-rm-lemma --lemmas olla,ei $1/corpus.sup.tag.xml $2/corpus.sup.tag.xml

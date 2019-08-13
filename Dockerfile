@@ -3,7 +3,7 @@ FROM registry.gitlab.com/frankier/finntk/requirements-deb:latest
 RUN apt-get update && apt-get install -y \
 	libssl-dev libfreetype6-dev libpng-dev libopenblas-dev \
 	musl-dev libopenblas-base libxml2-dev libxmlsec1-dev zstd \
-	opencc libopencc-dev curl
+	opencc libopencc-dev curl texlive texlive-xetex
 
 RUN ln -sf /usr/bin/python3 /usr/local/bin/python
 RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python3

@@ -175,9 +175,9 @@ def print_stage_tree(stages):
 
 @variants.command("mk-tournament-stages")
 def mk_tournament_stages():
-    print("\\begin{itemize}")
+    print("\\begin{enumerate}")
     print_stage_tree(STAGE_CATS)
-    print("\\end{itemize}")
+    print("\\end{enumerate}")
 
 
 @variants.command("mk-correspondance-table")

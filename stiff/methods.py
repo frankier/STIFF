@@ -64,7 +64,7 @@ STAGE_DOCS = {
         """,
     "freq-dom": "Keep only most frequent annotation.",
     "wiki-trg-dom": "Prefer annotations with support from WordNets other than qwf over those with only support from qwf.",
-    "hyp-dom": "Where there is a synset and a hypernym ancestor, prefer the hypernym.",
+    "hyp-dom": "Where there is a synset and its hypernym ancestor, prefer the hypernym.",
     "sup-dom": "Prefer tokens with some support to those with none.",
     "deriv-dom": "Prefer non-derived token to derived tokens.",
     "align-dom": "Prefer aligned tokens to non-aligned tokens.",
@@ -95,14 +95,14 @@ STAGE_DOCS = {
         proper nouns.
         """,
     "rm-pos-agg": """
-        As above, but additionally removed adpositions. The reason for not
+        As above, but additionally remove adpositions. The reason for not
         always removing these is some adpositions are included in FiWN, tagged
         as adverbs.
         """,
-    "rm-pos-soft": "As above, except only removes pronouns.",
+    "rm-pos-soft": "As above, except only remove pronouns.",
     "-rm/-dom": """
         Many ranking tournaments can be reinterpreted as removing any
-        possible tournament loser, without requiring a winner exists, These are
+        possible tournament loser, without requiring a winner exists. These are
         denoted \\textbf{-rm} instead of \\textbf{-dom}, e.g. \\textbf{recurs-rm}
         instead of \\textbf{recurs-dom}.
         """,
@@ -124,20 +124,20 @@ STAGE_CATS = {
 CAT_DOCS = {
     "tour": """
         Ranking tournaments, in which all annotations for each span are
-        considered, they are compared to determine whether some subset is
-        preferable to some other subset in some way. In this case the members of
-        the former subset is said to dominate the members of the latter, and only
-        the dominant annotations are kept.
+        considered. Annotations are compared, most often pair-wise, to determine
+        whether some subset is preferable to some other subset. When this is
+        the case the members of the former subset is said to dominate the
+        members of the latter, and only the dominant annotations are kept.
     """,
-    "gram": "Based on grammatical information of the target.",
-    "lexgraph": "Based on the lexical or graphical information of the target.",
-    "transproc": "Based on the transfer process.",
-    "lexgraphsrc": "Based on the lexical or graphical information of the source.",
+    "gram": "Based on grammatical information of the target:",
+    "lexgraph": "Based on the lexical or graphical information of the target:",
+    "transproc": "Based on the transfer process:",
+    "lexgraphsrc": "Based on the lexical or graphical information of the source:",
     "filterrank": """
         Filtered ranking tournaments, where only a subset of annotations
         participate in the tournament, and others are left as they are.
     """,
-    "span": "\\textbf{\\_-span:} Remove annotations outspanned by other annotations.",
+    "span": "\\textbf{\\_\\_\\_-span:} Remove annotations outspanned by other annotations.",
     "rm": "Removal of annotations which are heuristically likely to be incorrect.",
 }
 

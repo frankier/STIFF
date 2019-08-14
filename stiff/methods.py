@@ -16,7 +16,6 @@ METHOD_CODES = {
     "bilingual-precision-5": "BP5",
     "simple-precision": "SP",
     "simple-recall": "SR",
-    "max-precision": "MXP",
     "bilingual-recall-1": "BR1",
     "bilingual-recall-2": "BR2",
     "bilingual-recall-3": "BR3",
@@ -214,7 +213,6 @@ METHODS = {
     ],
     "simple-precision": ["sup-rm", "rm-ambg"],
     "simple-recall": ["sup-rm", "freq-dom", "rm-ambg"],
-    "max-precision": ["sup-rm", "align-rm", "rm-pos-agg", "lemma-rm", "rm-ambg"],
     "bilingual-recall-1": [
         "sup-dom",
         "align-dom",
@@ -258,7 +256,6 @@ TREE = [
     ["MR", ["BR1", ["BR2", ["BR3", ["BR4"]]]]],
     ["SP"],
     ["SR"],
-    ["MXP"],
 ]
 
 

@@ -160,7 +160,7 @@ def stages_check():
 def print_stage_tree(stages):
     for cat_code, stage_codes in stages.items():
         print("  \\item {}".format(CAT_DOCS[cat_code]).strip())
-        print("  \\begin{itemize}[topsep=0pt]")
+        print("  \\begin{itemize}[itemsep=3mm,parsep=0pt]")
         if isinstance(stage_codes, dict):
             print_stage_tree(stage_codes)
         else:
@@ -175,7 +175,7 @@ def print_stage_tree(stages):
 
 @variants.command("mk-tournament-stages")
 def mk_tournament_stages():
-    print("\\begin{enumerate}")
+    print("\\begin{enumerate}[itemsep=3mm,parsep=0pt]")
     print_stage_tree(STAGE_CATS)
     print("\\end{enumerate}")
 

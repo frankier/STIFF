@@ -231,8 +231,8 @@ def pr_plot(opensubs18_csv, eurosense_csv=None, out=None):
     fig.set_size_inches(645.0 / INCH_PTS, 441.0 / INCH_PTS)
 
     bax = brokenaxes(
-        xlims=((0, 0.01), (0.29, 1)),
-        ylims=((0, 0.51), (0.99, 1)),
+        xlims=((0, 0.01), (0.24, 0.51), (0.69, 0.81), (0.99, 1)),
+        ylims=((0, 0.21), (0.39, 0.43), (0.99, 1)),
         hspace=0.05,
         wspace=0.05,
     )
@@ -244,8 +244,14 @@ def pr_plot(opensubs18_csv, eurosense_csv=None, out=None):
         )
     texts = []
     for idx, row in df.iterrows():
+        if row["precision"] > 0.6:
+            axnum = 10
+        elif row["recall"] > 0.3:
+            axnum = 5
+        else:
+            axnum = 9
         texts.append(
-            bax.axs[3].text(
+            bax.axs[axnum].text(
                 row["precision"], row["recall"], row["name"], ha="center", va="center"
             )
         )

@@ -1,3 +1,4 @@
+import numpy
 from lxml import etree
 import click
 from stiff.utils.anns import get_ann_pos, get_ann_pos_dict
@@ -248,8 +249,18 @@ def pr_plot(opensubs18_csv, eurosense_csv=None, out=None):
                 row["precision"], row["recall"], row["name"], ha="center", va="center"
             )
         )
-    bax.set_xlabel("Precision")
-    bax.set_ylabel("Recall")
+    x = numpy.linspace(0, 0.6, 100)
+    for eurosense in ("EC", "EP"):
+        row = df[df.name == eurosense]
+        p = row.precision.item()
+        r = row.recall.item()
+        assert p > r
+        bax.plot(x, x * r / p)
+    from adjustText import adjust_text
+
+    adjust_text(texts)
+    bax.set_xlabel("Precision", labelpad=0)
+    bax.set_ylabel("Recall", labelpad=40)
     if out is not None:
         plt.savefig(out, bbox_inches="tight")
     else:

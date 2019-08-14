@@ -222,6 +222,8 @@ def pr_plot(opensubs18_csv, eurosense_csv=None, out=None):
     else:
         df = opensubs18_df
 
+    df = df.drop(df[df.name == "N"].index)
+
     print(df)
 
     fig = plt.gcf()

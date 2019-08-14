@@ -54,7 +54,7 @@ STAGE_CODES = {
 
 STAGE_DOCS = {
     "pos-dom": """
-        Prefer tokens which have the correct part of speech according to FinnPOS.
+        Prefer tokens which have the correct \\gls{pos} according to FinnPOS.
         """,
     "lemma-dom": """
         Prefer tokens which have the correct lemma according to FinnPOS.
@@ -88,15 +88,15 @@ STAGE_DOCS = {
     "char-span-dom": "Prefer annotations which outspan others on the character level.",
     "tok-span-dom": "Prefer annotations which outspan others on the token level.",
     "rm-pos-norm": """
-        Remove annotations covering tokens with certain parts of speech
-        according to FinnPOS. The justification is that these parts of speech
-        are not included in FiWN. Removes pronouns, numerals, interjections,
+        Remove annotations covering tokens with certain \\glspl{pos}
+        according to FinnPOS. The justification is that these \\glspl{pos}
+        are not included in \\gls{fiwn}. Removes pronouns, numerals, interjections,
         conjunctions, particles, punctuation and nouns which are tagged as
         proper nouns.
         """,
     "rm-pos-agg": """
         As above, but additionally remove adpositions. The reason for not
-        always removing these is some adpositions are included in FiWN, tagged
+        always removing these is some adpositions are included in \\gls{fiwn}, tagged
         as adverbs.
         """,
     "rm-pos-soft": "As above, except only remove pronouns.",

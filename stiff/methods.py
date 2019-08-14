@@ -382,9 +382,7 @@ def get_disp_diff(parent, child):
     keys_set = set(diffed.keys())
     if keys_set == {insert}:
         inserts = diffed[insert]
-        if len(inserts) != 1:
-            return
-        return "+{}".format(inserts[0][1])
+        return ", ".join(("+{}".format(insert[1]) for insert in inserts))
     elif keys_set == {insert, delete}:
         inserts = diffed[insert]
         deletes = diffed[delete]

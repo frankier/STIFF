@@ -261,7 +261,7 @@ def pr_plot(opensubs18_csv, eurosense_csv=None, out=None):
         p = row.precision.item()
         r = row.recall.item()
         assert p > r
-        bax.plot(x, x * r / p)
+        bax.plot(x, x * r / p, zorder=-1, color="#ffdddd")
     from adjustText import adjust_text
 
     adjust_text(texts)

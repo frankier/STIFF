@@ -49,6 +49,7 @@ def opensubs18_ids_to_unified(iter_stiff):
             ),
             sent_elem,
         )
+        prev_imdb = imdb
 
 
 def iter_sentences_opensubs18_man_ann(stream):
@@ -536,10 +537,9 @@ def write_context(sent_elem, inst, out_f):
 @click.argument("outdir", type=click.Path())
 def unified_to_senseval(inf: IO, keyin: IO, outdir: str):
     """
-
     Converts from the unified format to a Senseval-3 -style format in
     individual files. The resulting files should be directly usable to train a
-    single word model with ItMakesSense or can be gathered using.
+    single word model with ItMakesSense or can be gathered using senseval-gather.
 
     This is a scatter type operation.
     """

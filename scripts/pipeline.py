@@ -109,13 +109,14 @@ def stiff2unified(inf, outf, keyout, head, input_fmt):
 @click.argument("outf", type=click.Path())
 @click.argument("key3out", type=click.Path())
 @click.argument("keyout", type=click.Path())
-def unified_to_sup(inf, keyin, outf, key3out, keyout):
+@click.argument("exclude", nargs=-1)
+def unified_to_sup(inf, keyin, outf, key3out, keyout, exclude):
     """
     Make the unified format into the senseval format used by the supervised
     systems (at least It Makes Sense) for both training and test data.
     """
     tempdir = tempfile.mkdtemp(prefix="train")
-    python(munge_py, "unified-to-senseval", inf, keyin, tempdir)
+    python(munge_py, "unified-to-senseval", inf, keyin, tempdir, *exclude)
     (
         python[munge_py, "senseval-gather", tempdir, outf, "-"]
         | tee[key3out]
@@ -129,7 +130,12 @@ def unified_to_sup(inf, keyin, outf, key3out, keyout):
 @click.argument("keyin", type=click.Path(exists=True))
 @click.argument("goldkeyin", type=click.Path(exists=True))
 @click.argument("dirout", type=click.Path())
-def unified_auto_man_to_evals(inf, ingoldf, keyin, goldkeyin, dirout):
+@click.argument("--rm-blacklist/--keep-blacklist")
+def unified_auto_man_to_evals(inf, ingoldf, keyin, goldkeyin, dirout, rm_blacklist):
+    """
+    Converts a unified corpus and manually annotated data into a full full
+    train/dev/test split for use by finn-wsd-eval.
+    """
     ps = {}
     for seg in ["train", "devtest", "dev", "test"]:
         segoutdir = pjoin(dirout, seg)
@@ -159,6 +165,10 @@ def unified_auto_man_to_evals(inf, ingoldf, keyin, goldkeyin, dirout):
     )
     cp(ingoldf, ps["test"]["unified"])
     cp(goldkeyin, ps["test"]["unikey"])
+    if rm_blacklist:
+        exclude = ["olla", "ei"]
+    else:
+        exclude = []
     for seg in ["train", "dev", "test"]:
         segoutdir = pjoin(dirout, seg)
         unified_to_single_eval.callback(
@@ -166,6 +176,7 @@ def unified_auto_man_to_evals(inf, ingoldf, keyin, goldkeyin, dirout):
             pjoin(segoutdir, "corpus.xml"),
             pjoin(segoutdir, "corpus.key"),
             segoutdir,
+            exclude,
         )
 
 
@@ -201,10 +212,14 @@ def unified_to_eval(inf, keyin, dirout):
 @click.argument("inf", type=click.Path(exists=True))
 @click.argument("keyin", type=click.Path(exists=True))
 @click.argument("dirout", type=click.Path())
-def unified_to_single_eval(seg, inf, keyin, dirout):
+@click.argument("exclude", nargs=-1)
+def unified_to_single_eval(seg, inf, keyin, dirout, exclude):
     """
     Converts a unified corpus into all the data the data needed for a single
     test/train segment by finn-wsd-eval.
+
+    This creates a simple train/test split. For a full train/dev/test split
+    including manually annotated data use unified-auto-man-to-evals.
     """
     pdict = get_partition_paths(dirout, seg)
     for src, dest in [(inf, pdict["unified"]), (keyin, pdict["unikey"])]:
@@ -218,6 +233,7 @@ def unified_to_single_eval(seg, inf, keyin, dirout):
         pdict["sup"],
         pdict["sup3key"],
         pdict["supkey"],
+        exclude,
     )
     python(munge_py, "finnpos-senseval", pdict["sup"], pdict["suptag"])
     python(munge_py, "omorfi-segment-senseval", pdict["sup"], pdict["supseg"])

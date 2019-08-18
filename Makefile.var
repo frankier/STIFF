@@ -14,4 +14,4 @@ ${VARUNI}.xml ${VARUNI}.key: ${VARUNI}.target
 # Evaluation creation
 
 ${VAREVAL}: ${VARUNI}.xml ${STIFFWORK}/man-ann-OpenSubtitles2018.uni.xml ${VARUNI}.key ${STIFFWORK}/man-ann-OpenSubtitles2018.uni.key
-	python scripts/pipeline.py unified-auto-man-to-evals $^ $@
+	python scripts/pipeline.py unified-auto-man-to-evals --rm-blacklist $^ $@

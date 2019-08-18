@@ -23,7 +23,7 @@ from finntk.omor.extract import lemma_intersect
 from os.path import join as pjoin
 from os import makedirs, listdir
 from contextlib import contextmanager
-from typing import Dict, Set, IO
+from typing import Dict, Set, IO, List
 from collections import Counter
 from urllib.parse import urlencode
 import pickle
@@ -535,7 +535,8 @@ def write_context(sent_elem, inst, out_f):
 @click.argument("inf", type=click.File("rb"))
 @click.argument("keyin", type=click.File("r"))
 @click.argument("outdir", type=click.Path())
-def unified_to_senseval(inf: IO, keyin: IO, outdir: str):
+@click.argument("exclude", nargs=-1)
+def unified_to_senseval(inf: IO, keyin: IO, outdir: str, exclude: List[str]):
     """
     Converts from the unified format to a Senseval-3 -style format in
     individual files. The resulting files should be directly usable to train a
@@ -547,6 +548,8 @@ def unified_to_senseval(inf: IO, keyin: IO, outdir: str):
     for sent_elem in iter_sentences(inf):
         for inst in sent_elem.xpath("instance"):
             lemma_str = inst.attrib["lemma"].lower()
+            if lemma_str in exclude:
+                continue
             pos_str = inst.attrib["pos"]
             pos_chr = UNI_POS_WN_MAP[pos_str]
             lemma_pos = "{}.{}".format(lemma_str, pos_chr)

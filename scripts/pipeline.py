@@ -130,7 +130,7 @@ def unified_to_sup(inf, keyin, outf, key3out, keyout, exclude):
 @click.argument("keyin", type=click.Path(exists=True))
 @click.argument("goldkeyin", type=click.Path(exists=True))
 @click.argument("dirout", type=click.Path())
-@click.argument("--rm-blacklist/--keep-blacklist")
+@click.option("--rm-blacklist/--keep-blacklist")
 def unified_auto_man_to_evals(inf, ingoldf, keyin, goldkeyin, dirout, rm_blacklist):
     """
     Converts a unified corpus and manually annotated data into a full full

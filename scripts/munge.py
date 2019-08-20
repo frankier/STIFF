@@ -547,8 +547,16 @@ def unified_to_senseval(inf: IO, keyin: IO, outdir: str, exclude: List[str]):
     out_files: Dict[str, str] = {}
     for sent_elem in iter_sentences(inf):
         for inst in sent_elem.xpath("instance"):
+
+            def read_key():
+                key_line = keyin.readline()
+                key_id, key_synset = key_line.rstrip().split(" ", 1)
+                assert key_id == inst.attrib["id"]
+                return key_id, key_synset
+
             lemma_str = inst.attrib["lemma"].lower()
             if lemma_str in exclude:
+                read_key()
                 continue
             pos_str = inst.attrib["pos"]
             pos_chr = UNI_POS_WN_MAP[pos_str]
@@ -571,9 +579,7 @@ def unified_to_senseval(inf: IO, keyin: IO, outdir: str, exclude: List[str]):
 
             # Write key file
             key_fn = pjoin(out_dir, "train.key")
-            key_line = keyin.readline()
-            key_id, key_synset = key_line.rstrip().split(" ", 1)
-            assert key_id == inst.attrib["id"]
+            key_id, key_synset = read_key()
             if lemma_pos not in out_files:
                 key_f = open(key_fn, "w")
             else:

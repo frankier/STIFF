@@ -1,8 +1,9 @@
 from xml.sax.saxutils import quoteattr
-from nltk.corpus.reader.wordnet import Lemma, Synset, WordNetError
+from nltk.corpus.reader.wordnet import Lemma, Synset
 from stiff.models import Token, TaggedLemma
+from finntk.wordnet.utils import maybe_fi2en_ss
 from typing import Tuple  # noqa: F401
-from typing import Optional, List
+from typing import List
 
 
 def ann_common_attrs(lang: str, tok: Token, tag: TaggedLemma) -> str:
@@ -27,22 +28,6 @@ def ann_text(tag: TaggedLemma) -> str:
         bits.remove(qf2_lemma)
         bits.append(qf2_lemma)
     return " ".join(bits)
-
-
-def maybe_fi2en_ss(ss: Synset) -> Optional[Synset]:
-    from finntk.wordnet.reader import get_en_fi_maps
-    from finntk.wordnet.utils import ss2pre, pre2ss
-    from nltk.corpus import wordnet
-
-    fi2en, _en2fi = get_en_fi_maps()
-    pre_fi = ss2pre(ss)
-    pre_en = fi2en.get(pre_fi)
-    if pre_en is None:
-        return None
-    try:
-        return pre2ss(wordnet, pre_en)
-    except WordNetError:
-        return None
 
 
 def related_lemma_list(lemma_objs: List[Tuple[str, Lemma]]) -> str:

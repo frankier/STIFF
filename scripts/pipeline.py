@@ -304,12 +304,15 @@ def train_filter(mode, indir, outdir, lemmas):
             args = [munge_py, "senseval-rm-lemma", "--lemmas", "olla,ei", "-", "-"]
             if idx == 0:
                 args.append(pjoin(outdir, "rm-keys.pkl"))
-            pipeline |= python[args]
+            pipeline = python[args]
         if filter:
             args = [munge_py, "senseval-filter-lemma", lemmas, "-", "-"]
             if idx == 0:
                 args.append(pjoin(outdir, "filter-keys.pkl"))
-            pipeline |= python[args]
+            if pipeline is None:
+                pipeline = python[args]
+            else:
+                pipeline |= python[args]
         (pipeline < pjoin(indir, fn) > pjoin(outdir, fn))()
     for cmd, pkl in ([("key-rm-lemma", "rm-keys.pkl")] if blacklist else []) + (
         [("key-filter-lemma", "filter-keys.pkl")] if filter else []

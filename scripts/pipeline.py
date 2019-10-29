@@ -279,5 +279,53 @@ def man_ann_tdt(inf, outf):
     )(retcode=[0, 1])
 
 
+@pipeline.command("train-filter")
+@click.argument("mode")
+@click.argument("indir", type=click.Path(exists=True))
+@click.argument("outdir", type=click.Path())
+@click.argument("lemmas", type=click.Path(exists=True), required=False)
+def train_filter(mode, indir, outdir, lemmas):
+    filter = False
+    blacklist = False
+    if mode == "both":
+        filter = True
+        blacklist = True
+    elif mode == "blacklist":
+        blacklist = True
+    elif mode == "filter":
+        filter = True
+    else:
+        assert False
+    for fn in ["corpus.xml", "corpus.key"]:
+        cp(pjoin(indir, fn), pjoin(outdir, fn))
+    for idx, fn in enumerate(
+        ["corpus.sup.xml", "corpus.sup.seg.xml", "corpus.sup.tag.xml"]
+    ):
+        pipeline = None
+        if blacklist:
+            args = [munge_py, "senseval-rm-lemma", "--lemmas", "olla,ei", "-", "-"]
+            if idx == 0:
+                args.append(pjoin(outdir, "rm-keys.pkl"))
+            pipeline |= python[args]
+        if filter:
+            args = [munge_py, "senseval-filter-lemma", lemmas, "-", "-"]
+            if idx == 0:
+                args.append(pjoin(outdir, "filter-keys.pkl"))
+            pipeline |= python[args]
+        (pipeline < pjoin(indir, fn) > pjoin(outdir, fn))()
+    for cmd, pkl in ([("key-rm-lemma", "rm-keys.pkl")] if blacklist else []) + (
+        [("key-filter-lemma", "filter-keys.pkl")] if filter else []
+    ):
+        for flag, fn in [("--two", "corpus.sup.key"), ("--three", "corpus.sup.key")]:
+            python(
+                munge_py,
+                cmd,
+                flag,
+                pjoin(indir, fn),
+                pjoin(outdir, fn),
+                pjoin(outdir, pkl),
+            )
+
+
 if __name__ == "__main__":
     pipeline()

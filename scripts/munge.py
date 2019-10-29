@@ -13,6 +13,7 @@ from stiff.utils.xml import (
     write_event,
     fixup_missing_text,
     iter_sentences_opensubs18,
+    iter_blocks,
 )
 from xml.sax.saxutils import escape
 import pygtrie
@@ -783,6 +784,19 @@ def senseval_select_lemma(inf, keyin, outf, keyout, lemma_pos):
         keyout.write(line)
 
 
+@munge.command("extract-words")
+@click.argument("infs", nargs=-1, type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+def extract_words(infs, outf):
+    words = set()
+    for inf in infs:
+        for lexelt in iter_blocks("lexelt")(inf):
+            item = lexelt["item"]
+            pos = lexelt["pos"]
+            words.add((item, pos))
+    pickle.dump(words, outf)
+
+
 @munge.command("senseval-rm-lemma")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
@@ -816,6 +830,43 @@ def key_rm_lemma(inf, outf, rm_key_in, three):
     for line in inf:
         if (three and line.split(" ", 2)[1] in rm_keys) or (
             not three and line.split(" ", 1)[0] in rm_keys
+        ):
+            continue
+        outf.write(line)
+
+
+@munge.command("senseval-filter-lemma")
+@click.argument("lemmas", type=click.File("rb"))
+@click.argument("inf", type=click.File("rb"))
+@click.argument("outf", type=click.File("wb"))
+@click.argument("filter_key_out", type=click.File("wb"), required=False)
+def senseval_filter_lemma(lemmas, inf, outf, filter_key_out=None):
+    lemma_poses = pickle.load(lemmas)
+    filter_keys = set()
+
+    def filter_lexelt(lexelt):
+        if (str(lexelt.attrib["item"]), lexelt.attrib["pos"]) not in lemma_poses:
+            return BYPASS
+        elif filter_key_out:
+            for instance in lexelt:
+                filter_keys.add(instance.attrib["id"])
+
+    transform_blocks(eq_matcher("lexelt"), inf, filter_lexelt, outf)
+
+    if filter_key_out:
+        pickle.dump(filter_keys, filter_key_out)
+
+
+@munge.command("key-filter-lemma")
+@click.argument("inf", type=click.File("r"))
+@click.argument("outf", type=click.File("w"))
+@click.argument("filter_key_in", type=click.File("r"))
+@click.option("--three/--two")
+def key_filter_lemma(inf, outf, filter_key_in, three):
+    filter_keys = pickle.load(filter_key_in)
+    for line in inf:
+        if (three and line.split(" ", 2)[1] not in filter_keys) or (
+            not three and line.split(" ", 1)[0] not in filter_keys
         ):
             continue
         outf.write(line)

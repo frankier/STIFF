@@ -31,6 +31,7 @@ EUROSENSEUNI=${EUROPARLWORK}/eurosense.unified
 BP4EVAL=${STIFFWORK}/bp4-wsd-eval
 BR4EVAL=${STIFFWORK}/br4-wsd-eval
 EUROPARLEVAL=${EUROPARLWORK}/wsd-eval
+EVALWORDS = ${WORK}/evalwords.pkl
 
 # corpus-pr-eval outputs
 CORPUSPREVALPLOT=${CORPUSPREVALWORK}/plot.pgf
@@ -38,8 +39,8 @@ CORPUSPREVALPLOT=${CORPUSPREVALWORK}/plot.pgf
 ## Top levels
 .PHONY: all wsd-eval stiff-wsd-eval corpus-eval
 all: wsd-eval corpus-eval
-wsd-eval: stiff-wsd-eval ${EUROPARLEVAL}
-stiff-wsd-eval: ${BP4EVAL} ${BR4EVAL}
+wsd-eval: stiff-wsd-eval ${EUROPARLEVAL}/trainf
+stiff-wsd-eval: ${BP4EVAL}/trainf ${BR4EVAL}/trainf
 corpus-eval: ${CORPUSPREVALPLOT}
 
 ## Directory creation
@@ -99,6 +100,22 @@ ${BR4EVAL}: ${RAWSTIFF} ${STIFFWORK}/man-ann-OpenSubtitles2018.uni.xml ${STIFFWO
 # Eurosense
 ${EUROPARLEVAL}: ${EUROSENSEUNI}.xml ${EUROPARLWORK}/man-ann-europarl.uni.xml ${EUROSENSEUNI}.key ${EUROPARLWORK}/man-ann-europarl.uni.key
 	python scripts/pipeline.py unified-auto-man-to-evals $^ $@
+
+# Training data filtering
+${EVALWORDS}: ${BP4EVAL} ${BR4EVAL} ${EUROPARLEVAL}
+	python scripts/munge.py extract-words \
+		${BP4EVAL}/test/corpus.sup.xml ${BP4EVAL}/dev/corpus.sup.xml \
+		${BR4EVAL}/test/corpus.sup.xml ${BR4EVAL}/dev/corpus.sup.xml \
+		${EUROPARLEVAL}/test/corpus.sup.xml ${EUROPARLEVAL}/dev/corpus.sup.xml $@
+
+${BP4EVAL}/trainf: ${EVALWORDS} ${BP4EVAL}
+	python scripts/pipeline.py train-filter filter ${BP4EVAL}/train $@ $<
+
+${BR4EVAL}/trainf: ${EVALWORDS} ${BR4EVAL}
+	python scripts/pipeline.py train-filter filter ${BR4EVAL}/train $@ $<
+
+${EUROPARLEVAL}/trainf: ${EVALWORDS} ${EUROPARLEVAL}
+	python scripts/pipeline.py train-filter filter ${EUROPARLEVAL}/train $@ $<
 
 ## Make STIFF and EuroSense P/R plot
 

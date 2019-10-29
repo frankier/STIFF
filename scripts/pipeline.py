@@ -313,7 +313,7 @@ def train_filter(mode, indir, outdir, lemmas):
                 pipeline = python[args]
             else:
                 pipeline |= python[args]
-        (pipeline < pjoin(indir, fn) > pjoin(outdir, fn))()
+        ((pipeline < pjoin(indir, fn)) > pjoin(outdir, fn))()
     for cmd, pkl in ([("key-rm-lemma", "rm-keys.pkl")] if blacklist else []) + (
         [("key-filter-lemma", "filter-keys.pkl")] if filter else []
     ):

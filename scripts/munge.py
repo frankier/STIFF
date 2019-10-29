@@ -791,8 +791,8 @@ def extract_words(infs, outf):
     words = set()
     for inf in infs:
         for lexelt in iter_blocks("lexelt")(inf):
-            item = lexelt["item"]
-            pos = lexelt["pos"]
+            item = str(lexelt.attrib["item"])
+            pos = str(lexelt.attrib["pos"])
             words.add((item, pos))
     pickle.dump(words, outf)
 

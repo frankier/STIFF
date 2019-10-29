@@ -296,8 +296,6 @@ def train_filter(mode, indir, outdir, lemmas):
         filter = True
     else:
         assert False
-    for fn in ["corpus.xml", "corpus.key"]:
-        cp(pjoin(indir, fn), pjoin(outdir, fn))
     for idx, fn in enumerate(
         ["corpus.sup.xml", "corpus.sup.seg.xml", "corpus.sup.tag.xml"]
     ):

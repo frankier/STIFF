@@ -109,12 +109,15 @@ ${EVALWORDS}: ${BP4EVAL} ${BR4EVAL} ${EUROPARLEVAL}
 		${EUROPARLEVAL}/test/corpus.sup.xml ${EUROPARLEVAL}/dev/corpus.sup.xml $@
 
 ${BP4EVAL}/trainf: ${EVALWORDS} ${BP4EVAL}
+	mkdir -p $@
 	python scripts/pipeline.py train-filter filter ${BP4EVAL}/train $@ $<
 
 ${BR4EVAL}/trainf: ${EVALWORDS} ${BR4EVAL}
+	mkdir -p $@
 	python scripts/pipeline.py train-filter filter ${BR4EVAL}/train $@ $<
 
 ${EUROPARLEVAL}/trainf: ${EVALWORDS} ${EUROPARLEVAL}
+	mkdir -p $@
 	python scripts/pipeline.py train-filter filter ${EUROPARLEVAL}/train $@ $<
 
 ## Make STIFF and EuroSense P/R plot

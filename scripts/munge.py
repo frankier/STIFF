@@ -823,7 +823,7 @@ def senseval_rm_lemma(inf, outf, rm_key_out=None, lemmas=None):
 @munge.command("key-rm-lemma")
 @click.argument("inf", type=click.File("r"))
 @click.argument("outf", type=click.File("w"))
-@click.argument("rm_key_in", type=click.File("r"))
+@click.argument("rm_key_in", type=click.File("rb"))
 @click.option("--three/--two")
 def key_rm_lemma(inf, outf, rm_key_in, three):
     rm_keys = pickle.load(rm_key_in)
@@ -860,7 +860,7 @@ def senseval_filter_lemma(lemmas, inf, outf, filter_key_out=None):
 @munge.command("key-filter-lemma")
 @click.argument("inf", type=click.File("r"))
 @click.argument("outf", type=click.File("w"))
-@click.argument("filter_key_in", type=click.File("r"))
+@click.argument("filter_key_in", type=click.File("rb"))
 @click.option("--three/--two")
 def key_filter_lemma(inf, outf, filter_key_in, three):
     filter_keys = pickle.load(filter_key_in)

@@ -19,15 +19,16 @@ from xml.sax.saxutils import escape
 import pygtrie
 from stiff.data.constants import WN_UNI_POS_MAP, UNI_POS_WN_MAP
 from finntk.wordnet.reader import fiwn, get_en_fi_maps
-from finntk.wordnet.utils import pre_id_to_post, post_id_to_pre, pre2ss
+from finntk.wordnet.utils import maybe_fi2en_ss, pre_id_to_post, post_id_to_pre, pre2ss
 from finntk.omor.extract import lemma_intersect
 from os.path import join as pjoin
 from os import makedirs, listdir
 from contextlib import contextmanager
-from typing import Dict, Set, IO, List
+from typing import Dict, Set, IO, List, Optional
 from collections import Counter
 from urllib.parse import urlencode
 import pickle
+from nltk.corpus import wordnet
 
 
 @click.group("munge")
@@ -501,6 +502,10 @@ def lexelt_head(lemma_str, pos_chr, outf):
     outf.write("""<lexelt item="{}" pos="{}">\n""".format(lemma_str, pos_chr))
 
 
+def lexelt_synset_head(synset, outf):
+    outf.write("""<lexelt synset="{}">\n""".format(synset))
+
+
 def lexelt_foot(outf):
     outf.write("</lexelt>\n")
 
@@ -519,25 +524,54 @@ def instance(inst, out_f):
     out_f.write("</instance>\n")
 
 
-def write_context(sent_elem, inst, out_f):
+def write_context(sent_elem, inst, out_f, write_tag=False):
     out_f.write("<context>\n")
     for idx, elem in enumerate(sent_elem.xpath("instance|wf")):
         if idx > 0:
             out_f.write(" ")
         if elem == inst:
             out_f.write("<head>")
-        out_f.write(escape(elem.text))
+        if write_tag:
+            text = "{}|LEM|{}|POS|{}".format(
+                elem.text, elem.attrib["lemma"], elem.attrib["pos"]
+            )
+        else:
+            text = elem.text
+        out_f.write(escape(text))
         if elem == inst:
             out_f.write("</head>")
     out_f.write("\n</context>\n")
+
+
+@munge.command("lemma-to-synset-key")
+@click.argument("keyin", type=click.File("r"))
+@click.argument("keyout", type=click.File("w"))
+def lemma_to_synset_key(keyin, keyout):
+    for line in keyin:
+        inst_id, lemma_ids = line.split(" ", 1)
+        keyout.write(inst_id)
+        for lemma_id in lemma_ids.split():
+            keyout.write(" " + wordnet.ss2of(wordnet.lemma_from_key(lemma_id).synset()))
+        keyout.write("\n")
 
 
 @munge.command("unified-to-senseval")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("keyin", type=click.File("r"))
 @click.argument("outdir", type=click.Path())
-@click.argument("exclude", nargs=-1)
-def unified_to_senseval(inf: IO, keyin: IO, outdir: str, exclude: List[str]):
+@click.option("--exclude-word", multiple=True)
+@click.option("--synset-group/--lemma-group")
+@click.option("--write-tag/--no-write-tag")
+@click.option("--filter-key", type=click.File("rb"))
+def unified_to_senseval(
+    inf: IO,
+    keyin: IO,
+    outdir: str,
+    exclude_word: List[str],
+    write_tag: bool,
+    synset_group: bool,
+    filter_key: Optional[IO],
+):
     """
     Converts from the unified format to a Senseval-3 -style format in
     individual files. The resulting files should be directly usable to train a
@@ -545,7 +579,17 @@ def unified_to_senseval(inf: IO, keyin: IO, outdir: str, exclude: List[str]):
 
     This is a scatter type operation.
     """
-    out_files: Dict[str, str] = {}
+
+    def train_out(tag):
+        if tag:
+            return "train.tag.xml"
+        else:
+            return "train.xml"
+
+    seen_keys: Set[str] = set()
+    filter = None
+    if filter_key is not None:
+        exclude = pickle.load(filter_key)
     for sent_elem in iter_sentences(inf):
         for inst in sent_elem.xpath("instance"):
 
@@ -556,47 +600,71 @@ def unified_to_senseval(inf: IO, keyin: IO, outdir: str, exclude: List[str]):
                 return key_id, key_synset
 
             lemma_str = inst.attrib["lemma"].lower()
+            key_id, key_synset = read_key()
+
             if lemma_str in exclude:
-                read_key()
                 continue
+
             pos_str = inst.attrib["pos"]
             pos_chr = UNI_POS_WN_MAP[pos_str]
             lemma_pos = "{}.{}".format(lemma_str, pos_chr)
-
-            # Write XML
-            out_dir = pjoin(outdir, lemma_pos)
-            if lemma_pos not in out_files:
-                makedirs(out_dir, exist_ok=True)
-                out_fn = pjoin(out_dir, "train.xml")
-                out_f = open(out_fn, "w")
-                lexical_sample_head(out_f)
-                lexelt_head(lemma_str, pos_chr, out_f)
+            if synset_group:
+                group_keys = key_synset.split(" ")
             else:
-                out_fn = out_files[lemma_pos]
-                out_f = open(out_fn, "a")
-            with instance(inst, out_f):
-                write_context(sent_elem, inst, out_f)
-            out_f.close()
+                group_keys = [lemma_pos]
 
-            # Write key file
-            key_fn = pjoin(out_dir, "train.key")
-            key_id, key_synset = read_key()
-            if lemma_pos not in out_files:
-                key_f = open(key_fn, "w")
-            else:
-                key_f = open(key_fn, "a")
-            out_line = "{} {} {}\n".format(lemma_pos, key_id, key_synset)
-            key_f.write(out_line)
-            key_f.close()
+            for group_key in group_keys:
+                if filter is not None and group_key not in filter:
+                    continue
+                new_group = group_key not in seen_keys
+                seen_keys.add(group_key)
 
-            # Add to out_files
-            if lemma_pos not in out_files:
-                out_files[lemma_pos] = out_fn
+                # Make dir
+                group_dir = pjoin(outdir, group_key)
+                if new_group:
+                    makedirs(group_dir, exist_ok=True)
 
-    for out_fn in out_files.values():
-        with open(out_fn, "a") as out_f:
-            lexelt_foot(out_f)
-            lexical_sample_foot(out_f)
+                # Write XML
+                def write_xml(tag=False):
+                    out_fn = pjoin(group_dir, train_out(tag))
+                    if new_group:
+                        out_f = open(out_fn, "w")
+                        lexical_sample_head(out_f)
+                        if synset_group:
+                            lexelt_synset_head(group_key, out_f)
+                        else:
+                            lexelt_head(lemma_str, pos_chr, out_f)
+                    else:
+                        out_f = open(out_fn, "a")
+                    with instance(inst, out_f):
+                        write_context(sent_elem, inst, out_f, write_tag=tag)
+                    out_f.close()
+
+                write_xml()
+                if write_tag:
+                    write_xml(True)
+
+                # Write key file
+                key_fn = pjoin(group_dir, "train.key")
+                if new_group:
+                    key_f = open(key_fn, "w")
+                else:
+                    key_f = open(key_fn, "a")
+                out_line = "{} {} {}\n".format(lemma_pos, key_id, key_synset)
+                key_f.write(out_line)
+                key_f.close()
+
+    for group_key in seen_keys:
+
+        def write_foot(tag=False):
+            out_fn = pjoin(outdir, group_key, train_out(tag))
+            with open(out_fn, "a") as out_f:
+                lexelt_foot(out_f)
+                lexical_sample_foot(out_f)
+
+        write_foot(False)
+        if write_tag:
+            write_foot(True)
 
 
 @munge.command("senseval-gather")
@@ -787,13 +855,21 @@ def senseval_select_lemma(inf, keyin, outf, keyout, lemma_pos):
 @munge.command("extract-words")
 @click.argument("infs", nargs=-1, type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))
-def extract_words(infs, outf):
+@click.option("--synsets/--words")
+def extract_words(infs, outf, synsets):
     words = set()
     for inf in infs:
         for lexelt in iter_blocks("lexelt")(inf):
             item = str(lexelt.attrib["item"])
             pos = str(lexelt.attrib["pos"])
-            words.add((item, pos))
+            if synsets:
+                for lemma in fiwn.lemmas(item, pos):
+                    maybe_synset = maybe_fi2en_ss(lemma.synset())
+                    if maybe_synset is None:
+                        continue
+                    words.add(fiwn.ss2of(maybe_synset))
+            else:
+                words.add((item, pos))
     pickle.dump(words, outf)
 
 

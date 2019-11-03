@@ -7,6 +7,7 @@ from plumbum import local
 from stiff.eval import get_eval_paths, get_partition_paths
 from stiff.utils.pipeline import add_head, add_zstd, ensure_dir
 from os.path import join as pjoin, samefile
+from typing import List, Optional
 
 python = local[sys.executable]
 
@@ -109,19 +110,71 @@ def stiff2unified(inf, outf, keyout, head, input_fmt):
 @click.argument("outf", type=click.Path())
 @click.argument("key3out", type=click.Path())
 @click.argument("keyout", type=click.Path())
-@click.argument("exclude", nargs=-1)
-def unified_to_sup(inf, keyin, outf, key3out, keyout, exclude):
+@click.argument("outtagf", type=click.Path(), required=False)
+@click.option("--semcor/--fin")
+@click.option("--exclude-word", multiple=True)
+@click.option("--filter-key", type=click.Path())
+def unified_to_sup(
+    inf,
+    keyin,
+    outf,
+    key3out,
+    keyout,
+    outtagf,
+    semcor=False,
+    exclude_word: List[str] = (),
+    filter_key: Optional[str] = None,
+):
     """
     Make the unified format into the senseval format used by the supervised
     systems (at least It Makes Sense) for both training and test data.
     """
     tempdir = tempfile.mkdtemp(prefix="train")
-    python(munge_py, "unified-to-senseval", inf, keyin, tempdir, *exclude)
-    (
-        python[munge_py, "senseval-gather", tempdir, outf, "-"]
-        | tee[key3out]
-        | python[munge_py, "unified-key-to-ims-test", "-", keyout]
-    )()
+
+    def u2s(keyin, tempdir, synset_group=False, write_tag=False):
+        u2s_args = [munge_py, "unified-to-senseval", inf, keyin, tempdir]
+        for ex in exclude_word:
+            u2s_args.extend(["--exclude-word", ex])
+        if filter_key:
+            u2s_args.extend(["--filter-key", filter_key])
+        if synset_group:
+            u2s_args.append("--synset-group")
+        if write_tag:
+            u2s_args.append("--write-tag")
+        python(*u2s_args)
+
+    def gather(tempdir, write_keyout=True):
+        pipeline = python[
+            munge_py,
+            "senseval-gather",
+            tempdir,
+            outf,
+            "-" if write_keyout else "/dev/null",
+        ]
+        if write_keyout:
+            pipeline = (
+                pipeline
+                | tee[key3out]
+                | python[munge_py, "unified-key-to-ims-test", "-", keyout]
+            )
+        pipeline()
+
+    if semcor:
+        # Convert key
+        synsets_key = tempfile.mktemp(suffix="synsets.key")
+        python(munge_py, "lemma-to-synset-key", keyin, synsets_key)
+
+        # Write non-tagged
+        u2s(synsets_key, tempdir, synset_group=True)
+        gather(tempdir, write_keyout=True)
+
+        # Write tagged
+        tempdir2 = tempfile.mkdtemp(prefix="train2")
+        u2s(synsets_key, tempdir2, synset_group=True, write_tag=True)
+        gather(tempdir2, write_keyout=False)
+    else:
+        u2s(keyin, tempdir)
+        gather(tempdir, write_keyout=True)
 
 
 @pipeline.command("unified-auto-man-to-evals")

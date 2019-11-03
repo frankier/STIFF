@@ -1,0 +1,40 @@
+.SECONDARY:
+.EXPORT_ALL_VARIABLES:
+
+print-%:
+	@echo $*=$($*)
+
+# Workdirs
+WORK=work
+STIFFWORK=${WORK}/stiff
+EUROPARLWORK=${WORK}/eurosense
+
+# SemCor
+SEMCORIN=${WORK}/semcorin
+SEMCOROUT=${WORK}/semcorout
+BP4EVAL=${STIFFWORK}/bp4-wsd-eval
+BR4EVAL=${STIFFWORK}/br4-wsd-eval
+EUROPARLEVAL=${EUROPARLWORK}/wsd-eval
+EVALSYNSETS = ${WORK}/evalsynsets.pkl
+
+${EVALSYNSETS}: ${BP4EVAL} ${BR4EVAL} ${EUROPARLEVAL}
+	python scripts/munge.py extract-words --synsets \
+		${BP4EVAL}/test/corpus.sup.xml ${BP4EVAL}/dev/corpus.sup.xml \
+		${BR4EVAL}/test/corpus.sup.xml ${BR4EVAL}/dev/corpus.sup.xml \
+		${EUROPARLEVAL}/test/corpus.sup.xml ${EUROPARLEVAL}/dev/corpus.sup.xml $@
+
+
+${SEMCOROUT}: ${EVALSYNSETS} | ${SEMCORIN}
+	mkdir -p ${SEMCOROUT}
+	cp ${SEMCORIN}/semcor.data.xml ${SEMCOROUT}/corpus.xml
+	cp ${SEMCORIN}/semcor.gold.key.txt ${SEMCOROUT}/corpus.key
+	python scripts/pipeline.py \
+		unified-to-sup \
+		${SEMCORIN}/semcor.data.xml \
+		${SEMCORIN}/semcor.gold.key.txt \
+		${SEMCOROUT}/corpus.sup.xml \
+		${SEMCOROUT}/corpus.sup.3.key \
+		${SEMCOROUT}/corpus.sup.key \
+		${SEMCOROUT}/corpus.sup.tag.key \
+		--semcor \
+		--filter-key ${EVALSYNSETS}

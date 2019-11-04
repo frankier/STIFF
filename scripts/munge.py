@@ -671,14 +671,17 @@ def unified_to_senseval(
 @click.argument("indir", type=click.Path())
 @click.argument("outf", type=click.File("w"))
 @click.argument("keyout", type=click.File("w"))
-def senseval_gather(indir: str, outf: IO, keyout: IO):
+@click.option("--write-tag/--no-write-tag")
+def senseval_gather(indir: str, outf: IO, keyout: IO, write_tag: bool):
     """
     Gather individual per-word SenseEval files into one big file, usable by
     ItMakesSense and Context2Vec.
     """
     with lexical_sample(outf):
         for word_dir in listdir(indir):
-            train_fn = pjoin(indir, word_dir, "train.xml")
+            train_fn = pjoin(
+                indir, word_dir, "train.tag.xml" if write_tag else "train.xml"
+            )
             key_fn = pjoin(indir, word_dir, "train.key")
             with open(train_fn, "rb") as train_f:
                 stream = etree.iterparse(train_f, events=("start", "end"))

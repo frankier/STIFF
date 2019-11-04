@@ -26,8 +26,6 @@ ${EVALSYNSETS}: ${BP4EVAL} ${BR4EVAL} ${EUROPARLEVAL}
 
 ${SEMCOROUT}: ${EVALSYNSETS} | ${SEMCORIN}
 	mkdir -p ${SEMCOROUT}
-	cp ${SEMCORIN}/semcor.data.xml ${SEMCOROUT}/corpus.xml
-	cp ${SEMCORIN}/semcor.gold.key.txt ${SEMCOROUT}/corpus.key
 	python scripts/pipeline.py \
 		unified-to-sup \
 		${SEMCORIN}/semcor.data.xml \
@@ -35,6 +33,6 @@ ${SEMCOROUT}: ${EVALSYNSETS} | ${SEMCORIN}
 		${SEMCOROUT}/corpus.sup.xml \
 		${SEMCOROUT}/corpus.sup.3.key \
 		${SEMCOROUT}/corpus.sup.key \
-		${SEMCOROUT}/corpus.sup.tag.key \
+		${SEMCOROUT}/corpus.sup.tag.xml \
 		--semcor \
 		--filter-key ${EVALSYNSETS}

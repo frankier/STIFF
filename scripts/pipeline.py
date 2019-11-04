@@ -143,14 +143,17 @@ def unified_to_sup(
             u2s_args.append("--write-tag")
         python(*u2s_args)
 
-    def gather(tempdir, write_keyout=True):
-        pipeline = python[
+    def gather(tempdir, outf, write_keyout=True, write_tag=False):
+        args = [
             munge_py,
             "senseval-gather",
             tempdir,
             outf,
             "-" if write_keyout else "/dev/null",
         ]
+        if write_tag:
+            args.append("--write-tag")
+        pipeline = python[args]
         if write_keyout:
             pipeline = (
                 pipeline
@@ -165,16 +168,14 @@ def unified_to_sup(
         python(munge_py, "lemma-to-synset-key", keyin, synsets_key)
 
         # Write non-tagged
-        u2s(synsets_key, tempdir, synset_group=True)
-        gather(tempdir, write_keyout=True)
+        u2s(synsets_key, tempdir, synset_group=True, write_tag=True)
+        gather(tempdir, outf, write_keyout=True)
 
         # Write tagged
-        tempdir2 = tempfile.mkdtemp(prefix="train2")
-        u2s(synsets_key, tempdir2, synset_group=True, write_tag=True)
-        gather(tempdir2, write_keyout=False)
+        gather(tempdir, outtagf, write_keyout=False, write_tag=True)
     else:
         u2s(keyin, tempdir)
-        gather(tempdir, write_keyout=True)
+        gather(tempdir, outf, write_keyout=True)
 
 
 @pipeline.command("unified-auto-man-to-evals")

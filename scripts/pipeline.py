@@ -122,13 +122,15 @@ def unified_to_sup(
     keyout,
     outtagf,
     semcor=False,
-    exclude_word: List[str] = (),
+    exclude_word: Optional[List[str]] = None,
     filter_key: Optional[str] = None,
 ):
     """
     Make the unified format into the senseval format used by the supervised
     systems (at least It Makes Sense) for both training and test data.
     """
+    if exclude_word is None:
+        exclude_word = []
     tempdir = tempfile.mkdtemp(prefix="train")
 
     def u2s(keyin, tempdir, synset_group=False, write_tag=False):

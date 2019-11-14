@@ -525,6 +525,9 @@ def instance(inst, out_f):
 
 
 def write_context(sent_elem, inst, out_f, write_tag=False):
+    def write_one(surf, lem, pos):
+        out_f.write(escape("{}|LEM|{}|POS|{}".format(surf, lem, pos)))
+
     out_f.write("<context>\n")
     for idx, elem in enumerate(sent_elem.xpath("instance|wf")):
         if idx > 0:
@@ -532,12 +535,30 @@ def write_context(sent_elem, inst, out_f, write_tag=False):
         if elem == inst:
             out_f.write("<head>")
         if write_tag:
-            text = "{}|LEM|{}|POS|{}".format(
-                elem.text, elem.attrib["lemma"], elem.attrib["pos"]
-            )
+            pos = elem.attrib["pos"]
+            surf_bits = elem.text.split(" ")
+            lem_bits = elem.attrib["lemma"].split("_")
+
+            def iter_bits(bits):
+                for bit_idx, bit in enumerate(bits):
+                    if bit_idx > 0:
+                        out_f.write(" ")
+                    yield bit
+
+            if len(surf_bits) == len(lem_bits):
+                for surf, lem in iter_bits(zip(surf_bits, lem_bits)):
+                    write_one(surf, lem, pos)
+            elif len(surf_bits) == 1:
+                for lem in iter_bits(lem_bits):
+                    write_one(surf_bits[0], lem, pos)
+            elif len(lem_bits) == 1:
+                for surf in iter_bits(surf_bits):
+                    write_one(surf, lem_bits[0], pos)
+            else:
+                for surf in iter_bits(surf_bits):
+                    write_one(surf, surf, pos)
         else:
-            text = elem.text
-        out_f.write(escape(text))
+            out_f.write(escape(elem.text))
         if elem == inst:
             out_f.write("</head>")
     out_f.write("\n</context>\n")

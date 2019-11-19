@@ -125,6 +125,26 @@ def fold_support(lang, inf, outf):
     transform_sentences(inf, tran, outf)
 
 
+@filter.command()
+@click.argument("inf", type=click.File("rb"))
+def overlap_examples(inf):
+    for sent in iter_sentences(inf):
+        tok_lems = sent.xpath("./text[@id='zh-tok']")[0].text.split(" ")
+        untok_lems = set()
+        for ann in sent.xpath("./annotations/annotation[@lang='zh']"):
+            anchor_positions = ann.attrib["anchor-positions"]
+            for position in anchor_positions.split(" "):
+                anchor = parse_qs_single(position)
+                source = anchor["from-id"]
+                if source == "zh-untok":
+                    untok_lems.add(ann.attrib["lemma"])
+        for untok_lem in untok_lems:
+            if not (any(untok_lem in tok_lem for tok_lem in tok_lems)):
+                print("Not a substring:", untok_lem)
+                for text in sent.xpath("./text"):
+                    print(text.text)
+
+
 @filter.command("rm-empty")
 @click.argument("inf", type=click.File("rb"))
 @click.argument("outf", type=click.File("wb"))

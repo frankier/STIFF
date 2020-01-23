@@ -21,14 +21,18 @@ def in_matcher(*tag_names: str) -> Matcher:
     return inner
 
 
+def detatch_elem(elem):
+    # Eliminate now-empty references from the root node to elem
+    for ancestor in elem.xpath("ancestor-or-self::*"):
+        while ancestor.getprevious() is not None:
+            del ancestor.getparent()[0]
+
+
 def free_elem(elem):
     # It's safe to call clear() here because no descendants will be
     # accessed
     elem.clear()
-    # Also eliminate now-empty references from the root node to elem
-    for ancestor in elem.xpath("ancestor-or-self::*"):
-        while ancestor.getprevious() is not None:
-            del ancestor.getparent()[0]
+    detatch_elem(elem)
 
 
 def open_tag(elem):
@@ -245,7 +249,7 @@ def chunk_stream_cb(stream, matcher: Matcher, outside_cb, inside_cb, always_cb=N
         if event == "end" and matcher(elem.tag):
             inside = False
             retval = inside_cb(elem)
-            free_elem(elem)
+            detatch_elem(elem)
             if retval is BREAK:
                 break
 

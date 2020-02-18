@@ -681,6 +681,9 @@ def plot_train_entropies(
     semcorkey,
     outf,
 ):
+    from statsmodels.sandbox.nonparametric import kernels
+    from statsmodels.nonparametric.kde import bandwidths
+
     fig, (ax1, ax2, ax3) = pl.subplots(3, sharex=True, gridspec_kw={"hspace": 0.05})
 
     def add_to_data(data, dists):
@@ -690,20 +693,23 @@ def plot_train_entropies(
             data.extend((h for _ in range(int(insts + 0.5))))
 
     # EuroSense/STIFF
+    bw = None
     for inf, keyin, ax in [
         (eurosensetrainxml, eurosensetrainkey, ax1),
         (stifftrainxml, stifftrainkey, ax2),
     ]:
         data = []
         add_to_data(data, iter_dists_sup(inf, keyin))
-        sns.distplot(data, hist_kws=dict(align="left"), ax=ax)
+        if bw is None:
+            bw = bandwidths.select_bandwidth(data, "scott", kernels.Gaussian)
+        sns.distplot(data, kde_kws=dict(bw=bw, gridsize=1000), ax=ax)
     # SemCor
     semcor_vocab = {}
     build_uni_sense_dist(iter_sentences(semcorxml), semcorkey, semcor_vocab)
     data = []
     add_to_data(data, semcor_vocab.values())
     # Plot
-    sns.distplot(data, hist_kws=dict(align="left"), ax=ax3)
+    sns.distplot(data, kde_kws=dict(bw=bw, gridsize=1000), ax=ax3)
     ax3.set_xlim(-0.1)
     ax3.set_xlabel("Entropy")
     ax1.set_ylabel("EuroSense instance density")

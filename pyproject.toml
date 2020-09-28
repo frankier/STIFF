@@ -6,7 +6,7 @@ authors = ["Frankie Robertson <frankie@robertson.name>"]
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.7"
 adjusttext = "=0.7.3"
 pareto = "^1.1"
 cython = "^0.29.2"

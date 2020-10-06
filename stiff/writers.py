@@ -71,13 +71,7 @@ def annotation_comment(lemma_objs: List[Tuple[str, Lemma]]):
 
 
 def man_ann_ann(lang: str, tok: Token, tag: TaggedLemma) -> str:
-    return (
-        "<annotation "
-        'type="man-ann" '
-        "{}>"
-        "{}</annotation>\n"
-        "<!-- {}: {} ({}{}lexname: {}) -->\n"
-    ).format(
+    return ('<annotation type="man-ann" {}>{}</annotation>\n<!-- {} -->\n').format(
         ann_common_attrs(lang, tok, tag),
         ann_text(tag),
         annotation_comment(tag.lemma_objs),
